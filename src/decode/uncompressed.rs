@@ -29,7 +29,7 @@ fn process_pixels_impl<InPixel: cast::FromLeBytes, OutPixel: cast::IntoNeBytes>(
     }
 }
 /// This is a hack to explicitly annotate the types of the closures.
-fn closure_types<A, B>(f: impl Fn(A) -> B) -> impl Fn(A) -> B {
+fn closure_types<A, B, F: Fn(A) -> B>(f: F) -> impl Fn(A) -> B {
     f
 }
 
@@ -40,7 +40,7 @@ macro_rules! underlying {
         type OutPixel = [$out; OUT_COUNT];
 
         fn process_pixels(encoded: &[u8], decoded: &mut [u8]) {
-            let f = closure_types::<InPixel, OutPixel>($f);
+            let f = closure_types::<InPixel, OutPixel, _>($f);
             process_pixels_impl(encoded, decoded, f);
         }
 
