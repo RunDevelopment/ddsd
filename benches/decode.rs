@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ddsd::*;
-use rand::RngCore;
+use rand::{Rng, RngCore};
 
 fn simple_texture_header(size: Size, format: DxgiFormat) -> Header {
     Header {
@@ -38,6 +38,15 @@ fn random_bytes(len: usize) -> Vec<u8> {
 }
 
 fn bench_decoder(c: &mut Criterion, format: DxgiFormat, channels: Channels, precision: Precision) {
+    bench_decoder_with_data(c, format, channels, precision, |_| {});
+}
+fn bench_decoder_with_data(
+    c: &mut Criterion,
+    format: DxgiFormat,
+    channels: Channels,
+    precision: Precision,
+    mut data_modifier: impl FnMut(&mut [u8]),
+) {
     let color = ColorFormat::new(channels, precision);
     let name = format!("{:?} -> {}", format, color);
 
@@ -49,7 +58,8 @@ fn bench_decoder(c: &mut Criterion, format: DxgiFormat, channels: Channels, prec
         assert!(format.supports(color));
 
         let surface = reader.layout().texture().unwrap().main();
-        let bytes = random_bytes(surface.data_len() as usize).into_boxed_slice();
+        let mut bytes = random_bytes(surface.data_len() as usize).into_boxed_slice();
+        data_modifier(&mut bytes);
         let mut output =
             vec![0; surface.size().pixels() as usize * color.bytes_per_pixel() as usize];
         b.iter(|| {
@@ -64,6 +74,25 @@ fn bench_decoder(c: &mut Criterion, format: DxgiFormat, channels: Channels, prec
     });
 }
 
+/// This sets the BC7 block modes such that each mode is equally likely.
+///
+/// This is necessary, because the block mode is decided by the number of
+/// leading zeros, meaning that for random bytes, 50% of the blocks will be
+/// mode 0. This does NOT represent real-world data at all, hence this function.
+///
+/// Note that this is not a perfect solution either, but it should be good
+/// enough.
+fn random_bc7_modes(data: &mut [u8]) {
+    let mut rng = rand::thread_rng();
+    for i in (0..data.len()).step_by(16) {
+        let mode: u8 = rng.gen_range(0..8);
+        let mut byte = data[i];
+        byte |= 1;
+        byte <<= mode;
+        data[i] = byte;
+    }
+}
+
 pub fn uncompressed(c: &mut Criterion) {
     use Channels::*;
     use Precision::*;
@@ -76,6 +105,7 @@ pub fn uncompressed(c: &mut Criterion) {
     bench_decoder(c, DxgiFormat::R16G16_SNORM, Rgba, U8);
     bench_decoder(c, DxgiFormat::B8G8R8X8_UNORM, Rgba, U8);
     bench_decoder(c, DxgiFormat::BC1_UNORM, Rgba, U8);
+    bench_decoder_with_data(c, DxgiFormat::BC7_UNORM, Rgba, U8, random_bc7_modes);
 }
 
 criterion_group!(benches, uncompressed);

@@ -54,6 +54,9 @@ pub(crate) fn decode_bc7_block(block: [u8; 16]) -> [[u8; 4]; 16] {
         let color_index_bits = 2;
         let alpha_index_bits = if mode == 4 { 3 } else { 2 };
 
+        debug_assert!(num_subsets == 1);
+        debug_assert!(subset_index == PARTITION_SET_1);
+
         // pass 1: decode the color indexes
         // TODO: This can be heavily optimized, because mode 4&5 only have one
         // subset. This means that we statically know that only the first index
@@ -76,42 +79,22 @@ pub(crate) fn decode_bc7_block(block: [u8; 16]) -> [[u8; 4]; 16] {
             let mut color_index = color_indexes[pixel_index as usize];
             let mut alpha_index = stream.consume_bits(alpha_index_bits - is_fix_up as u8);
 
-            let mut color_index_bits = color_index_bits;
-            let mut alpha_index_bits = alpha_index_bits;
+            let mut color_bits = color_index_bits;
+            let mut alpha_bits = alpha_index_bits;
 
             if mode == 4 && index_mode {
                 std::mem::swap(&mut color_index, &mut alpha_index);
-                std::mem::swap(&mut color_index_bits, &mut alpha_index_bits);
+                std::mem::swap(&mut color_bits, &mut alpha_bits);
             }
 
             // endpoints are now complete.
             let endpoint_start = endpoints[0];
             let endpoint_end = endpoints[1];
 
-            let r = interpolate(
-                endpoint_start[0],
-                endpoint_end[0],
-                color_index,
-                color_index_bits,
-            );
-            let g = interpolate(
-                endpoint_start[1],
-                endpoint_end[1],
-                color_index,
-                color_index_bits,
-            );
-            let b = interpolate(
-                endpoint_start[2],
-                endpoint_end[2],
-                color_index,
-                color_index_bits,
-            );
-            let a = interpolate(
-                endpoint_start[3],
-                endpoint_end[3],
-                alpha_index,
-                alpha_index_bits,
-            );
+            let r = interpolate(endpoint_start[0], endpoint_end[0], color_index, color_bits);
+            let g = interpolate(endpoint_start[1], endpoint_end[1], color_index, color_bits);
+            let b = interpolate(endpoint_start[2], endpoint_end[2], color_index, color_bits);
+            let a = interpolate(endpoint_start[3], endpoint_end[3], alpha_index, alpha_bits);
 
             output[pixel_index as usize] = [r, g, b, a];
         }
@@ -371,7 +354,7 @@ fn interpolate(e0: u8, e1: u8, index: u8, index_bits: u8) -> u8 {
 }
 
 /// The subset indexes for all 4x4 pixels encoded as a single u32.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 struct SubsetIndexMap(u32, u16);
 impl SubsetIndexMap {
     const fn new_1() -> Self {
@@ -636,8 +619,30 @@ impl BitStream {
     #[inline(always)]
     pub fn consume_bits_16(&mut self, count: u8) -> u16 {
         debug_assert!(0 < count && count <= 16);
-        let mask = (1_u16 << count).wrapping_sub(1);
-        let bits = self.state as u16 & mask;
+        let mut bits = self.state as u16;
+        if count < 16 {
+            bits &= (1_u16.wrapping_shl(count as u32)).wrapping_sub(1);
+        }
+        self.skip(count);
+        bits
+    }
+    #[inline(always)]
+    pub fn consume_bits_32(&mut self, count: u8) -> u32 {
+        debug_assert!(0 < count && count <= 32);
+        let mut bits = self.state as u32;
+        if count < 32 {
+            bits &= (1_u32.wrapping_shl(count as u32)).wrapping_sub(1);
+        }
+        self.skip(count);
+        bits
+    }
+    #[inline(always)]
+    pub fn consume_bits_64(&mut self, count: u8) -> u64 {
+        debug_assert!(0 < count && count <= 64);
+        let mut bits = self.state as u64;
+        if count < 64 {
+            bits &= (1_u64.wrapping_shl(count as u32)).wrapping_sub(1);
+        }
         self.skip(count);
         bits
     }
