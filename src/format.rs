@@ -153,12 +153,15 @@ pub enum SupportedFormat {
     BC7_UNORM,
 
     // non-standard formats
-
-    /// This is just [`BC3_UNORM`], but with the A and R channels swapped.
+    /// This is just [`BC3_UNORM`], but with the R channel stored in alpha.
     ///
-    /// This is a trick to improve the precision of the R channel at the cost
-    /// of losing the A channel completely. This format does not have an A
-    /// channel when decoded.
+    /// BC3 stores the A channel with a much higher precision than the other
+    /// (color) channels. RXGB uses this by storing the R channel of the image in
+    /// the BC3 A channel, effectively increasing the precision of not just the
+    /// R channel, but also the G and B channels.
+    ///
+    /// Note that this is an RGB format. The BC3-encoded R channel is commonly
+    /// set to 0 to improve the quality of G and B.
     BC3_UNORM_RXGB,
 }
 impl SupportedFormat {
@@ -537,7 +540,7 @@ mod decoders {
             SupportedFormat::BC5_SNORM => decode::BC5_SNORM,
             SupportedFormat::BC6H_UF16 => decoders!(Rgb, F32, noop_decode),
             SupportedFormat::BC6H_SF16 => decoders!(Rgb, F32, noop_decode),
-            SupportedFormat::BC7_UNORM => decoders!(Rgb, U8, noop_decode),
+            SupportedFormat::BC7_UNORM => decode::BC7_UNORM,
 
             // non-standard formats
             SupportedFormat::BC3_UNORM_RXGB => decode::BC3_UNORM_RXGB,

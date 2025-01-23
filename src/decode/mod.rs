@@ -3,6 +3,7 @@ use std::io::{Read, Seek};
 use crate::{Channels, DecodeError, Precision, Rect, Size, TinyEnum, TinySet};
 
 mod bc;
+mod bc7;
 mod convert;
 mod read_write;
 mod sub_sampled;

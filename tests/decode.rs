@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
 use ddsd::*;
-use util::Castable;
 use Precision::*;
 
 mod util;
@@ -83,70 +82,6 @@ fn decode_rect() {
 
 #[test]
 fn decode_all_color_formats() {
-    trait NormMax {
-        const NORM_MAX: Self;
-    }
-    impl NormMax for u8 {
-        const NORM_MAX: Self = u8::MAX;
-    }
-    impl NormMax for u16 {
-        const NORM_MAX: Self = u16::MAX;
-    }
-    impl NormMax for f32 {
-        const NORM_MAX: Self = 1.0;
-    }
-
-    fn convert_channels<T>(data: &[T], from: Channels, to: Channels) -> Vec<T>
-    where
-        T: Copy + Default + Castable + NormMax,
-    {
-        if from == to {
-            return data.to_vec();
-        }
-
-        fn convert<const N: usize, const M: usize, T>(
-            data: &[T],
-            f: impl Fn([T; N]) -> [T; M],
-        ) -> Vec<T>
-        where
-            T: Copy + Default + Castable,
-        {
-            let pixels = data.len() / N;
-            let mut result: Vec<T> = vec![Default::default(); pixels * M];
-
-            let data_n: &[[T; N]] = util::cast_slice(data);
-            let result_m: &mut [[T; M]] = util::cast_slice_mut(&mut result);
-
-            for (i, o) in data_n.iter().zip(result_m.iter_mut()) {
-                *o = f(*i);
-            }
-
-            result
-        }
-
-        match (from, to) {
-            // already handled
-            (Channels::Grayscale, Channels::Grayscale)
-            | (Channels::Alpha, Channels::Alpha)
-            | (Channels::Rgb, Channels::Rgb)
-            | (Channels::Rgba, Channels::Rgba) => unreachable!(),
-
-            (Channels::Grayscale, Channels::Alpha) => todo!(),
-            (Channels::Grayscale, Channels::Rgb) => convert(data, |[g]| [g, g, g]),
-            (Channels::Grayscale, Channels::Rgba) => convert(data, |[g]| [g, g, g, T::NORM_MAX]),
-            (Channels::Alpha, Channels::Grayscale) => todo!(),
-            (Channels::Alpha, Channels::Rgb) => todo!(),
-            (Channels::Alpha, Channels::Rgba) => {
-                convert(data, |[a]| [T::default(), T::default(), T::default(), a])
-            }
-            (Channels::Rgb, Channels::Grayscale) => todo!(),
-            (Channels::Rgb, Channels::Alpha) => todo!(),
-            (Channels::Rgb, Channels::Rgba) => convert(data, |[r, g, b]| [r, g, b, T::NORM_MAX]),
-            (Channels::Rgba, Channels::Grayscale) => todo!(),
-            (Channels::Rgba, Channels::Alpha) => convert(data, |[_, _, _, a]| [a]),
-            (Channels::Rgba, Channels::Rgb) => convert(data, |[r, g, b, _]| [r, g, b]),
-        }
-    }
     fn u16_to_u8(data: &[u16]) -> Vec<u8> {
         fn n8(x: u16) -> u8 {
             ((x as u32 * 255 + 32895) >> 16) as u8
@@ -167,17 +102,20 @@ fn decode_all_color_formats() {
         for channels in format.supported_channels() {
             if format.supported_precisions().contains(U8) && channels != reference.channels {
                 let image = util::read_dds_with_channels::<u8>(dds_path, channels)?.0;
-                let reference = convert_channels(&reference.data, reference.channels, channels);
+                let reference =
+                    util::convert_channels(&reference.data, reference.channels, channels);
                 assert!(reference == image.data)
             }
             if format.supported_precisions().contains(U16) {
                 let image = util::read_dds_with_channels::<u16>(dds_path, channels)?.0;
-                let reference = convert_channels(&reference.data, reference.channels, channels);
+                let reference =
+                    util::convert_channels(&reference.data, reference.channels, channels);
                 assert!(reference == u16_to_u8(&image.data))
             }
             if format.supported_precisions().contains(F32) {
                 let image = util::read_dds_with_channels::<f32>(dds_path, channels)?.0;
-                let reference = convert_channels(&reference.data, reference.channels, channels);
+                let reference =
+                    util::convert_channels(&reference.data, reference.channels, channels);
                 assert!(reference == f32_to_u8(&image.data))
             }
         }

@@ -186,18 +186,25 @@ pub fn compare_snapshot_png_u8(
     if png_exists {
         let png_decoder = png::Decoder::new(File::open(png_path)?);
         let mut png_reader = png_decoder.read_info()?;
-        let (png_color, png_bits) = png_reader.output_color_type();
+        let (mut png_color, png_bits) = png_reader.output_color_type();
         if png_bits != png::BitDepth::Eight {
             return Err("Output PNG is not 8-bit, which shouldn't happen.".into());
         }
+
+        let mut png_image_data = vec![0; png_reader.output_buffer_size()];
+        png_reader.next_frame(&mut png_image_data)?;
+        png_reader.finish()?;
+
+        if color == png::ColorType::Rgba && png_color == png::ColorType::Rgb {
+            // convert to RGBA
+            png_image_data = convert_channels(&png_image_data, Channels::Rgb, Channels::Rgba);
+            png_color = png::ColorType::Rgba;
+        }
+
         if png_color != color {
             eprintln!("Color mismatch: {:?} != {:?}", png_color, color);
         } else {
-            assert!(png_reader.output_buffer_size() == image.data.len());
-            let mut png_image_data = vec![0; image.data.len()];
-            png_reader.next_frame(&mut png_image_data)?;
-            png_reader.finish()?;
-
+            assert!(png_image_data.len() == image.data.len());
             if png_image_data == image.data {
                 // all good
                 return Ok(());
@@ -224,4 +231,69 @@ pub fn compare_snapshot_png_u8(
         return Err("Output PNG didn't exist".into());
     }
     Err("Output PNG didn't match".into())
+}
+
+pub trait NormMax {
+    const NORM_MAX: Self;
+}
+impl NormMax for u8 {
+    const NORM_MAX: Self = u8::MAX;
+}
+impl NormMax for u16 {
+    const NORM_MAX: Self = u16::MAX;
+}
+impl NormMax for f32 {
+    const NORM_MAX: Self = 1.0;
+}
+
+pub fn convert_channels<T>(data: &[T], from: Channels, to: Channels) -> Vec<T>
+where
+    T: Copy + Default + Castable + NormMax,
+{
+    if from == to {
+        return data.to_vec();
+    }
+
+    fn convert<const N: usize, const M: usize, T>(
+        data: &[T],
+        f: impl Fn([T; N]) -> [T; M],
+    ) -> Vec<T>
+    where
+        T: Copy + Default + Castable,
+    {
+        let pixels = data.len() / N;
+        let mut result: Vec<T> = vec![Default::default(); pixels * M];
+
+        let data_n: &[[T; N]] = cast_slice(data);
+        let result_m: &mut [[T; M]] = cast_slice_mut(&mut result);
+
+        for (i, o) in data_n.iter().zip(result_m.iter_mut()) {
+            *o = f(*i);
+        }
+
+        result
+    }
+
+    match (from, to) {
+        // already handled
+        (Channels::Grayscale, Channels::Grayscale)
+        | (Channels::Alpha, Channels::Alpha)
+        | (Channels::Rgb, Channels::Rgb)
+        | (Channels::Rgba, Channels::Rgba) => unreachable!(),
+
+        (Channels::Grayscale, Channels::Alpha) => todo!(),
+        (Channels::Grayscale, Channels::Rgb) => convert(data, |[g]| [g, g, g]),
+        (Channels::Grayscale, Channels::Rgba) => convert(data, |[g]| [g, g, g, T::NORM_MAX]),
+        (Channels::Alpha, Channels::Grayscale) => todo!(),
+        (Channels::Alpha, Channels::Rgb) => todo!(),
+        (Channels::Alpha, Channels::Rgba) => {
+            convert(data, |[a]| [T::default(), T::default(), T::default(), a])
+        }
+        (Channels::Rgb, Channels::Grayscale) => todo!(),
+        (Channels::Rgb, Channels::Alpha) => todo!(),
+        (Channels::Rgb, Channels::Rgba) => convert(data, |[r, g, b]| [r, g, b, T::NORM_MAX]),
+        (Channels::Rgba, Channels::Grayscale) => todo!(),
+        (Channels::Rgba, Channels::Alpha) => convert(data, |[_, _, _, a]| [a]),
+        (Channels::Rgba, Channels::Rgb) => convert(data, |[r, g, b, _]| [r, g, b]),
+    }
 }

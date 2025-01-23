@@ -1,5 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ddsd::*;
+use rand::RngCore;
 
 fn simple_texture_header(size: Size, format: DxgiFormat) -> Header {
     Header {
@@ -31,17 +32,8 @@ fn simple_texture_header(size: Size, format: DxgiFormat) -> Header {
 
 fn random_bytes(len: usize) -> Vec<u8> {
     let mut out = vec![0; len];
-
-    let mut state = 0x0123456789ABCDEFu64;
-    for i in 0..(len / 4) {
-        state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
-        let x = (state >> 31) as u32;
-        out[i * 4] = x as u8;
-        out[i * 4 + 1] = (x >> 8) as u8;
-        out[i * 4 + 2] = (x >> 16) as u8;
-        out[i * 4 + 3] = (x >> 24) as u8;
-    }
-
+    let mut rng = rand::thread_rng();
+    rng.fill_bytes(&mut out);
     out
 }
 

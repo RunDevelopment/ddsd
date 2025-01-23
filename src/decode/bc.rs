@@ -64,6 +64,8 @@ pub(crate) const BC5_UNORM: DecoderSet = DecoderSet::new(&[rgb!(u8, blocks::bc5u
 
 pub(crate) const BC5_SNORM: DecoderSet = DecoderSet::new(&[rgb!(u8, blocks::bc5s_u8_rgb)]);
 
+pub(crate) const BC7_UNORM: DecoderSet = DecoderSet::new(&[rgba!(u8, blocks::bc7_u8_rgba)]);
+
 /// Internal module for the underlying logic of decoding BC1-7 blocks.
 mod blocks {
     use crate::{
@@ -321,5 +323,10 @@ mod blocks {
         }
 
         pixels
+    }
+
+    /// Decodes a BC7 UNORM block into 16 RGBA pixels.
+    pub(crate) fn bc7_u8_rgba(block_bytes: [u8; 16]) -> [[u8; 4]; 16] {
+        super::super::bc7::decode_bc7_block(block_bytes)
     }
 }
