@@ -110,7 +110,7 @@ fn full_layout_snapshot() {
         match layout {
             DataLayout::Texture(texture) => {
                 output.push_str(&format!("Texture ({} bytes)\n", texture.data_len()));
-                for (i, surface) in texture.iter_levels().enumerate() {
+                for (i, surface) in texture.iter_mips().enumerate() {
                     output.push_str(&format!(
                         "    Surface[{i}] {}x{} ({} bytes)\n",
                         surface.width(),
@@ -121,7 +121,7 @@ fn full_layout_snapshot() {
             }
             DataLayout::Volume(volume) => {
                 output.push_str(&format!("Volume ({} bytes)\n", volume.data_len()));
-                for (i, volume) in volume.iter_levels().enumerate() {
+                for (i, volume) in volume.iter_mips().enumerate() {
                     output.push_str(&format!(
                         "    Volume[{i}] {}x{}x{} ({} bytes)\n",
                         volume.width(),
@@ -151,7 +151,7 @@ fn full_layout_snapshot() {
                         "    Texture[{i}] ({} bytes)\n",
                         texture.data_len()
                     ));
-                    for (i, surface) in texture.iter_levels().enumerate() {
+                    for (i, surface) in texture.iter_mips().enumerate() {
                         output.push_str(&format!(
                             "        Surface[{i}] {}x{} ({} bytes)\n",
                             surface.width(),
@@ -251,13 +251,13 @@ fn iter_and_get_volume() {
 
     let volume = layout.volume().unwrap();
 
-    let from_iter: Vec<VolumeDescriptor> = volume.iter_levels().collect();
+    let from_iter: Vec<VolumeDescriptor> = volume.iter_mips().collect();
     let from_get: Vec<VolumeDescriptor> = (0..u8::MAX).map_while(|i| volume.get(i)).collect();
     assert_eq!(from_iter, from_get);
 
     assert_eq!(volume.main(), volume.get(0).unwrap());
 
-    for volume in volume.iter_levels() {
+    for volume in volume.iter_mips() {
         let from_iter: Vec<SurfaceDescriptor> = volume.iter_depth_slices().collect();
         let from_get: Vec<SurfaceDescriptor> = (0..u32::MAX)
             .map_while(|i| volume.get_depth_slice(i))
@@ -300,7 +300,7 @@ fn iter_and_get_texture_array() {
     assert_eq!(from_iter, from_get);
 
     for texture in array.iter() {
-        let from_iter: Vec<SurfaceDescriptor> = texture.iter_levels().collect();
+        let from_iter: Vec<SurfaceDescriptor> = texture.iter_mips().collect();
         let from_get: Vec<SurfaceDescriptor> = (0..u8::MAX).map_while(|i| texture.get(i)).collect();
         assert_eq!(from_iter, from_get);
 

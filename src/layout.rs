@@ -221,9 +221,9 @@ impl Texture {
         self.mipmaps
     }
     pub fn get(&self, level: u8) -> Option<SurfaceDescriptor> {
-        self.iter_levels().nth(level as usize)
+        self.iter_mips().nth(level as usize)
     }
-    pub fn iter_levels(&self) -> impl Iterator<Item = SurfaceDescriptor> {
+    pub fn iter_mips(&self) -> impl Iterator<Item = SurfaceDescriptor> {
         let mut offset = self.main.data_offset();
         let width_0 = self.main.width();
         let height_0 = self.main.height();
@@ -321,9 +321,9 @@ impl Volume {
         self.mipmaps
     }
     pub fn get(&self, level: u8) -> Option<VolumeDescriptor> {
-        self.iter_levels().nth(level as usize)
+        self.iter_mips().nth(level as usize)
     }
-    pub fn iter_levels(&self) -> impl Iterator<Item = VolumeDescriptor> {
+    pub fn iter_mips(&self) -> impl Iterator<Item = VolumeDescriptor> {
         let mut offset = self.main.data_offset();
         let width_0 = self.main.width();
         let height_0 = self.main.height();
