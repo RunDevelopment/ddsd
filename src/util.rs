@@ -74,6 +74,20 @@ impl Unsigned for u32 {}
 impl Unsigned for u64 {}
 impl Unsigned for usize {}
 
+/// Computes `2^exponent` as a float.
+#[inline(always)]
+pub(crate) const fn two_powi(exponent: i8) -> f32 {
+    // Ensure the exponent is within the range for f32
+    // Exponent range for f32: -126 to 127 (since 2^127 is the max positive finite power of 2)
+    debug_assert!(-126 <= exponent, "Exponent out of range for f32");
+
+    // Calculate the raw bits for the float
+    let bits = (((exponent as i32) + 127) as u32) << 23;
+
+    // Transmute the bits to f32
+    f32::from_bits(bits)
+}
+
 #[cfg(test)]
 mod test {
     #[test]
@@ -92,6 +106,14 @@ mod test {
                 let expected = (a as f64 / b as f64).round() as u8;
                 assert_eq!(super::div_round_fast(a, b), expected, "a={}, b={}", a, b);
             }
+        }
+    }
+    #[test]
+    fn two_powi() {
+        for i in -126..=127 {
+            let expected = 2.0f32.powi(i as i32);
+            let actual = super::two_powi(i);
+            assert_eq!(actual, expected, "i={}", i);
         }
     }
 }

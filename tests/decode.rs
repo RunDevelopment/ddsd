@@ -104,19 +104,34 @@ fn decode_all_color_formats() {
                 let image = util::read_dds_with_channels::<u8>(dds_path, channels)?.0;
                 let reference =
                     util::convert_channels(&reference.data, reference.channels, channels);
-                assert!(reference == image.data)
+                assert!(
+                    reference == image.data,
+                    "Failed {:?} for {:?}",
+                    channels,
+                    dds_path
+                );
             }
             if format.supported_precisions().contains(U16) {
                 let image = util::read_dds_with_channels::<u16>(dds_path, channels)?.0;
                 let reference =
                     util::convert_channels(&reference.data, reference.channels, channels);
-                assert!(reference == u16_to_u8(&image.data))
+                assert!(
+                    reference == u16_to_u8(&image.data),
+                    "Failed {:?} for {:?}",
+                    channels,
+                    dds_path
+                )
             }
             if format.supported_precisions().contains(F32) {
                 let image = util::read_dds_with_channels::<f32>(dds_path, channels)?.0;
                 let reference =
                     util::convert_channels(&reference.data, reference.channels, channels);
-                assert!(reference == f32_to_u8(&image.data))
+                assert!(
+                    reference == f32_to_u8(&image.data),
+                    "Failed {:?} for {:?}",
+                    channels,
+                    dds_path
+                )
             }
         }
 

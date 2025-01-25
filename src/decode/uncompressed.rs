@@ -1,6 +1,6 @@
 use super::convert::{
-    f10_to_f32, f11_to_f32, f16_to_f32, fp, n10, n16, n2, n4, n8, s16, s8, xr10, SwapRB, ToRgb,
-    ToRgba, B5G5R5A1, B5G6R5,
+    f10_to_f32, f11_to_f32, f16_to_f32, fp, n10, n16, n2, n4, n8, rgb9995f, s16, s8, xr10, SwapRB,
+    ToRgb, ToRgba, B5G5R5A1, B5G6R5,
 };
 use super::read_write::{for_each_pixel_rect_untyped, for_each_pixel_untyped};
 use super::{Args, DecodeFn, Decoder, DecoderSet, RArgs, WithPrecision};
@@ -370,44 +370,13 @@ pub(crate) const R11G11B10_FLOAT: DecoderSet = DecoderSet::new(&[
         .to_rgba()),
 ]);
 
-#[inline(always)]
-fn unpack_rgb9995f(rgb: u32) -> [f32; 3] {
-    let r_mant = rgb & 0x1FF;
-    let g_mant = (rgb >> 9) & 0x1FF;
-    let b_mant = (rgb >> 18) & 0x1FF;
-    let exp = (rgb >> 27) & 0x1F;
-
-    fn to_f32(e5: u32, m9: u32) -> f32 {
-        // based on f16_to_f32
-        if e5 == 0 {
-            // denorm
-            m9 as f32 * 2.0_f32.powi(-23)
-        } else if e5 != 31 {
-            m9 as f32 * 2.0_f32.powi(e5 as i32 - 24)
-        } else if m9 == 0 {
-            f32::INFINITY
-        } else {
-            f32::NAN
-        }
-    }
-
-    let r = to_f32(exp, r_mant);
-    let g = to_f32(exp, g_mant);
-    let b = to_f32(exp, b_mant);
-
-    [r, g, b]
-}
 pub(crate) const R9G9B9E5_SHAREDEXP: DecoderSet = DecoderSet::new(&[
-    rgb!(f32, [u32; 1], |[rgb]| unpack_rgb9995f(rgb)),
-    rgb!(u16, [u32; 1], |[rgb]| unpack_rgb9995f(rgb).map(fp::n16)),
-    rgb!(u8, [u32; 1], |[rgb]| unpack_rgb9995f(rgb).map(fp::n8)),
-    rgba!(f32, [u32; 1], |[rgb]| unpack_rgb9995f(rgb).to_rgba()),
-    rgba!(u16, [u32; 1], |[rgb]| unpack_rgb9995f(rgb)
-        .map(fp::n16)
-        .to_rgba()),
-    rgba!(u8, [u32; 1], |[rgb]| unpack_rgb9995f(rgb)
-        .map(fp::n8)
-        .to_rgba()),
+    rgb!(f32, [u32; 1], |[rgb]| rgb9995f::f32(rgb)),
+    rgb!(u16, [u32; 1], |[rgb]| rgb9995f::n16(rgb)),
+    rgb!(u8, [u32; 1], |[rgb]| rgb9995f::n8(rgb)),
+    rgba!(f32, [u32; 1], |[rgb]| rgb9995f::f32(rgb).to_rgba()),
+    rgba!(u16, [u32; 1], |[rgb]| rgb9995f::n16(rgb).to_rgba()),
+    rgba!(u8, [u32; 1], |[rgb]| rgb9995f::n8(rgb).to_rgba()),
 ]);
 
 pub(crate) const R16_FLOAT: DecoderSet = DecoderSet::new(&[

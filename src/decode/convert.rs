@@ -3,6 +3,8 @@
 //! Most magic constants for the U/SNorm conversion are from:
 //! https://rundevelopment.github.io/projects/multiply-add-constants-finder
 
+use crate::util::two_powi;
+
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct B5G6R5 {
     pub r5: u16,
@@ -479,9 +481,9 @@ pub(crate) fn f16_to_f32(half: u16) -> f32 {
     let mant: u16 = half & 0b11_1111_1111;
     let val: f32 = if exp == 0 {
         // denorm
-        mant as f32 * 2.0_f32.powi(-24)
+        mant as f32 * two_powi(-24)
     } else if exp != 31 {
-        (mant as f32 + 1024_f32) * 2.0_f32.powi(exp as i32 - 25)
+        (mant as f32 + 1024_f32) * two_powi(exp as i8 - 25)
     } else if mant == 0 {
         f32::INFINITY
     } else {
@@ -499,9 +501,9 @@ pub(crate) fn f11_to_f32(half: u16) -> f32 {
     let mant: u16 = half & 0b11_1111;
     let val: f32 = if exp == 0 {
         // denorm
-        mant as f32 * 2.0_f32.powi(-20)
+        mant as f32 * two_powi(-20)
     } else if exp != 31 {
-        (mant as f32 + 64_f32) * 2.0_f32.powi(exp as i32 - 21)
+        (mant as f32 + 64_f32) * two_powi(exp as i8 - 21)
     } else if mant == 0 {
         f32::INFINITY
     } else {
@@ -516,9 +518,9 @@ pub(crate) fn f10_to_f32(half: u16) -> f32 {
     let mant: u16 = half & 0b1_1111;
     let val: f32 = if exp == 0 {
         // denorm
-        mant as f32 * 2.0_f32.powi(-19)
+        mant as f32 * two_powi(-19)
     } else if exp != 31 {
-        (mant as f32 + 32_f32) * 2.0_f32.powi(exp as i32 - 20)
+        (mant as f32 + 32_f32) * two_powi(exp as i8 - 20)
     } else if mant == 0 {
         f32::INFINITY
     } else {
@@ -528,32 +530,117 @@ pub(crate) fn f10_to_f32(half: u16) -> f32 {
     val
 }
 
+/// Optimized functions for the R9G9B9E5_SHAREDEXP format.
+pub(crate) mod rgb9995f {
+    use crate::util::two_powi;
+
+    #[inline]
+    pub fn f32(rgb: u32) -> [f32; 3] {
+        let r_mant = rgb & 0x1FF;
+        let g_mant = (rgb >> 9) & 0x1FF;
+        let b_mant = (rgb >> 18) & 0x1FF;
+        let exp = (rgb >> 27) & 0x1F;
+
+        if exp == 0 {
+            // denorm
+            const F: f32 = two_powi(-23);
+            [r_mant as f32 * F, g_mant as f32 * F, b_mant as f32 * F]
+        } else if exp != 31 {
+            let f = two_powi(exp as i8 - 24);
+            [r_mant as f32 * f, g_mant as f32 * f, b_mant as f32 * f]
+        } else {
+            [
+                if r_mant == 0 { f32::INFINITY } else { f32::NAN },
+                if g_mant == 0 { f32::INFINITY } else { f32::NAN },
+                if b_mant == 0 { f32::INFINITY } else { f32::NAN },
+            ]
+        }
+    }
+    #[inline]
+    pub fn n8(rgb: u32) -> [u8; 3] {
+        let r_mant = rgb & 0x1FF;
+        let g_mant = (rgb >> 9) & 0x1FF;
+        let b_mant = (rgb >> 18) & 0x1FF;
+        let exp = (rgb >> 27) & 0x1F;
+
+        if exp == 0 {
+            // denorms are technically a special case, but since they will
+            // always be rounded to 0, no matter the mantissa, we can just let
+            // them fall through. One branch less.
+        }
+
+        if exp != 31 {
+            // This is just the f32 conversion and f32 -> UNORM8 conversion
+            // combined into one step.
+            //
+            // NOTE: I originally used a fixed-point math implementation, but
+            // it was around 50% slower. I also looked into using f16 -> u8
+            // hardware instructions (x86 f16c VCVTPH2PS), but this isn't
+            // possible simply because the mantissa here has an *explicit* one
+            // at the start. I also suspect that fixing up the one bit would make
+            // R9G9B9E5 -> f16 -> f32 -> u8 slower than what I use below.
+
+            let f = two_powi(exp as i8 - 24) * 255.0;
+            [
+                (r_mant as f32 * f + 0.5) as u8,
+                (g_mant as f32 * f + 0.5) as u8,
+                (b_mant as f32 * f + 0.5) as u8,
+            ]
+        } else {
+            // NaN maps to 0 and Inf maps to 255
+            [
+                if r_mant == 0 { 255 } else { 0 },
+                if g_mant == 0 { 255 } else { 0 },
+                if b_mant == 0 { 255 } else { 0 },
+            ]
+        }
+    }
+    #[inline]
+    pub fn n16(rgb: u32) -> [u16; 3] {
+        let r_mant = rgb & 0x1FF;
+        let g_mant = (rgb >> 9) & 0x1FF;
+        let b_mant = (rgb >> 18) & 0x1FF;
+        let exp = (rgb >> 27) & 0x1F;
+
+        // This method is essentially the same as the above n8 method, so see
+        // above for more information. The only difference is that denorms can
+        // no longer fall through.
+
+        if exp == 0 {
+            // denorm
+            const F: f32 = two_powi(-23) * 65535.0;
+            [
+                (r_mant as f32 * F + 0.5) as u16,
+                (g_mant as f32 * F + 0.5) as u16,
+                (b_mant as f32 * F + 0.5) as u16,
+            ]
+        } else if exp != 31 {
+            let f = two_powi(exp as i8 - 24) * 65535.0;
+            [
+                (r_mant as f32 * f + 0.5) as u16,
+                (g_mant as f32 * f + 0.5) as u16,
+                (b_mant as f32 * f + 0.5) as u16,
+            ]
+        } else {
+            [
+                if r_mant == 0 { u16::MAX } else { 0 },
+                if g_mant == 0 { u16::MAX } else { 0 },
+                if b_mant == 0 { u16::MAX } else { 0 },
+            ]
+        }
+    }
+}
+
 pub(crate) trait ToRgba {
     type Channel;
     fn to_rgba(self) -> [Self::Channel; 4];
 }
-impl ToRgba for [u8; 3] {
-    type Channel = u8;
+impl<T: Norm> ToRgba for [T; 3] {
+    type Channel = T;
 
     #[inline(always)]
-    fn to_rgba(self) -> [u8; 4] {
-        [self[0], self[1], self[2], u8::MAX]
-    }
-}
-impl ToRgba for [u16; 3] {
-    type Channel = u16;
-
-    #[inline(always)]
-    fn to_rgba(self) -> [u16; 4] {
-        [self[0], self[1], self[2], u16::MAX]
-    }
-}
-impl ToRgba for [f32; 3] {
-    type Channel = f32;
-
-    #[inline(always)]
-    fn to_rgba(self) -> [f32; 4] {
-        [self[0], self[1], self[2], 1.0]
+    fn to_rgba(self) -> [T; 4] {
+        [self[0], self[1], self[2], T::NORM_ONE]
     }
 }
 
@@ -589,8 +676,31 @@ impl<T> SwapRB for [T; 4] {
     }
 }
 
+pub(crate) trait Norm: Copy + Default {
+    const NORM_ZERO: Self;
+    const NORM_HALF: Self;
+    const NORM_ONE: Self;
+}
+impl Norm for u8 {
+    const NORM_ZERO: Self = 0;
+    const NORM_HALF: Self = 128;
+    const NORM_ONE: Self = u8::MAX;
+}
+impl Norm for u16 {
+    const NORM_ZERO: Self = 0;
+    const NORM_HALF: Self = 32768;
+    const NORM_ONE: Self = u16::MAX;
+}
+impl Norm for f32 {
+    const NORM_ZERO: Self = 0.0;
+    const NORM_HALF: Self = 0.5;
+    const NORM_ONE: Self = 1.0;
+}
+
 #[cfg(test)]
 mod test {
+    use crate::decode::convert::fp;
+
     macro_rules! test_to_unorm {
         ($t:ident, $name:ident, $convert:path, $max_in:expr) => {
             #[test]
@@ -795,6 +905,35 @@ mod test {
             let expected = super::fp::n16(super::xr10::f32(i));
             let actual = super::xr10::n16(i);
             assert_eq!(actual, expected, "failed for i={}", i);
+        }
+    }
+
+    #[test]
+    fn rgb9995f_to_n8() {
+        // This will exhaustively test all exponent and B mantissa values.
+        // R and G won't be tested, since they behave the same as B.
+        for e in 0..=31 {
+            for b in 0..=255 {
+                let i = e << 27 | b << 18;
+
+                let expected = super::rgb9995f::f32(i).map(fp::n8);
+                let actual = super::rgb9995f::n8(i);
+                assert_eq!(actual, expected, "failed for exp={} mant={}", e, b);
+            }
+        }
+    }
+    #[test]
+    fn rgb9995f_to_n16() {
+        // This will exhaustively test all exponent and B mantissa values.
+        // R and G won't be tested, since they behave the same as B.
+        for e in 0..=31 {
+            for b in 0..=255 {
+                let i = e << 27 | b << 18;
+
+                let expected = super::rgb9995f::f32(i).map(fp::n16);
+                let actual = super::rgb9995f::n16(i);
+                assert_eq!(actual, expected, "failed for exp={} mant={}", e, b);
+            }
         }
     }
 }
