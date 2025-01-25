@@ -233,14 +233,24 @@ pub(crate) const R8_UNORM: DecoderSet = DecoderSet::new(&[
     gray!(u8, [u8; 1], |r| r).with_decode_fn(COPY_U8),
     gray!(u16, [u8; 1], |r| r.map(n8::n16)),
     gray!(f32, [u8; 1], |r| r.map(n8::f32)),
-    // TODO: Rgb and Rgba
+    rgb!(u8, [u8; 1], |r| r.to_rgb()),
+    rgb!(u16, [u8; 1], |r| r.map(n8::n16).to_rgb()),
+    rgb!(f32, [u8; 1], |r| r.map(n8::f32).to_rgb()),
+    rgba!(u8, [u8; 1], |r| r.to_rgba()),
+    rgba!(u16, [u8; 1], |r| r.map(n8::n16).to_rgba()),
+    rgba!(f32, [u8; 1], |r| r.map(n8::f32).to_rgba()),
 ]);
 
 pub(crate) const R8_SNORM: DecoderSet = DecoderSet::new(&[
     gray!(u8, [u8; 1], |r| r.map(s8::n8)).with_decode_fn(COPY_S8),
     gray!(u16, [u8; 1], |r| r.map(s8::n16)),
     gray!(f32, [u8; 1], |r| r.map(s8::uf32)),
-    // TODO: Rgb and Rgba
+    rgb!(u8, [u8; 1], |r| r.map(s8::n8).to_rgb()),
+    rgb!(u16, [u8; 1], |r| r.map(s8::n16).to_rgb()),
+    rgb!(f32, [u8; 1], |r| r.map(s8::uf32).to_rgb()),
+    rgba!(u8, [u8; 1], |r| r.map(s8::n8).to_rgba()),
+    rgba!(u16, [u8; 1], |r| r.map(s8::n16).to_rgba()),
+    rgba!(f32, [u8; 1], |r| r.map(s8::uf32).to_rgba()),
 ]);
 
 pub(crate) const R8G8_UNORM: DecoderSet = DecoderSet::new(&[
@@ -276,14 +286,24 @@ pub(crate) const R16_UNORM: DecoderSet = DecoderSet::new(&[
     gray!(u16, [u16; 1], |r| r).with_decode_fn(COPY_U16),
     gray!(u8, [u16; 1], |r| r.map(n16::n8)),
     gray!(f32, [u16; 1], |r| r.map(n16::f32)),
-    // TODO: Rgb and Rgba
+    rgb!(u16, [u16; 1], |r| r.to_rgb()),
+    rgb!(u8, [u16; 1], |r| r.map(n16::n8).to_rgb()),
+    rgb!(f32, [u16; 1], |r| r.map(n16::f32).to_rgb()),
+    rgba!(u16, [u16; 1], |r| r.to_rgba()),
+    rgba!(u8, [u16; 1], |r| r.map(n16::n8).to_rgba()),
+    rgba!(f32, [u16; 1], |r| r.map(n16::f32).to_rgba()),
 ]);
 
 pub(crate) const R16_SNORM: DecoderSet = DecoderSet::new(&[
     gray!(u16, [u16; 1], |r| r.map(s16::n16)),
     gray!(u8, [u16; 1], |r| r.map(s16::n8)),
     gray!(f32, [u16; 1], |r| r.map(s16::uf32)),
-    // TODO: Rgb and Rgba
+    rgb!(u16, [u16; 1], |r| r.map(s16::n16).to_rgb()),
+    rgb!(u8, [u16; 1], |r| r.map(s16::n8).to_rgb()),
+    rgb!(f32, [u16; 1], |r| r.map(s16::uf32).to_rgb()),
+    rgba!(u16, [u16; 1], |r| r.map(s16::n16).to_rgba()),
+    rgba!(u8, [u16; 1], |r| r.map(s16::n8).to_rgba()),
+    rgba!(f32, [u16; 1], |r| r.map(s16::uf32).to_rgba()),
 ]);
 
 pub(crate) const R16G16_UNORM: DecoderSet = DecoderSet::new(&[
@@ -383,7 +403,12 @@ pub(crate) const R16_FLOAT: DecoderSet = DecoderSet::new(&[
     gray!(f32, [u16; 1], |r| r.map(f16_to_f32)),
     gray!(u16, [u16; 1], |r| r.map(f16_to_f32).map(fp::n16)),
     gray!(u8, [u16; 1], |r| r.map(f16_to_f32).map(fp::n8)),
-    // TODO: Rgb and Rgba
+    rgb!(f32, [u16; 1], |r| r.map(f16_to_f32).to_rgb()),
+    rgb!(u16, [u16; 1], |r| r.map(f16_to_f32).map(fp::n16).to_rgb()),
+    rgb!(u8, [u16; 1], |r| r.map(f16_to_f32).map(fp::n8).to_rgb()),
+    rgba!(f32, [u16; 1], |r| r.map(f16_to_f32).to_rgba()),
+    rgba!(u16, [u16; 1], |r| r.map(f16_to_f32).map(fp::n16).to_rgba()),
+    rgba!(u8, [u16; 1], |r| r.map(f16_to_f32).map(fp::n8).to_rgba()),
 ]);
 
 pub(crate) const R16G16_FLOAT: DecoderSet = DecoderSet::new(&[
@@ -424,6 +449,12 @@ pub(crate) const R32_FLOAT: DecoderSet = DecoderSet::new(&[
     gray!(f32, [f32; 1], |r| r).with_decode_fn(COPY_U32),
     gray!(u16, [f32; 1], |r| r.map(fp::n16)),
     gray!(u8, [f32; 1], |r| r.map(fp::n8)),
+    rgb!(f32, [f32; 1], |r| r.to_rgb()),
+    rgb!(u16, [f32; 1], |r| r.map(fp::n16).to_rgb()),
+    rgb!(u8, [f32; 1], |r| r.map(fp::n8).to_rgb()),
+    rgba!(f32, [f32; 1], |r| r.to_rgba()),
+    rgba!(u16, [f32; 1], |r| r.map(fp::n16).to_rgba()),
+    rgba!(u8, [f32; 1], |r| r.map(fp::n8).to_rgba()),
 ]);
 
 pub(crate) const R32G32_FLOAT: DecoderSet = DecoderSet::new(&[

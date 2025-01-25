@@ -640,7 +640,17 @@ impl<T: Norm> ToRgba for [T; 3] {
 
     #[inline(always)]
     fn to_rgba(self) -> [T; 4] {
-        [self[0], self[1], self[2], T::NORM_ONE]
+        let [r, g, b] = self;
+        [r, g, b, T::NORM_ONE]
+    }
+}
+impl<T: Norm> ToRgba for [T; 1] {
+    type Channel = T;
+
+    #[inline(always)]
+    fn to_rgba(self) -> [T; 4] {
+        let [gray] = self;
+        [gray, gray, gray, T::NORM_ONE]
     }
 }
 
@@ -655,6 +665,15 @@ impl<T> ToRgb for [T; 4] {
     fn to_rgb(self) -> [T; 3] {
         let [r, g, b, _] = self;
         [r, g, b]
+    }
+}
+impl<T: Copy> ToRgb for [T; 1] {
+    type Channel = T;
+
+    #[inline(always)]
+    fn to_rgb(self) -> [T; 3] {
+        let [gray] = self;
+        [gray, gray, gray]
     }
 }
 

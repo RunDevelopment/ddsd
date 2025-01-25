@@ -53,8 +53,6 @@ pub(crate) struct Decoder {
     decode_rect_fn: Option<DecodeRectFn>,
 }
 impl Decoder {
-    const DISABLED_FN: DecodeFn = |_| unreachable!();
-
     pub const fn new(
         channels: Channels,
         precision: Precision,
@@ -87,7 +85,7 @@ impl Decoder {
             channels,
             precision,
             disabled: true,
-            decode_fn: Self::DISABLED_FN,
+            decode_fn: |_| unreachable!(),
             decode_rect_fn: None,
         }
     }
@@ -315,6 +313,33 @@ impl DecoderSet {
 
             // TODO: Enable soon.
             // assert!((precision_bitset & required) == required);
+        }
+
+        // 5. Some channels imply that other channels are supported
+        {
+            let supports_alpha = channels_bitset & (1 << Channels::Alpha as u32) != 0;
+            let supports_gray = channels_bitset & (1 << Channels::Grayscale as u32) != 0;
+            let supports_rgb = channels_bitset & (1 << Channels::Rgb as u32) != 0;
+            let supports_rgba = channels_bitset & (1 << Channels::Rgba as u32) != 0;
+
+            if supports_alpha {
+                assert!(
+                    supports_rgba,
+                    "Formats that decode into Alpha must also support Rgba"
+                );
+            }
+            if supports_gray {
+                assert!(
+                    supports_rgb && supports_rgba,
+                    "Formats that decode into Grayscale must also support Rgb & Rgba"
+                );
+            }
+            if supports_rgb {
+                assert!(
+                    supports_rgba,
+                    "Formats that decode into Rgb must also support Rgba"
+                );
+            }
         }
     }
 }

@@ -1,5 +1,7 @@
 pub(crate) fn decode_bc7_block(block: [u8; 16]) -> [[u8; 4]; 16] {
     let mut stream = BitStream::new(block);
+    // initialize the output to all 0s, aka transparent black
+    let mut output = [[0_u8; 4]; 16];
 
     let mode = extract_mode(&mut stream);
 
@@ -7,20 +9,8 @@ pub(crate) fn decode_bc7_block(block: [u8; 16]) -> [[u8; 4]; 16] {
         // To quote the spec: Mode 8 (LSB 0x00) is reserved and should not
         // be used by the encoder. If this mode is given to the hardware,
         // an all 0 block will be returned.
-        return [[0; 4]; 16];
+        return output;
     }
-
-    // match mode {
-    //     0 => return [[0, 0, 0, 255]; 16],
-    //     1 => return [[255, 1, 1, 255]; 16],
-    //     2 => return [[2, 255, 2, 255]; 16],
-    //     3 => return [[3, 3, 255, 255]; 16],
-    //     4 => return [[255, 255, 4, 255]; 16],
-    //     5 => return [[5, 255, 255, 255]; 16],
-    //     6 => return [[255, 6, 255, 255]; 16],
-    //     7 => return [[255, 255, 255, 255]; 16],
-    //     _ => {}
-    // };
 
     //decode partition data from explicit partition bits
     let mut subset_index = PARTITION_SET_1;
@@ -46,8 +36,6 @@ pub(crate) fn decode_bc7_block(block: [u8; 16]) -> [[u8; 4]; 16] {
 
     // get fully decoded endpoints
     let endpoints = get_end_points(mode, &mut stream);
-
-    let mut output = [[0_u8; 4]; 16];
 
     // mode 4 and 5 store alpha indexes separately... fun.
     if matches!(mode, 4 | 5) {

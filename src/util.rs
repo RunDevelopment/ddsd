@@ -81,10 +81,7 @@ pub(crate) const fn two_powi(exponent: i8) -> f32 {
     // Exponent range for f32: -126 to 127 (since 2^127 is the max positive finite power of 2)
     debug_assert!(-126 <= exponent, "Exponent out of range for f32");
 
-    // Calculate the raw bits for the float
     let bits = (((exponent as i32) + 127) as u32) << 23;
-
-    // Transmute the bits to f32
     f32::from_bits(bits)
 }
 

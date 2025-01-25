@@ -18,6 +18,10 @@ fn decode_all_dds_files() {
         dds_path: &PathBuf,
         png_path: &PathBuf,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let name = dds_path.file_name().unwrap().to_str().unwrap();
+        if name.contains("mode 0") {
+            println!("debugger");
+        }
         let (image, _) = util::read_dds_png_compatible(dds_path)?;
 
         // compare to PNG

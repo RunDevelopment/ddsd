@@ -2,7 +2,7 @@ use std::io::{Read, Seek};
 
 use crate::{
     cast,
-    decode::{Decoder, ReadSeek},
+    decode::{self, Decoder, DecoderSet, ReadSeek},
     detect, DecodeError, DxgiFormat, FourCC, Header, TinyEnum, TinySet,
 };
 
@@ -199,7 +199,7 @@ impl SupportedFormat {
     /// [`Channels`], the next larger type is used. For example, a format with
     /// only R and G channels will be described as [`Channels::Rgb`].
     pub const fn channels(&self) -> Channels {
-        decoders::get_decoders(*self).main().channels
+        get_decoders(*self).main().channels
     }
     /// The precision/bit depth closest to the values in the surface.
     ///
@@ -213,7 +213,7 @@ impl SupportedFormat {
     /// `B5G6R5_UNORM` values, it is not exact. E.g. a 5-bit UNORM value of 11
     /// is 90.48 as an 8-bit UNORM value exactly but will be rounded to 90.
     pub const fn precision(&self) -> Precision {
-        decoders::get_decoders(*self).main().precision
+        get_decoders(*self).main().precision
     }
 
     pub const fn color_format(&self) -> ColorFormat {
@@ -225,14 +225,14 @@ impl SupportedFormat {
     /// This list is guaranteed to be without duplicates and to contain
     /// `self.channels()`.
     pub fn supported_channels(&self) -> TinySet<Channels> {
-        decoders::get_decoders(*self).supported_channels
+        get_decoders(*self).supported_channels
     }
     /// A set of all precisions this formats supports for decoding.
     ///
     /// This list is guaranteed to be without duplicates and to contain
     /// `self.precision()`.
     pub fn supported_precisions(&self) -> TinySet<Precision> {
-        decoders::get_decoders(*self).supported_precisions
+        get_decoders(*self).supported_precisions
     }
 
     /// Returns `true` if this format supports decoding as the given color
@@ -250,7 +250,7 @@ impl SupportedFormat {
     }
 
     fn get_decoder(&self, color: ColorFormat) -> Result<&'static Decoder, DecodeError> {
-        let decoders = decoders::get_decoders(*self).decoders;
+        let decoders = get_decoders(*self).decoders;
         let found = decoders
             .iter()
             .find(|d| d.channels == color.channels && d.precision == color.precision);
@@ -471,79 +471,58 @@ impl Rect {
     }
 }
 
-mod decoders {
+const fn get_decoders(format: SupportedFormat) -> DecoderSet {
+    match format {
+        // uncompressed formats
+        SupportedFormat::R8G8B8_UNORM => decode::R8G8B8_UNORM,
+        SupportedFormat::B8G8R8_UNORM => decode::B8G8R8_UNORM,
+        SupportedFormat::R8G8B8A8_UNORM => decode::R8G8B8A8_UNORM,
+        SupportedFormat::R8G8B8A8_SNORM => decode::R8G8B8A8_SNORM,
+        SupportedFormat::B8G8R8A8_UNORM => decode::B8G8R8A8_UNORM,
+        SupportedFormat::B8G8R8X8_UNORM => decode::B8G8R8X8_UNORM,
+        SupportedFormat::B5G6R5_UNORM => decode::B5G6R5_UNORM,
+        SupportedFormat::B5G5R5A1_UNORM => decode::B5G5R5A1_UNORM,
+        SupportedFormat::B4G4R4A4_UNORM => decode::B4G4R4A4_UNORM,
+        SupportedFormat::R8_SNORM => decode::R8_SNORM,
+        SupportedFormat::R8_UNORM => decode::R8_UNORM,
+        SupportedFormat::R8G8_UNORM => decode::R8G8_UNORM,
+        SupportedFormat::R8G8_SNORM => decode::R8G8_SNORM,
+        SupportedFormat::A8_UNORM => decode::A8_UNORM,
+        SupportedFormat::R16_UNORM => decode::R16_UNORM,
+        SupportedFormat::R16_SNORM => decode::R16_SNORM,
+        SupportedFormat::R16G16_UNORM => decode::R16G16_UNORM,
+        SupportedFormat::R16G16_SNORM => decode::R16G16_SNORM,
+        SupportedFormat::R16G16B16A16_UNORM => decode::R16G16B16A16_UNORM,
+        SupportedFormat::R16G16B16A16_SNORM => decode::R16G16B16A16_SNORM,
+        SupportedFormat::R10G10B10A2_UNORM => decode::R10G10B10A2_UNORM,
+        SupportedFormat::R11G11B10_FLOAT => decode::R11G11B10_FLOAT,
+        SupportedFormat::R9G9B9E5_SHAREDEXP => decode::R9G9B9E5_SHAREDEXP,
+        SupportedFormat::R16_FLOAT => decode::R16_FLOAT,
+        SupportedFormat::R16G16_FLOAT => decode::R16G16_FLOAT,
+        SupportedFormat::R16G16B16A16_FLOAT => decode::R16G16B16A16_FLOAT,
+        SupportedFormat::R32_FLOAT => decode::R32_FLOAT,
+        SupportedFormat::R32G32_FLOAT => decode::R32G32_FLOAT,
+        SupportedFormat::R32G32B32_FLOAT => decode::R32G32B32_FLOAT,
+        SupportedFormat::R32G32B32A32_FLOAT => decode::R32G32B32A32_FLOAT,
+        SupportedFormat::R10G10B10_XR_BIAS_A2_UNORM => decode::R10G10B10_XR_BIAS_A2_UNORM,
 
-    use crate::decode::{self, DecodeFn, Decoder, DecoderSet};
+        // sub-sampled formats
+        SupportedFormat::R8G8_B8G8_UNORM => decode::R8G8_B8G8_UNORM,
+        SupportedFormat::G8R8_G8B8_UNORM => decode::G8R8_G8B8_UNORM,
 
-    use super::{Channels, Precision, SupportedFormat};
+        // block compression formats
+        SupportedFormat::BC1_UNORM => decode::BC1_UNORM,
+        SupportedFormat::BC2_UNORM => decode::BC2_UNORM,
+        SupportedFormat::BC3_UNORM => decode::BC3_UNORM,
+        SupportedFormat::BC4_UNORM => decode::BC4_UNORM,
+        SupportedFormat::BC4_SNORM => decode::BC4_SNORM,
+        SupportedFormat::BC5_UNORM => decode::BC5_UNORM,
+        SupportedFormat::BC5_SNORM => decode::BC5_SNORM,
+        SupportedFormat::BC6H_UF16 => decode::BC6H_UF16,
+        SupportedFormat::BC6H_SF16 => decode::BC6H_SF16,
+        SupportedFormat::BC7_UNORM => decode::BC7_UNORM,
 
-    const noop_decode: DecodeFn = |_| Ok(());
-
-    pub(crate) const fn get_decoders(format: SupportedFormat) -> DecoderSet {
-        use Channels::*;
-        use Precision::*;
-
-        /// A helper macro to make it easier to define a const array of decoders.
-        macro_rules! decoders {
-            ($c:ident, $p:ident, $d:expr) => {{
-                const DECODER: Decoder = Decoder::new_without_rect_decode($c, $p, $d);
-                const INFO: DecoderSet = DecoderSet::new(&[DECODER]);
-                INFO
-            }};
-        }
-
-        match format {
-            // uncompressed formats
-            SupportedFormat::R8G8B8_UNORM => decode::R8G8B8_UNORM,
-            SupportedFormat::B8G8R8_UNORM => decode::B8G8R8_UNORM,
-            SupportedFormat::R8G8B8A8_UNORM => decode::R8G8B8A8_UNORM,
-            SupportedFormat::R8G8B8A8_SNORM => decode::R8G8B8A8_SNORM,
-            SupportedFormat::B8G8R8A8_UNORM => decode::B8G8R8A8_UNORM,
-            SupportedFormat::B8G8R8X8_UNORM => decode::B8G8R8X8_UNORM,
-            SupportedFormat::B5G6R5_UNORM => decode::B5G6R5_UNORM,
-            SupportedFormat::B5G5R5A1_UNORM => decode::B5G5R5A1_UNORM,
-            SupportedFormat::B4G4R4A4_UNORM => decode::B4G4R4A4_UNORM,
-            SupportedFormat::R8_SNORM => decode::R8_SNORM,
-            SupportedFormat::R8_UNORM => decode::R8_UNORM,
-            SupportedFormat::R8G8_UNORM => decode::R8G8_UNORM,
-            SupportedFormat::R8G8_SNORM => decode::R8G8_SNORM,
-            SupportedFormat::A8_UNORM => decode::A8_UNORM,
-            SupportedFormat::R16_UNORM => decode::R16_UNORM,
-            SupportedFormat::R16_SNORM => decode::R16_SNORM,
-            SupportedFormat::R16G16_UNORM => decode::R16G16_UNORM,
-            SupportedFormat::R16G16_SNORM => decode::R16G16_SNORM,
-            SupportedFormat::R16G16B16A16_UNORM => decode::R16G16B16A16_UNORM,
-            SupportedFormat::R16G16B16A16_SNORM => decode::R16G16B16A16_SNORM,
-            SupportedFormat::R10G10B10A2_UNORM => decode::R10G10B10A2_UNORM,
-            SupportedFormat::R11G11B10_FLOAT => decode::R11G11B10_FLOAT,
-            SupportedFormat::R9G9B9E5_SHAREDEXP => decode::R9G9B9E5_SHAREDEXP,
-            SupportedFormat::R16_FLOAT => decode::R16_FLOAT,
-            SupportedFormat::R16G16_FLOAT => decode::R16G16_FLOAT,
-            SupportedFormat::R16G16B16A16_FLOAT => decode::R16G16B16A16_FLOAT,
-            SupportedFormat::R32_FLOAT => decode::R32_FLOAT,
-            SupportedFormat::R32G32_FLOAT => decode::R32G32_FLOAT,
-            SupportedFormat::R32G32B32_FLOAT => decode::R32G32B32_FLOAT,
-            SupportedFormat::R32G32B32A32_FLOAT => decode::R32G32B32A32_FLOAT,
-            SupportedFormat::R10G10B10_XR_BIAS_A2_UNORM => decode::R10G10B10_XR_BIAS_A2_UNORM,
-
-            // sub-sampled formats
-            SupportedFormat::R8G8_B8G8_UNORM => decode::R8G8_B8G8_UNORM,
-            SupportedFormat::G8R8_G8B8_UNORM => decode::G8R8_G8B8_UNORM,
-
-            // block compression formats
-            SupportedFormat::BC1_UNORM => decode::BC1_UNORM,
-            SupportedFormat::BC2_UNORM => decode::BC2_UNORM,
-            SupportedFormat::BC3_UNORM => decode::BC3_UNORM,
-            SupportedFormat::BC4_UNORM => decode::BC4_UNORM,
-            SupportedFormat::BC4_SNORM => decode::BC4_SNORM,
-            SupportedFormat::BC5_UNORM => decode::BC5_UNORM,
-            SupportedFormat::BC5_SNORM => decode::BC5_SNORM,
-            SupportedFormat::BC6H_UF16 => decoders!(Rgb, F32, noop_decode),
-            SupportedFormat::BC6H_SF16 => decoders!(Rgb, F32, noop_decode),
-            SupportedFormat::BC7_UNORM => decode::BC7_UNORM,
-
-            // non-standard formats
-            SupportedFormat::BC3_UNORM_RXGB => decode::BC3_UNORM_RXGB,
-        }
+        // non-standard formats
+        SupportedFormat::BC3_UNORM_RXGB => decode::BC3_UNORM_RXGB,
     }
 }
