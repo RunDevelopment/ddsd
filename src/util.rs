@@ -76,7 +76,7 @@ impl Unsigned for usize {}
 
 /// Computes `2^exponent` as a float.
 #[inline(always)]
-pub(crate) const fn two_powi(exponent: i8) -> f32 {
+pub(crate) fn two_powi(exponent: i8) -> f32 {
     // Ensure the exponent is within the range for f32
     // Exponent range for f32: -126 to 127 (since 2^127 is the max positive finite power of 2)
     debug_assert!(-126 <= exponent, "Exponent out of range for f32");

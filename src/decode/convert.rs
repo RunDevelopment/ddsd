@@ -534,6 +534,9 @@ pub(crate) fn f10_to_f32(half: u16) -> f32 {
 pub(crate) mod rgb9995f {
     use crate::util::two_powi;
 
+    // This is 2 ** -23
+    const C23: f32 = 1.0 / 8388608.0;
+
     #[inline]
     pub fn f32(rgb: u32) -> [f32; 3] {
         let r_mant = rgb & 0x1FF;
@@ -543,8 +546,8 @@ pub(crate) mod rgb9995f {
 
         if exp == 0 {
             // denorm
-            const F: f32 = two_powi(-23);
-            [r_mant as f32 * F, g_mant as f32 * F, b_mant as f32 * F]
+            let f = C23;
+            [r_mant as f32 * f, g_mant as f32 * f, b_mant as f32 * f]
         } else if exp != 31 {
             let f = two_powi(exp as i8 - 24);
             [r_mant as f32 * f, g_mant as f32 * f, b_mant as f32 * f]
@@ -608,7 +611,7 @@ pub(crate) mod rgb9995f {
 
         if exp == 0 {
             // denorm
-            const F: f32 = two_powi(-23) * 65535.0;
+            const F: f32 = C23 * 65535.0;
             [
                 (r_mant as f32 * F + 0.5) as u16,
                 (g_mant as f32 * F + 0.5) as u16,
