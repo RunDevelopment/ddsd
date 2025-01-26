@@ -50,7 +50,7 @@ pub(crate) struct Decoder {
     pub precision: Precision,
     pub disabled: bool,
     decode_fn: DecodeFn,
-    decode_rect_fn: Option<DecodeRectFn>,
+    decode_rect_fn: DecodeRectFn,
 }
 impl Decoder {
     pub const fn new(
@@ -64,20 +64,7 @@ impl Decoder {
             precision,
             disabled: false,
             decode_fn,
-            decode_rect_fn: Some(decode_rect_fn),
-        }
-    }
-    pub const fn new_without_rect_decode(
-        channels: Channels,
-        precision: Precision,
-        decode_fn: DecodeFn,
-    ) -> Self {
-        Self {
-            channels,
-            precision,
-            disabled: false,
-            decode_fn,
-            decode_rect_fn: None,
+            decode_rect_fn,
         }
     }
     pub const fn new_disabled(channels: Channels, precision: Precision) -> Self {
@@ -86,7 +73,7 @@ impl Decoder {
             precision,
             disabled: true,
             decode_fn: |_| unreachable!(),
-            decode_rect_fn: None,
+            decode_rect_fn: |_| unreachable!(),
         }
     }
 
@@ -126,10 +113,7 @@ impl Decoder {
             return Ok(());
         }
 
-        // TODO: temporary. In the future, we should always have a rect decoder.
-        let f = self.decode_rect_fn.unwrap();
-
-        (f)(RArgs(
+        (self.decode_rect_fn)(RArgs(
             reader,
             output,
             row_pitch,

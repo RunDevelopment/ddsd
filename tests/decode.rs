@@ -50,20 +50,31 @@ fn decode_rect() {
         "images/uncompressed/DX9 B4G4R4A4_UNORM.dds",
         // This one is optimized for mem-copying
         "images/uncompressed/DX10 R8_UNORM.dds",
+        // Sub-sampled formats
+        "images/sub-sampled/DX9 R8G8_B8G8_UNORM.dds",
+        // Block-compressed formats
+        "images/bc/DX10 BC7_UNORM.dds",
     ]
     .map(|x| util::test_data_dir().join(x));
 
-    fn get_png_path(dds_path: &Path) -> PathBuf {
+    fn get_png_path(dds_path: &Path, rect: Rect) -> PathBuf {
+        let name = dds_path.file_name().unwrap().to_string_lossy().to_string();
+        let mut name = name.replace(".dds", "");
+        name += " -";
+        name += &format!(" {},{}", rect.x, rect.y);
+        name += &format!(" {},{}", rect.width, rect.height);
+
         util::test_data_dir()
             .join("output-rect")
-            .join(dds_path.file_name().unwrap())
+            .join(name)
             .with_extension("png")
     }
     fn dds_to_png_8bit(
         dds_path: &PathBuf,
+        rect: Rect,
         png_path: &PathBuf,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let (image, _) = util::read_dds_rect_as_u8(dds_path, Rect::new(47, 2, 63, 35))?;
+        let (image, _) = util::read_dds_rect_as_u8(dds_path, rect)?;
 
         // compare to PNG
         util::compare_snapshot_png_u8(png_path, &image)?;
@@ -73,11 +84,18 @@ fn decode_rect() {
 
     let mut failed_count = 0;
     for test_image in files {
-        if let Err(e) = dds_to_png_8bit(&test_image, &get_png_path(&test_image)) {
-            let path = test_image.strip_prefix(util::test_data_dir()).unwrap();
-            eprintln!("Failed to convert {:?}: {}", path, e);
-            failed_count += 1;
-        }
+        let mut test = |rect| {
+            if let Err(e) = dds_to_png_8bit(&test_image, rect, &get_png_path(&test_image, rect)) {
+                let path = test_image.strip_prefix(util::test_data_dir()).unwrap();
+                eprintln!("Failed to convert {:?}: {}", path, e);
+                failed_count += 1;
+            }
+        };
+
+        test(Rect::new(47, 2, 63, 35));
+        // single pixel to cover certain edge cases
+        test(Rect::new(9, 41, 1, 1));
+        test(Rect::new(10, 51, 1, 1));
     }
     if failed_count > 0 {
         panic!("{} tests failed", failed_count);
