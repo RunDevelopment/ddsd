@@ -37,21 +37,36 @@ fn random_bytes(len: usize) -> Vec<u8> {
     out
 }
 
-fn bench_decoder(c: &mut Criterion, format: DxgiFormat, channels: Channels, precision: Precision) {
-    bench_decoder_with_data(c, format, channels, precision, |_| {});
+struct BenchConfig {
+    data_modifier: fn(&mut [u8]),
+    size: Size,
 }
-fn bench_decoder_with_data(
+impl Default for BenchConfig {
+    fn default() -> Self {
+        Self {
+            data_modifier: |_| {},
+            size: (4096, 4096).into(),
+        }
+    }
+}
+fn bench_decoder(c: &mut Criterion, format: DxgiFormat, channels: Channels, precision: Precision) {
+    bench_decoder_with(c, format, channels, precision, |_| {});
+}
+fn bench_decoder_with(
     c: &mut Criterion,
     format: DxgiFormat,
     channels: Channels,
     precision: Precision,
-    mut data_modifier: impl FnMut(&mut [u8]),
+    create_config: impl FnOnce(&mut BenchConfig),
 ) {
+    let mut config = BenchConfig::default();
+    create_config(&mut config);
+
     let color = ColorFormat::new(channels, precision);
     let name = format!("{:?} -> {}", format, color);
 
     c.bench_function(&name, |b| {
-        let header = simple_texture_header((4096, 4096).into(), format);
+        let header = simple_texture_header(config.size, format);
 
         let reader = DdsDecoder::from_header(header).unwrap();
         let format = reader.format();
@@ -59,7 +74,7 @@ fn bench_decoder_with_data(
 
         let surface = reader.layout().texture().unwrap().main();
         let mut bytes = random_bytes(surface.data_len() as usize).into_boxed_slice();
-        data_modifier(&mut bytes);
+        (config.data_modifier)(&mut bytes);
         let mut output =
             vec![0; surface.size().pixels() as usize * color.bytes_per_pixel() as usize];
         b.iter(|| {
@@ -115,7 +130,9 @@ pub fn uncompressed(c: &mut Criterion) {
     bench_decoder(c, DxgiFormat::BC1_UNORM, Rgb, U8);
     bench_decoder(c, DxgiFormat::BC4_UNORM, Grayscale, U8);
     bench_decoder(c, DxgiFormat::BC4_SNORM, Grayscale, U8);
-    bench_decoder_with_data(c, DxgiFormat::BC7_UNORM, Rgba, U8, random_bc7_modes);
+    bench_decoder_with(c, DxgiFormat::BC7_UNORM, Rgba, U8, |c| {
+        c.data_modifier = random_bc7_modes;
+    });
 }
 
 criterion_group!(benches, uncompressed);
