@@ -1,5 +1,5 @@
 use super::convert::{Norm, ToRgb, ToRgba};
-use super::read_write::{for_each_block_untyped, process_4x4_blocks_helper};
+use super::read_write::{for_each_block_untyped, process_4x4_blocks_helper, PixelRange};
 use super::{Args, Decoder, DecoderSet, WithPrecision};
 
 use crate::util::closure_types;
@@ -16,12 +16,11 @@ macro_rules! underlying {
         fn process_blocks(
             encoded_blocks: &[u8],
             decoded: &mut [u8],
-            width: usize,
             stride: usize,
-            rows: usize,
+            range: PixelRange,
         ) {
             let f = closure_types::<[u8; BYTES_PER_BLOCK], [OutPixel; 16], _>($f);
-            process_4x4_blocks_helper(encoded_blocks, decoded, width, stride, rows, f)
+            process_4x4_blocks_helper(encoded_blocks, decoded, stride, range, f)
         }
 
         Decoder::new_without_rect_decode(

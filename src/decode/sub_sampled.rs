@@ -2,7 +2,7 @@ use crate::util::closure_types;
 use crate::Channels::*;
 
 use super::convert::{n8, ToRgba};
-use super::read_write::{for_each_block_untyped, process_2x1_blocks_helper};
+use super::read_write::{for_each_block_untyped, process_2x1_blocks_helper,PixelRange};
 use super::{Args, Decoder, DecoderSet, WithPrecision};
 
 // helpers
@@ -16,12 +16,11 @@ macro_rules! underlying {
         fn process_blocks(
             encoded_blocks: &[u8],
             decoded: &mut [u8],
-            width: usize,
             _stride: usize,
-            _rows: usize,
+            range: PixelRange,
         ) {
             let f = closure_types::<[u8; BYTES_PER_BLOCK], [OutPixel; 2], _>($f);
-            process_2x1_blocks_helper(encoded_blocks, decoded, width, f)
+            process_2x1_blocks_helper(encoded_blocks, decoded, range, f)
         }
 
         Decoder::new_without_rect_decode(
