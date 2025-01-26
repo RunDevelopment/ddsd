@@ -1,51 +1,62 @@
 use super::convert::{Norm, ToRgb, ToRgba};
-use super::read_write::for_each_block_4x4;
+use super::read_write::{for_each_block_untyped, process_4x4_blocks_helper};
 use super::{Args, Decoder, DecoderSet, WithPrecision};
 
 use crate::Channels::*;
 
 // helpers
 
-macro_rules! gray {
-    ($out:ty, $f:expr) => {
+macro_rules! underlying {
+    ($channels:expr, $out:ty, $bytes_per_block:literal, $f:expr) => {{
+        const BYTES_PER_BLOCK: usize = $bytes_per_block;
+        const CHANNELS: usize = $channels.count() as usize;
+        type OutPixel = [$out; CHANNELS];
+
+        fn process_blocks(
+            encoded_blocks: &[u8],
+            decoded: &mut [u8],
+            width: usize,
+            stride: usize,
+            rows: usize,
+        ) {
+            process_4x4_blocks_helper::<BYTES_PER_BLOCK, OutPixel>(
+                encoded_blocks,
+                decoded,
+                width,
+                stride,
+                rows,
+                $f,
+            )
+        }
+
         Decoder::new_without_rect_decode(
-            Grayscale,
+            $channels,
             <$out as WithPrecision>::PRECISION,
             |Args(r, out, context)| {
-                let f = $f;
-                for_each_block_4x4(r, out, context.size, |pixel| -> [[$out; 1]; 16] {
-                    f(pixel)
-                })
+                for_each_block_untyped::<4, 4, BYTES_PER_BLOCK, OutPixel>(
+                    r,
+                    out,
+                    context.size,
+                    process_blocks,
+                )
             },
         )
+    }};
+}
+
+macro_rules! gray {
+    ($out:ty, $bytes_per_block:literal, $f:expr) => {
+        underlying!(Grayscale, $out, $bytes_per_block, $f)
     };
 }
 macro_rules! rgb {
-    ($out:ty, $f:expr) => {
-        Decoder::new_without_rect_decode(
-            Rgb,
-            <$out as WithPrecision>::PRECISION,
-            |Args(r, out, context)| {
-                let f = $f;
-                for_each_block_4x4(r, out, context.size, |pixel| -> [[$out; 3]; 16] {
-                    f(pixel)
-                })
-            },
-        )
+    ($out:ty, $bytes_per_block:literal, $f:expr) => {
+        underlying!(Rgb, $out, $bytes_per_block, $f)
     };
 }
 macro_rules! rgba {
-    ($out:ty, $f:expr) => {
-        Decoder::new_without_rect_decode(
-            Rgba,
-            <$out as WithPrecision>::PRECISION,
-            |Args(r, out, context)| {
-                let f = $f;
-                for_each_block_4x4(r, out, context.size, |pixel| -> [[$out; 4]; 16] {
-                    f(pixel)
-                })
-            },
-        )
+    ($out:ty, $bytes_per_block:literal, $f:expr) => {
+        underlying!(Rgba, $out, $bytes_per_block, $f)
     };
 }
 
@@ -73,64 +84,72 @@ fn rgba_to_rgb<const N: usize, T>(
 // decoders
 
 pub(crate) const BC1_UNORM: DecoderSet = DecoderSet::new(&[
-    rgba!(u8, blocks::bc1_u8_rgba),
-    rgb!(u8, rgba_to_rgb(blocks::bc1_u8_rgba)),
+    rgba!(u8, 8, blocks::bc1_u8_rgba),
+    rgb!(u8, 8, rgba_to_rgb(blocks::bc1_u8_rgba)),
 ]);
 
-pub(crate) const BC2_UNORM: DecoderSet =
-    DecoderSet::new(&[rgba!(u8, blocks::bc2_u8_rgba), rgb!(u8, blocks::bc2_u8_rgb)]);
+pub(crate) const BC2_UNORM: DecoderSet = DecoderSet::new(&[
+    rgba!(u8, 16, blocks::bc2_u8_rgba),
+    rgb!(u8, 16, blocks::bc2_u8_rgb),
+]);
 
-pub(crate) const BC3_UNORM: DecoderSet =
-    DecoderSet::new(&[rgba!(u8, blocks::bc3_u8_rgba), rgb!(u8, blocks::bc3_u8_rgb)]);
+pub(crate) const BC3_UNORM: DecoderSet = DecoderSet::new(&[
+    rgba!(u8, 16, blocks::bc3_u8_rgba),
+    rgb!(u8, 16, blocks::bc3_u8_rgb),
+]);
 
 pub(crate) const BC3_UNORM_RXGB: DecoderSet = DecoderSet::new(&[
-    rgb!(u8, blocks::bc3_rxgb_u8_rgb),
-    rgba!(u8, rgb_to_rgba(blocks::bc3_rxgb_u8_rgb)),
+    rgb!(u8, 16, blocks::bc3_rxgb_u8_rgb),
+    rgba!(u8, 16, rgb_to_rgba(blocks::bc3_rxgb_u8_rgb)),
 ]);
 
 pub(crate) const BC4_UNORM: DecoderSet = DecoderSet::new(&[
-    gray!(u8, blocks::bc4u_gray),
-    gray!(u16, blocks::bc4u_gray),
-    gray!(f32, blocks::bc4u_gray),
-    rgb!(u8, gray_to_rgb(blocks::bc4u_gray)),
-    rgb!(u16, gray_to_rgb(blocks::bc4u_gray)),
-    rgb!(f32, gray_to_rgb(blocks::bc4u_gray)),
-    rgba!(u8, gray_to_rgba(blocks::bc4u_gray)),
-    rgba!(u16, gray_to_rgba(blocks::bc4u_gray)),
-    rgba!(f32, gray_to_rgba(blocks::bc4u_gray)),
+    gray!(u8, 8, blocks::bc4u_gray),
+    gray!(u16, 8, blocks::bc4u_gray),
+    gray!(f32, 8, blocks::bc4u_gray),
+    rgb!(u8, 8, gray_to_rgb(blocks::bc4u_gray)),
+    rgb!(u16, 8, gray_to_rgb(blocks::bc4u_gray)),
+    rgb!(f32, 8, gray_to_rgb(blocks::bc4u_gray)),
+    rgba!(u8, 8, gray_to_rgba(blocks::bc4u_gray)),
+    rgba!(u16, 8, gray_to_rgba(blocks::bc4u_gray)),
+    rgba!(f32, 8, gray_to_rgba(blocks::bc4u_gray)),
 ]);
 
 pub(crate) const BC4_SNORM: DecoderSet = DecoderSet::new(&[
-    gray!(u8, blocks::bc4s_u8_gray),
-    rgb!(u8, gray_to_rgb(blocks::bc4s_u8_gray)),
-    rgba!(u8, gray_to_rgba(blocks::bc4s_u8_gray)),
+    gray!(u8, 8, blocks::bc4s_u8_gray),
+    rgb!(u8, 8, gray_to_rgb(blocks::bc4s_u8_gray)),
+    rgba!(u8, 8, gray_to_rgba(blocks::bc4s_u8_gray)),
 ]);
 
 pub(crate) const BC5_UNORM: DecoderSet = DecoderSet::new(&[
-    rgb!(u8, blocks::bc5u_rgb),
-    rgb!(u16, blocks::bc5u_rgb),
-    rgb!(f32, blocks::bc5u_rgb),
-    rgba!(u8, rgb_to_rgba(blocks::bc5u_rgb)),
-    rgba!(u16, rgb_to_rgba(blocks::bc5u_rgb)),
-    rgba!(f32, rgb_to_rgba(blocks::bc5u_rgb)),
+    rgb!(u8, 16, blocks::bc5u_rgb),
+    rgb!(u16, 16, blocks::bc5u_rgb),
+    rgb!(f32, 16, blocks::bc5u_rgb),
+    rgba!(u8, 16, rgb_to_rgba(blocks::bc5u_rgb)),
+    rgba!(u16, 16, rgb_to_rgba(blocks::bc5u_rgb)),
+    rgba!(f32, 16, rgb_to_rgba(blocks::bc5u_rgb)),
 ]);
 
 pub(crate) const BC5_SNORM: DecoderSet = DecoderSet::new(&[
-    rgb!(u8, blocks::bc5s_u8_rgb),
-    rgba!(u8, rgb_to_rgba(blocks::bc5s_u8_rgb)),
+    rgb!(u8, 16, blocks::bc5s_u8_rgb),
+    rgba!(u8, 16, rgb_to_rgba(blocks::bc5s_u8_rgb)),
 ]);
 
 fn dummy_bc6(_block: [u8; 16]) -> [[f32; 3]; 16] {
     todo!("BC6H is not supported yet")
 }
-pub(crate) const BC6H_UF16: DecoderSet =
-    DecoderSet::new(&[rgb!(f32, dummy_bc6), rgba!(f32, rgb_to_rgba(dummy_bc6))]);
-pub(crate) const BC6H_SF16: DecoderSet =
-    DecoderSet::new(&[rgb!(f32, dummy_bc6), rgba!(f32, rgb_to_rgba(dummy_bc6))]);
+pub(crate) const BC6H_UF16: DecoderSet = DecoderSet::new(&[
+    rgb!(f32, 16, dummy_bc6),
+    rgba!(f32, 16, rgb_to_rgba(dummy_bc6)),
+]);
+pub(crate) const BC6H_SF16: DecoderSet = DecoderSet::new(&[
+    rgb!(f32, 16, dummy_bc6),
+    rgba!(f32, 16, rgb_to_rgba(dummy_bc6)),
+]);
 
 pub(crate) const BC7_UNORM: DecoderSet = DecoderSet::new(&[
-    rgba!(u8, blocks::bc7_u8_rgba),
-    rgb!(u8, rgba_to_rgb(blocks::bc7_u8_rgba)),
+    rgba!(u8, 16, blocks::bc7_u8_rgba),
+    rgb!(u8, 16, rgba_to_rgb(blocks::bc7_u8_rgba)),
 ]);
 
 /// Internal module for the underlying logic of decoding BC1-7 blocks.

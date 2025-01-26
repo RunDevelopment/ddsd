@@ -97,6 +97,7 @@ pub fn uncompressed(c: &mut Criterion) {
     use Channels::*;
     use Precision::*;
 
+    // uncompressed formats
     bench_decoder(c, DxgiFormat::R8G8B8A8_UNORM, Rgba, U8);
     bench_decoder(c, DxgiFormat::R8G8B8A8_SNORM, Rgba, U8);
     bench_decoder(c, DxgiFormat::R8G8B8A8_UNORM, Rgba, U16);
@@ -105,7 +106,15 @@ pub fn uncompressed(c: &mut Criterion) {
     bench_decoder(c, DxgiFormat::R16G16_SNORM, Rgba, U8);
     bench_decoder(c, DxgiFormat::B8G8R8X8_UNORM, Rgba, U8);
     bench_decoder(c, DxgiFormat::R9G9B9E5_SHAREDEXP, Rgb, U8);
+
+    // sub-sampled formats
+    bench_decoder(c, DxgiFormat::R8G8_B8G8_UNORM, Rgb, U8);
+
+    // block-compressed formats
     bench_decoder(c, DxgiFormat::BC1_UNORM, Rgba, U8);
+    bench_decoder(c, DxgiFormat::BC1_UNORM, Rgb, U8);
+    bench_decoder(c, DxgiFormat::BC4_UNORM, Grayscale, U8);
+    bench_decoder(c, DxgiFormat::BC4_SNORM, Grayscale, U8);
     bench_decoder_with_data(c, DxgiFormat::BC7_UNORM, Rgba, U8, random_bc7_modes);
 }
 

@@ -1,114 +1,81 @@
 use crate::Channels::*;
 
 use super::convert::{n8, ToRgba};
-use super::read_write::for_each_pair;
+use super::read_write::{for_each_block_untyped, process_2x1_blocks_helper};
 use super::{Args, Decoder, DecoderSet, WithPrecision};
 
 // helpers
 
-macro_rules! rgb {
-    ($out:ty, $f1:expr, $f2:expr) => {
+macro_rules! underlying {
+    ($channels:expr, $out:ty, $f:expr) => {{
+        const BYTES_PER_BLOCK: usize = 4;
+        const CHANNELS: usize = $channels.count() as usize;
+        type OutPixel = [$out; CHANNELS];
+
+        fn process_blocks(
+            encoded_blocks: &[u8],
+            decoded: &mut [u8],
+            width: usize,
+            _stride: usize,
+            _rows: usize,
+        ) {
+            process_2x1_blocks_helper(encoded_blocks, decoded, width, $f)
+        }
+
         Decoder::new_without_rect_decode(
-            Rgb,
+            $channels,
             <$out as WithPrecision>::PRECISION,
             |Args(r, out, context)| {
-                let f1 = $f1;
-                let f2 = $f2;
-                for_each_pair(
+                for_each_block_untyped::<2, 1, BYTES_PER_BLOCK, OutPixel>(
                     r,
                     out,
                     context.size,
-                    |pixel| -> [$out; 3] { f1(pixel) },
-                    |pixel| -> [$out; 3] { f2(pixel) },
+                    process_blocks,
                 )
             },
         )
+    }};
+}
+
+macro_rules! rgb {
+    ($out:ty, $f:expr) => {
+        underlying!(Rgb, $out, $f)
     };
 }
 macro_rules! rgba {
-    ($out:ty, $f1:expr, $f2:expr) => {
-        Decoder::new_without_rect_decode(
-            Rgba,
-            <$out as WithPrecision>::PRECISION,
-            |Args(r, out, context)| {
-                let f1 = $f1;
-                let f2 = $f2;
-                for_each_pair(
-                    r,
-                    out,
-                    context.size,
-                    |pixel| -> [$out; 4] { f1(pixel) },
-                    |pixel| -> [$out; 4] { f2(pixel) },
-                )
-            },
-        )
+    ($out:ty, $f:expr) => {
+        underlying!(Rgba, $out, $f)
     };
 }
 
 // decoders
 
+#[inline]
+fn decode_rg_bg<T: Copy>([r, g1, b, g2]: [T; 4]) -> [[T; 3]; 2] {
+    [[r, g1, b], [r, g2, b]]
+}
 pub(crate) const R8G8_B8G8_UNORM: DecoderSet = DecoderSet::new(&[
-    rgb!(
-        u8,
-        |[r, g1, b, _g2]: [u8; 4]| [r, g1, b],
-        |[r, _g1, b, g2]: [u8; 4]| [r, g2, b]
-    ),
-    rgb!(
-        u16,
-        |[r, g1, b, _g2]: [u8; 4]| [r, g1, b].map(n8::n16),
-        |[r, _g1, b, g2]: [u8; 4]| [r, g2, b].map(n8::n16)
-    ),
-    rgb!(
-        f32,
-        |[r, g1, b, _g2]: [u8; 4]| [r, g1, b].map(n8::f32),
-        |[r, _g1, b, g2]: [u8; 4]| [r, g2, b].map(n8::f32)
-    ),
-    rgba!(
-        u8,
-        |[r, g1, b, _g2]: [u8; 4]| [r, g1, b].to_rgba(),
-        |[r, _g1, b, g2]: [u8; 4]| [r, g2, b].to_rgba()
-    ),
-    rgba!(
-        u16,
-        |[r, g1, b, _g2]: [u8; 4]| [r, g1, b].map(n8::n16).to_rgba(),
-        |[r, _g1, b, g2]: [u8; 4]| [r, g2, b].map(n8::n16).to_rgba()
-    ),
-    rgba!(
-        f32,
-        |[r, g1, b, _g2]: [u8; 4]| [r, g1, b].map(n8::f32).to_rgba(),
-        |[r, _g1, b, g2]: [u8; 4]| [r, g2, b].map(n8::f32).to_rgba()
-    ),
+    rgb!(u8, decode_rg_bg),
+    rgb!(u16, |pair| decode_rg_bg(pair.map(n8::n16))),
+    rgb!(f32, |pair| decode_rg_bg(pair.map(n8::f32))),
+    rgba!(u8, |pair| decode_rg_bg(pair).map(ToRgba::to_rgba)),
+    rgba!(u16, |pair| decode_rg_bg(pair.map(n8::n16))
+        .map(ToRgba::to_rgba)),
+    rgba!(f32, |pair| decode_rg_bg(pair.map(n8::f32))
+        .map(ToRgba::to_rgba)),
 ]);
 
+#[inline]
+fn decode_gr_bg<T: Copy>([g1, r, g2, b]: [T; 4]) -> [[T; 3]; 2] {
+    [[r, g1, b], [r, g2, b]]
+}
 pub(crate) const G8R8_G8B8_UNORM: DecoderSet = DecoderSet::new(&[
-    rgb!(
-        u8,
-        |[g1, r, _g2, b]: [u8; 4]| [r, g1, b],
-        |[_g1, r, g2, b]: [u8; 4]| [r, g2, b]
-    ),
-    rgb!(
-        u16,
-        |[g1, r, _g2, b]: [u8; 4]| [r, g1, b].map(n8::n16),
-        |[_g1, r, g2, b]: [u8; 4]| [r, g2, b].map(n8::n16)
-    ),
-    rgb!(
-        f32,
-        |[g1, r, _g2, b]: [u8; 4]| [r, g1, b].map(n8::f32),
-        |[_g1, r, g2, b]: [u8; 4]| [r, g2, b].map(n8::f32)
-    ),
-    rgba!(
-        u8,
-        |[g1, r, _g2, b]: [u8; 4]| [r, g1, b].to_rgba(),
-        |[_g1, r, g2, b]: [u8; 4]| [r, g2, b].to_rgba()
-    ),
-    rgba!(
-        u16,
-        |[g1, r, _g2, b]: [u8; 4]| [r, g1, b].map(n8::n16).to_rgba(),
-        |[_g1, r, g2, b]: [u8; 4]| [r, g2, b].map(n8::n16).to_rgba()
-    ),
-    rgba!(
-        f32,
-        |[g1, r, _g2, b]: [u8; 4]| [r, g1, b].map(n8::f32).to_rgba(),
-        |[_g1, r, g2, b]: [u8; 4]| [r, g2, b].map(n8::f32).to_rgba()
-    ),
+    rgb!(u8, decode_gr_bg),
+    rgb!(u16, |pair| decode_gr_bg(pair.map(n8::n16))),
+    rgb!(f32, |pair| decode_gr_bg(pair.map(n8::f32))),
+    rgba!(u8, |pair| decode_gr_bg(pair).map(ToRgba::to_rgba)),
+    rgba!(u16, |pair| decode_gr_bg(pair.map(n8::n16))
+        .map(ToRgba::to_rgba)),
+    rgba!(f32, |pair| decode_gr_bg(pair.map(n8::f32))
+        .map(ToRgba::to_rgba)),
 ]);

@@ -17,12 +17,50 @@ pub(crate) fn from_bytes_mut<T: Castable>(bytes: &mut [u8]) -> Option<&mut [T]> 
 }
 
 /// Casts a slice of `T` to a slice of `u8`.
+pub(crate) fn as_bytes<T: Castable>(buffer: &[T]) -> &[u8] {
+    buffer.as_bytes()
+}
+/// Casts a slice of `T` to a slice of `u8`.
 pub(crate) fn as_bytes_mut<T: Castable>(buffer: &mut [T]) -> &mut [u8] {
     buffer.as_mut_bytes()
 }
-/// Casts a slice of `T` to a slice of `u8`.
-pub(crate) fn as_bytes<T: Castable>(buffer: &[T]) -> &[u8] {
-    buffer.as_bytes()
+
+/// An implementation of `slice::as_flattened` for more Rust versions.
+pub(crate) fn as_flattened<const N: usize, T>(buffer: &[[T; N]]) -> &[T]
+where
+    T: Castable,
+    [T; N]: Castable,
+{
+    // PANIC SAFETY: This unwrap can never fail, because T isn't a ZST.
+    from_bytes(as_bytes(buffer)).unwrap()
+}
+/// An implementation of `slice::as_flattened_mut` for more Rust versions.
+pub(crate) fn as_flattened_mut<const N: usize, T>(buffer: &mut [[T; N]]) -> &mut [T]
+where
+    T: Castable,
+    [T; N]: Castable,
+{
+    // PANIC SAFETY: This unwrap can never fail, because T isn't a ZST.
+    from_bytes_mut(as_bytes_mut(buffer)).unwrap()
+}
+
+/// An implementation of something similar to `slice::array_chunks`.
+pub(crate) fn as_array_chunks<const N: usize, T>(buffer: &[T]) -> Option<&[[T; N]]>
+where
+    T: Castable,
+    [T; N]: Castable,
+{
+    // PANIC SAFETY: This unwrap can never fail, because T isn't a ZST.
+    from_bytes(as_bytes(buffer))
+}
+/// An implementation of something similar to `slice::array_chunks_mut`.
+pub(crate) fn as_array_chunks_mut<const N: usize, T>(buffer: &mut [T]) -> Option<&mut [[T; N]]>
+where
+    T: Castable,
+    [T; N]: Castable,
+{
+    // PANIC SAFETY: This unwrap can never fail, because T isn't a ZST.
+    from_bytes_mut(as_bytes_mut(buffer))
 }
 
 /// Returns the native endian bytes of a value.

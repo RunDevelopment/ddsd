@@ -2,32 +2,16 @@ use super::convert::{
     f10_to_f32, f11_to_f32, f16_to_f32, fp, n10, n16, n2, n4, n8, rgb9995f, s16, s8, xr10, SwapRB,
     ToRgb, ToRgba, B5G5R5A1, B5G6R5,
 };
-use super::read_write::{for_each_pixel_rect_untyped, for_each_pixel_untyped};
+use super::read_write::{
+    for_each_pixel_rect_untyped, for_each_pixel_untyped, process_pixels_helper,
+};
 use super::{Args, DecodeFn, Decoder, DecoderSet, RArgs, WithPrecision};
 
-use crate::cast;
 use crate::util::{le_to_native_endian_16, le_to_native_endian_32};
 use crate::Channels::*;
 
 // helpers
 
-/// A helper function used to generate the pixel processing function for the decoders.
-#[inline(always)]
-fn process_pixels_impl<InPixel: cast::FromLeBytes, OutPixel: cast::IntoNeBytes>(
-    encoded: &[u8],
-    decoded: &mut [u8],
-    f: impl Fn(InPixel) -> OutPixel,
-) {
-    // group bytes into chunks
-    let encoded: &[InPixel::Bytes] = cast::from_bytes(encoded).expect("Invalid input buffer");
-    let decoded: &mut [OutPixel::Bytes] =
-        cast::from_bytes_mut(decoded).expect("Invalid output buffer");
-
-    for (encoded, decoded) in encoded.iter().zip(decoded.iter_mut()) {
-        let input: InPixel = cast::FromLeBytes::from_le_bytes(*encoded);
-        *decoded = cast::IntoNeBytes::into_ne_bytes(f(input));
-    }
-}
 /// This is a hack to explicitly annotate the types of the closures.
 fn closure_types<A, B, F: Fn(A) -> B>(f: F) -> impl Fn(A) -> B {
     f
@@ -41,7 +25,7 @@ macro_rules! underlying {
 
         fn process_pixels(encoded: &[u8], decoded: &mut [u8]) {
             let f = closure_types::<InPixel, OutPixel, _>($f);
-            process_pixels_impl(encoded, decoded, f);
+            process_pixels_helper(encoded, decoded, f);
         }
 
         Decoder::new(
