@@ -85,6 +85,11 @@ pub(crate) const fn two_powi(exponent: i8) -> f32 {
     f32::from_bits(bits)
 }
 
+/// This is a hack to explicitly annotate the types of the closures.
+pub(crate) fn closure_types<A, B, F: Fn(A) -> B>(f: F) -> impl Fn(A) -> B {
+    f
+}
+
 #[cfg(test)]
 mod test {
     #[test]

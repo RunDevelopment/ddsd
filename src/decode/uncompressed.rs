@@ -7,15 +7,10 @@ use super::read_write::{
 };
 use super::{Args, DecodeFn, Decoder, DecoderSet, RArgs, WithPrecision};
 
-use crate::util::{le_to_native_endian_16, le_to_native_endian_32};
+use crate::util::{closure_types, le_to_native_endian_16, le_to_native_endian_32};
 use crate::Channels::*;
 
 // helpers
-
-/// This is a hack to explicitly annotate the types of the closures.
-fn closure_types<A, B, F: Fn(A) -> B>(f: F) -> impl Fn(A) -> B {
-    f
-}
 
 macro_rules! underlying {
     ($channels:expr, $out:ty, $in_pixel:ty, $f:expr) => {{

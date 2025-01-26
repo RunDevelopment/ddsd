@@ -2,6 +2,7 @@ use super::convert::{Norm, ToRgb, ToRgba};
 use super::read_write::{for_each_block_untyped, process_4x4_blocks_helper};
 use super::{Args, Decoder, DecoderSet, WithPrecision};
 
+use crate::util::closure_types;
 use crate::Channels::*;
 
 // helpers
@@ -19,14 +20,8 @@ macro_rules! underlying {
             stride: usize,
             rows: usize,
         ) {
-            process_4x4_blocks_helper::<BYTES_PER_BLOCK, OutPixel>(
-                encoded_blocks,
-                decoded,
-                width,
-                stride,
-                rows,
-                $f,
-            )
+            let f = closure_types::<[u8; BYTES_PER_BLOCK], [OutPixel; 16], _>($f);
+            process_4x4_blocks_helper(encoded_blocks, decoded, width, stride, rows, f)
         }
 
         Decoder::new_without_rect_decode(

@@ -1,3 +1,4 @@
+use crate::util::closure_types;
 use crate::Channels::*;
 
 use super::convert::{n8, ToRgba};
@@ -19,7 +20,8 @@ macro_rules! underlying {
             _stride: usize,
             _rows: usize,
         ) {
-            process_2x1_blocks_helper(encoded_blocks, decoded, width, $f)
+            let f = closure_types::<[u8; BYTES_PER_BLOCK], [OutPixel; 2], _>($f);
+            process_2x1_blocks_helper(encoded_blocks, decoded, width, f)
         }
 
         Decoder::new_without_rect_decode(
