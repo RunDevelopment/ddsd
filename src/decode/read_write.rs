@@ -239,10 +239,13 @@ pub(crate) fn process_4x4_blocks_helper<
     let encoded_blocks: &[[u8; BYTES_PER_BLOCK]] =
         cast::from_bytes(encoded_blocks).expect("Invalid block buffer");
 
-    if width % 4 == 0 && row_count == 4 && stride % size_of::<OutPixel>() == 0 {
+    if row_count == 4 && stride % size_of::<OutPixel>() == 0 {
         if let Some(decoded) = cast::from_bytes_mut::<OutPixel>(decoded) {
             let stride = stride / size_of::<OutPixel>();
-            for (block_index, block) in encoded_blocks.iter().enumerate() {
+
+            let full_blocks = width / 4;
+
+            for (block_index, block) in encoded_blocks[..full_blocks].iter().enumerate() {
                 let pixel_index = block_index * 4;
 
                 let block = process_block(*block);
@@ -251,6 +254,22 @@ pub(crate) fn process_4x4_blocks_helper<
                     let row_start = stride * y + pixel_index;
                     let row = &mut decoded[row_start..row_start + 4];
                     for x in 0..4 {
+                        row[x] = block[y * 4 + x];
+                    }
+                }
+            }
+
+            if width % 4 != 0 {
+                let block = encoded_blocks[full_blocks];
+                let pixel_index = full_blocks * 4;
+                let block_w = width - pixel_index;
+
+                let block = process_block(block);
+
+                for y in 0..4 {
+                    let row_start = stride * y + pixel_index;
+                    let row = &mut decoded[row_start..row_start + block_w];
+                    for x in 0..block_w {
                         row[x] = block[y * 4 + x];
                     }
                 }
