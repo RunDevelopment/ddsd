@@ -56,17 +56,6 @@ where
     }
 }
 
-/// Computes `(a as f64 / b as f64).round() as T`.
-///
-/// Results are NOT correct if `a + b/2` overflows `T`.
-#[inline(always)]
-pub(crate) fn div_round_fast<T>(a: T, b: T) -> T
-where
-    T: Copy + From<u8> + std::ops::Add<T, Output = T> + std::ops::Div<T, Output = T> + Unsigned,
-{
-    (a + b / 2.into()) / b
-}
-
 pub(crate) trait Unsigned {}
 impl Unsigned for u8 {}
 impl Unsigned for u16 {}
@@ -98,15 +87,6 @@ mod test {
             for b in 1..255 {
                 let expected = (a as f64 / b as f64).ceil() as u8;
                 assert_eq!(super::div_ceil(a, b), expected, "a={}, b={}", a, b);
-            }
-        }
-    }
-    #[test]
-    fn div_round_fast() {
-        for a in 0..32 {
-            for b in 1..32 {
-                let expected = (a as f64 / b as f64).round() as u8;
-                assert_eq!(super::div_round_fast(a, b), expected, "a={}, b={}", a, b);
             }
         }
     }
