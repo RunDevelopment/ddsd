@@ -155,7 +155,11 @@ pub(crate) const BC6H_SF16: DecoderSet = DecoderSet::new(&[
 
 pub(crate) const BC7_UNORM: DecoderSet = DecoderSet::new(&[
     rgba!(u8, 16, blocks::bc7_u8_rgba),
+    rgba!(u16, 16, blocks::bc7_u16_rgba),
+    rgba!(f32, 16, blocks::bc7_f32_rgba),
     rgb!(u8, 16, rgba_to_rgb(blocks::bc7_u8_rgba)),
+    rgb!(u16, 16, rgba_to_rgb(blocks::bc7_u16_rgba)),
+    rgb!(f32, 16, rgba_to_rgb(blocks::bc7_f32_rgba)),
 ]);
 
 /// Internal module for the underlying logic of decoding BC1-7 blocks.
@@ -478,5 +482,11 @@ mod blocks {
     /// Decodes a BC7 UNORM block into 16 RGBA pixels.
     pub(crate) fn bc7_u8_rgba(block_bytes: [u8; 16]) -> [[u8; 4]; 16] {
         super::super::bc7::decode_bc7_block(block_bytes)
+    }
+    pub(crate) fn bc7_u16_rgba(block_bytes: [u8; 16]) -> [[u16; 4]; 16] {
+        super::super::bc7::decode_bc7_block(block_bytes).map(|p| p.map(n8::n16))
+    }
+    pub(crate) fn bc7_f32_rgba(block_bytes: [u8; 16]) -> [[f32; 4]; 16] {
+        super::super::bc7::decode_bc7_block(block_bytes).map(|p| p.map(n8::f32))
     }
 }
