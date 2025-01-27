@@ -376,60 +376,69 @@ fn swap_channels(pixels: &mut [[u8; 4]; 16], rotation: u8) {
     };
 }
 
-const WEIGHTS_2: [u8; 4] = [0, 21, 43, 64];
-const WEIGHTS_3: [u8; 8] = [0, 9, 18, 27, 37, 46, 55, 64];
-const WEIGHTS_4: [u8; 16] = [0, 4, 9, 13, 17, 21, 26, 30, 34, 38, 43, 47, 51, 55, 60, 64];
+// Weights are all multiplied by 4 compared to the original ones. This changes
+// the interpolation formula from
+//   ((64-w)*e0 + w*e1 + 32) >> 6
+// to
+//   ((256-w)*e0 + w*e1 + 128) >> 8
+// The nice thing about this is that intermediate results still fit into u16,
+// but the compiler can optimize away the `>> 8`.
+const WEIGHTS_2: [u16; 4] = [0, 84, 172, 256];
+const WEIGHTS_3: [u16; 8] = [0, 36, 72, 108, 148, 184, 220, 256];
+const WEIGHTS_4: [u16; 16] = [
+    0, 16, 36, 52, 68, 84, 104, 120, 136, 152, 172, 188, 204, 220, 240, 256,
+];
 
 fn interpolate_2_or_3(e0: u8, e1: u8, index: u8, index_bits: u8) -> u8 {
     let weight = match index_bits {
-        2 => WEIGHTS_2[index as usize] as u16,
-        3 => WEIGHTS_3[index as usize] as u16,
+        2 => WEIGHTS_2[index as usize],
+        3 => WEIGHTS_3[index as usize],
         _ => unreachable!(),
     };
-    let w0 = 64 - weight;
+    let w0 = 256 - weight;
     let w1 = weight;
-    ((w0 * e0 as u16 + w1 * e1 as u16 + 32) >> 6) as u8
+    ((w0 * e0 as u16 + w1 * e1 as u16 + 128) >> 8) as u8
 }
 
 #[inline]
-fn get_weight_4(index: u8) -> u8 {
+fn get_weight_4(index: u8) -> u16 {
     WEIGHTS_4[index as usize]
 }
 #[inline]
-fn get_weight_3(index: u8) -> u8 {
+fn get_weight_3(index: u8) -> u16 {
     WEIGHTS_3[index as usize]
 }
 #[inline]
-fn get_weight_2(index: u8) -> u8 {
+fn get_weight_2(index: u8) -> u16 {
     WEIGHTS_2[index as usize]
 }
 #[inline]
-fn interpolate_colors(color0: [u8; 4], color1: [u8; 4], weight: u8) -> [u8; 4] {
-    let w0 = (64 - weight) as u16;
-    let w1 = (weight) as u16;
+fn interpolate_colors(color0: [u8; 4], color1: [u8; 4], weight: u16) -> [u8; 4] {
+    let w0 = 256 - weight;
+    let w1 = weight;
     [
-        ((w0 * color0[0] as u16 + w1 * color1[0] as u16 + 32) >> 6) as u8,
-        ((w0 * color0[1] as u16 + w1 * color1[1] as u16 + 32) >> 6) as u8,
-        ((w0 * color0[2] as u16 + w1 * color1[2] as u16 + 32) >> 6) as u8,
-        ((w0 * color0[3] as u16 + w1 * color1[3] as u16 + 32) >> 6) as u8,
+        ((w0 * color0[0] as u16 + w1 * color1[0] as u16 + 128) >> 8) as u8,
+        ((w0 * color0[1] as u16 + w1 * color1[1] as u16 + 128) >> 8) as u8,
+        ((w0 * color0[2] as u16 + w1 * color1[2] as u16 + 128) >> 8) as u8,
+        ((w0 * color0[3] as u16 + w1 * color1[3] as u16 + 128) >> 8) as u8,
     ]
 }
 #[inline]
 fn interpolate_colors_alpha(
     color0: [u8; 4],
     color1: [u8; 4],
-    color_weight: u8,
-    alpha_weight: u8,
+    color_weight: u16,
+    alpha_weight: u16,
 ) -> [u8; 4] {
-    let wc0 = (64 - color_weight) as u16;
-    let wc1 = (color_weight) as u16;
-    let wa0 = (64 - alpha_weight) as u16;
-    let wa1 = (alpha_weight) as u16;
+    let wc0 = 256 - color_weight;
+    let wc1 = color_weight;
+    let wa0 = 256 - alpha_weight;
+    let wa1 = alpha_weight;
     [
-        ((wc0 * color0[0] as u16 + wc1 * color1[0] as u16 + 32) >> 6) as u8,
-        ((wc0 * color0[1] as u16 + wc1 * color1[1] as u16 + 32) >> 6) as u8,
-        ((wc0 * color0[2] as u16 + wc1 * color1[2] as u16 + 32) >> 6) as u8,
-        ((wa0 * color0[3] as u16 + wa1 * color1[3] as u16 + 32) >> 6) as u8,
+        ((wc0 * color0[0] as u16 + wc1 * color1[0] as u16 + 128) >> 8) as u8,
+        ((wc0 * color0[1] as u16 + wc1 * color1[1] as u16 + 128) >> 8) as u8,
+        ((wc0 * color0[2] as u16 + wc1 * color1[2] as u16 + 128) >> 8) as u8,
+        ((wa0 * color0[3] as u16 + wa1 * color1[3] as u16 + 128) >> 8) as u8,
     ]
 }
 
