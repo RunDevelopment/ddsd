@@ -79,6 +79,11 @@ pub(crate) fn closure_types<A, B, F: Fn(A) -> B>(f: F) -> F {
     f
 }
 
+/// This can be used to hint to the compiler that a branch is unlikely to be taken.
+#[cold]
+#[inline]
+pub(crate) fn unlikely_branch() {}
+
 #[cfg(test)]
 mod test {
     #[test]

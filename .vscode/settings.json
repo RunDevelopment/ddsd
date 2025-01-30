@@ -1,6 +1,7 @@
 {
 	"rust-analyzer.showUnlinkedFileNotification": false,
 	"cSpell.words": [
+		"bgrx",
 		"FOURCC",
 		"mipmap",
 		"SHAREDEXP",

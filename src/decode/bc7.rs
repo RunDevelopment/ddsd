@@ -1,6 +1,4 @@
-#[cold]
-#[inline]
-fn unlikely_branch() {}
+use crate::util::unlikely_branch;
 
 pub(crate) fn decode_bc7_block(block: [u8; 16]) -> [[u8; 4]; 16] {
     let mut stream = BitStream::new(block);
@@ -692,15 +690,11 @@ const PARTITION_SET_3: [Subset3Map; 64] = [
 
 struct BitStream {
     state: u128,
-    #[cfg(debug_assertions)]
-    consumed_bits: u8,
 }
 impl BitStream {
     pub fn new(block: [u8; 16]) -> Self {
         Self {
             state: u128::from_le_bytes(block),
-            #[cfg(debug_assertions)]
-            consumed_bits: 0,
         }
     }
 
@@ -711,10 +705,6 @@ impl BitStream {
     #[inline(always)]
     pub fn skip(&mut self, n: u8) {
         self.state >>= n;
-        #[cfg(debug_assertions)]
-        {
-            self.consumed_bits += n;
-        }
     }
 
     #[inline]
@@ -741,13 +731,6 @@ impl BitStream {
         }
         self.skip(count);
         bits
-    }
-}
-#[cfg(debug_assertions)]
-impl Drop for BitStream {
-    fn drop(&mut self) {
-        // Validate that we consumed all bits
-        debug_assert_eq!(self.consumed_bits, 128);
     }
 }
 
