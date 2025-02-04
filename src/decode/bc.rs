@@ -376,8 +376,8 @@ mod blocks {
                 T::from_interpolation_4(c0_u16 * 3 + c1_u16 * 2),
                 T::from_interpolation_4(c0_u16 * 2 + c1_u16 * 3),
                 T::from_interpolation_4(c0_u16 + c1_u16 * 4),
-                T::NORM_ZERO,
-                T::NORM_ONE,
+                T::ZERO,
+                T::ONE,
             )
         };
 
@@ -405,7 +405,7 @@ mod blocks {
         for (i, pixel) in pixels.iter_mut().enumerate() {
             pixel[0] = red[i][0];
             pixel[1] = green[i][0];
-            pixel[2] = T::NORM_ZERO;
+            pixel[2] = T::ZERO;
         }
 
         pixels

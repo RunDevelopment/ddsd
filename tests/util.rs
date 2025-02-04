@@ -50,6 +50,11 @@ pub struct Image<T> {
     pub channels: Channels,
     pub size: Size,
 }
+impl<T> Image<T> {
+    pub fn stride(&self) -> usize {
+        self.size.width as usize * self.channels.count() as usize * std::mem::size_of::<T>()
+    }
+}
 impl<T: WithPrecision> Image<T> {
     pub fn precision(&self) -> Precision {
         T::PRECISION
@@ -233,22 +238,26 @@ pub fn compare_snapshot_png_u8(
     Err("Output PNG didn't match".into())
 }
 
-pub trait NormMax {
-    const NORM_MAX: Self;
+pub trait Norm {
+    const NORM_ONE: Self;
+    const NORM_ZERO: Self;
 }
-impl NormMax for u8 {
-    const NORM_MAX: Self = u8::MAX;
+impl Norm for u8 {
+    const NORM_ONE: Self = u8::MAX;
+    const NORM_ZERO: Self = 0;
 }
-impl NormMax for u16 {
-    const NORM_MAX: Self = u16::MAX;
+impl Norm for u16 {
+    const NORM_ONE: Self = u16::MAX;
+    const NORM_ZERO: Self = 0;
 }
-impl NormMax for f32 {
-    const NORM_MAX: Self = 1.0;
+impl Norm for f32 {
+    const NORM_ONE: Self = 1.0;
+    const NORM_ZERO: Self = 0.0;
 }
 
 pub fn convert_channels<T>(data: &[T], from: Channels, to: Channels) -> Vec<T>
 where
-    T: Copy + Default + Castable + NormMax,
+    T: Copy + Default + Castable + Norm,
 {
     if from == to {
         return data.to_vec();
@@ -281,18 +290,20 @@ where
         | (Channels::Rgb, Channels::Rgb)
         | (Channels::Rgba, Channels::Rgba) => unreachable!(),
 
-        (Channels::Grayscale, Channels::Alpha) => todo!(),
+        (Channels::Grayscale, Channels::Alpha) => convert(data, |[_]| [T::NORM_ONE]),
         (Channels::Grayscale, Channels::Rgb) => convert(data, |[g]| [g, g, g]),
-        (Channels::Grayscale, Channels::Rgba) => convert(data, |[g]| [g, g, g, T::NORM_MAX]),
-        (Channels::Alpha, Channels::Grayscale) => todo!(),
-        (Channels::Alpha, Channels::Rgb) => todo!(),
-        (Channels::Alpha, Channels::Rgba) => {
-            convert(data, |[a]| [T::default(), T::default(), T::default(), a])
+        (Channels::Grayscale, Channels::Rgba) => convert(data, |[g]| [g, g, g, T::NORM_ONE]),
+        (Channels::Alpha, Channels::Grayscale) => convert(data, |[_]| [T::NORM_ZERO]),
+        (Channels::Alpha, Channels::Rgb) => {
+            convert(data, |[_]| [T::NORM_ZERO, T::NORM_ZERO, T::NORM_ZERO])
         }
-        (Channels::Rgb, Channels::Grayscale) => todo!(),
-        (Channels::Rgb, Channels::Alpha) => todo!(),
-        (Channels::Rgb, Channels::Rgba) => convert(data, |[r, g, b]| [r, g, b, T::NORM_MAX]),
-        (Channels::Rgba, Channels::Grayscale) => todo!(),
+        (Channels::Alpha, Channels::Rgba) => {
+            convert(data, |[a]| [T::NORM_ZERO, T::NORM_ZERO, T::NORM_ZERO, a])
+        }
+        (Channels::Rgb, Channels::Grayscale) => convert(data, |[r, _, _]| [r]),
+        (Channels::Rgb, Channels::Alpha) => convert(data, |[_, _, _]| [T::NORM_ONE]),
+        (Channels::Rgb, Channels::Rgba) => convert(data, |[r, g, b]| [r, g, b, T::NORM_ONE]),
+        (Channels::Rgba, Channels::Grayscale) => convert(data, |[r, _, _, _]| [r]),
         (Channels::Rgba, Channels::Alpha) => convert(data, |[_, _, _, a]| [a]),
         (Channels::Rgba, Channels::Rgb) => convert(data, |[r, g, b, _]| [r, g, b]),
     }

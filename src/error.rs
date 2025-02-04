@@ -23,8 +23,6 @@ pub enum DecodeError {
     UnsupportedColorFormat {
         format: SupportedFormat,
         color: ColorFormat,
-        /// Whether the decoder is supported, but the necessary feature flag is not set.
-        missing_feature: bool,
     },
     UnexpectedBufferSize {
         expected: usize,
@@ -92,24 +90,12 @@ impl std::fmt::Display for DecodeError {
             DecodeError::DataLayoutTooBig => {
                 write!(f, "Data layout described by the header is too large")
             }
-            DecodeError::UnsupportedColorFormat {
-                format,
-                color,
-                missing_feature,
-            } => {
-                if *missing_feature {
-                    write!(
-                        f,
-                        "Color format {} is not supported for format {:?} because the necessary feature flag is not set.",
-                        color, format,
-                    )
-                } else {
-                    write!(
-                        f,
-                        "Color format {} is not supported for format {:?}.",
-                        color, format,
-                    )
-                }
+            DecodeError::UnsupportedColorFormat { format, color } => {
+                write!(
+                    f,
+                    "Color format {} is not supported for format {:?}.",
+                    color, format,
+                )
             }
             DecodeError::UnexpectedBufferSize { expected, actual } => {
                 write!(

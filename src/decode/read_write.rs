@@ -8,6 +8,20 @@ use crate::{cast, util::div_ceil, DecodeError, Rect, Size};
 
 use super::ReadSeek;
 
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct InOutSize {
+    pub in_size: u8,
+    pub out_size: u8,
+}
+impl InOutSize {
+    pub const fn from<InPixel, OutPixel>() -> InOutSize {
+        InOutSize {
+            in_size: size_of::<InPixel>() as u8,
+            out_size: size_of::<OutPixel>() as u8,
+        }
+    }
+}
+
 /// A function that processes a row of pixels.
 ///
 /// The first argument is a byte slice of encoded pixels. The slice is
@@ -36,19 +50,56 @@ pub(crate) fn process_pixels_helper<InPixel: cast::FromLeBytes, OutPixel: cast::
         *decoded = cast::IntoNeBytes::into_ne_bytes(f(input));
     }
 }
+#[inline]
+pub(crate) fn process_pixels_helper_unroll<const UNROLL: usize, InPixel, OutPixel>(
+    encoded: &[u8],
+    decoded: &mut [u8],
+    f: impl Copy + Fn(InPixel) -> OutPixel,
+) where
+    InPixel: cast::FromLeBytes,
+    OutPixel: cast::IntoNeBytes,
+    [InPixel; UNROLL]: cast::FromLeBytes,
+    [OutPixel; UNROLL]: cast::IntoNeBytes,
+{
+    let pixels = encoded.len() / size_of::<InPixel>();
+    let rolled_chunks = pixels / UNROLL;
+
+    let encoded_chunks_bytes = rolled_chunks * size_of::<[InPixel; UNROLL]>();
+    let decoded_chunks_bytes = rolled_chunks * size_of::<[OutPixel; UNROLL]>();
+
+    // process unrolled chunks
+    process_pixels_helper::<[InPixel; UNROLL], [OutPixel; UNROLL]>(
+        &encoded[..encoded_chunks_bytes],
+        &mut decoded[..decoded_chunks_bytes],
+        move |input| input.map(f),
+    );
+
+    // process the rest
+    let encoded: &[InPixel::Bytes] =
+        cast::from_bytes(&encoded[encoded_chunks_bytes..]).expect("Invalid input buffer");
+    let decoded: &mut [OutPixel::Bytes] =
+        cast::from_bytes_mut(&mut decoded[decoded_chunks_bytes..]).expect("Invalid output buffer");
+    debug_assert!(encoded.len() == decoded.len());
+
+    for (encoded, decoded) in encoded.iter().zip(decoded.iter_mut()) {
+        let input: InPixel = cast::FromLeBytes::from_le_bytes(*encoded);
+        *decoded = cast::IntoNeBytes::into_ne_bytes(f(input));
+    }
+}
 
 /// Helper method for decoding UNCOMPRESSED formats.
-pub(crate) fn for_each_pixel_untyped<InPixel, OutPixel>(
+pub(crate) fn for_each_pixel_untyped(
     r: &mut dyn Read,
     buf: &mut [u8],
-    process_pixels: ProcessPixelsFn,
+    pixel_size: InOutSize,
+    process_pixels: impl Fn(&[u8], &mut [u8]),
 ) -> Result<(), DecodeError> {
     fn inner(
         r: &mut dyn Read,
         buf: &mut [u8],
         size_of_in: usize,
         size_of_out: usize,
-        process_pixels: ProcessPixelsFn,
+        process_pixels: impl Fn(&[u8], &mut [u8]),
     ) -> Result<(), DecodeError> {
         assert!(buf.len() % size_of_out == 0);
         let pixels = buf.len() / size_of_out;
@@ -67,8 +118,8 @@ pub(crate) fn for_each_pixel_untyped<InPixel, OutPixel>(
     inner(
         r,
         buf,
-        size_of::<InPixel>(),
-        size_of::<OutPixel>(),
+        pixel_size.in_size as usize,
+        pixel_size.out_size as usize,
         process_pixels,
     )
 }
@@ -76,13 +127,14 @@ pub(crate) fn for_each_pixel_untyped<InPixel, OutPixel>(
 /// Helper method for decoding UNCOMPRESSED formats.
 ///
 /// `process_pixels` has the same semantics as in `for_each_pixel_untyped`.
-pub(crate) fn for_each_pixel_rect_untyped<InPixel, OutPixel>(
+pub(crate) fn for_each_pixel_rect_untyped(
     r: &mut dyn ReadSeek,
     buf: &mut [u8],
     row_pitch: usize,
     size: Size,
     rect: Rect,
-    process_pixels: ProcessPixelsFn,
+    pixel_size: InOutSize,
+    process_pixels: impl Fn(&[u8], &mut [u8]),
 ) -> Result<(), DecodeError> {
     #[allow(clippy::too_many_arguments)]
     fn inner(
@@ -93,7 +145,7 @@ pub(crate) fn for_each_pixel_rect_untyped<InPixel, OutPixel>(
         rect: Rect,
         size_of_in: usize,
         size_of_out: usize,
-        process_pixels: ProcessPixelsFn,
+        process_pixels: impl Fn(&[u8], &mut [u8]),
     ) -> Result<(), DecodeError> {
         // assert that no overflow will occur for byte positions in the encoded image/reader
         assert!(size
@@ -149,8 +201,8 @@ pub(crate) fn for_each_pixel_rect_untyped<InPixel, OutPixel>(
         row_pitch,
         size,
         rect,
-        size_of::<InPixel>(),
-        size_of::<OutPixel>(),
+        pixel_size.in_size as usize,
+        pixel_size.out_size as usize,
         process_pixels,
     )
 }
@@ -175,9 +227,10 @@ fn seek_relative(r: &mut dyn ReadSeek, offset: i64) -> std::io::Result<()> {
 /// in `decoded`.
 pub(crate) type ProcessBlocksFn =
     fn(encoded_blocks: &[u8], decoded: &mut [u8], stride: usize, range: PixelRange);
+#[derive(Debug, Clone)]
 pub(crate) struct PixelRange {
     /// The number of pixels in a row. This might *not* be a multiple of `BLOCK_SIZE_X`
-    pub width: usize,
+    pub width: u32,
     /// The number of pixels in the first block that should be skipped.
     ///
     /// This is at most `BLOCK_SIZE_X - 1`.
@@ -201,7 +254,7 @@ pub(crate) fn process_2x1_blocks_helper<
     let mut encoded_blocks: &[[u8; BYTES_PER_BLOCK]] =
         cast::from_bytes(encoded_blocks).expect("Invalid block buffer");
 
-    let mut width = range.width;
+    let mut width = range.width as usize;
     let mut decoded: &mut [OutPixel::Bytes] =
         cast::from_bytes_mut(&mut decoded[..width * size_of::<OutPixel>()])
             .expect("Invalid output buffer");
@@ -272,7 +325,7 @@ pub(crate) fn process_4x4_blocks_helper<
                 cast::from_bytes(encoded_blocks).expect("Invalid block buffer");
 
             let stride = stride / size_of::<OutPixel>();
-            let full_blocks = range.width / 4;
+            let full_blocks = range.width as usize / 4;
 
             for (block_index, block) in encoded_blocks[..full_blocks].iter().enumerate() {
                 let pixel_index = block_index * 4;
@@ -291,7 +344,7 @@ pub(crate) fn process_4x4_blocks_helper<
             if range.width % 4 != 0 {
                 let block = encoded_blocks[full_blocks];
                 let pixel_index = full_blocks * 4;
-                let block_w = range.width - pixel_index;
+                let block_w = range.width as usize - pixel_index;
 
                 let block = process_block(block);
 
@@ -335,9 +388,9 @@ fn handle_width_offset<
     range: &mut PixelRange,
     process_block: F,
 ) -> usize {
-    let offset = range.width_offset as usize;
-    debug_assert!(offset < BLOCK_SIZE_X);
-    let pixel_w = (BLOCK_SIZE_X - offset).min(range.width);
+    let offset = range.width_offset as u32;
+    debug_assert!(offset < BLOCK_SIZE_X as u32);
+    let pixel_w = u32::min(BLOCK_SIZE_X as u32 - offset, range.width);
     if pixel_w == 0 {
         return 0;
     }
@@ -360,7 +413,7 @@ fn handle_width_offset<
     // skip first block that has now been processed
     *encoded_blocks = &encoded_blocks[BYTES_PER_BLOCK..];
     // skip first offset pixels
-    pixel_w * size_of::<OutPixel>()
+    pixel_w as usize * size_of::<OutPixel>()
 }
 /// A helper function for implementing [`ProcessBlocksFn`]s.
 ///
@@ -396,8 +449,8 @@ pub(crate) fn general_process_blocks<
             0
         };
         let block_w = (BLOCK_SIZE_X - pixel_offset_x)
-            .min(range.width)
-            .min(range.width + range.width_offset as usize - block_index * BLOCK_SIZE_X);
+            .min(range.width as usize)
+            .min(range.width as usize + range.width_offset as usize - block_index * BLOCK_SIZE_X);
 
         // This whole method is structured to call this function exactly once.
         // This is done to reduce code size.
@@ -471,7 +524,7 @@ pub(crate) fn for_each_block_untyped<
                 [start_pixel_y * pixel_row_bytes..(start_pixel_y + pixel_rows) * pixel_row_bytes];
 
             let range = PixelRange {
-                width: size.width as usize,
+                width: size.width,
                 width_offset: 0,
                 rows: 0..pixel_rows as u8,
             };
@@ -549,7 +602,7 @@ pub(crate) fn for_each_block_rect_untyped<
             (block_range_start * bytes_per_block)..(block_range_end * bytes_per_block);
 
         // re-calculated parts of the pixel range
-        let width = rect.width as usize;
+        let width = rect.width;
         let width_offset = (rect.x % block_size_x as u32) as u8;
 
         let mut block_line_y = skip_block_lines_before;

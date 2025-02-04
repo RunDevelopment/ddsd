@@ -460,7 +460,7 @@ pub(crate) mod xr10 {
     }
 }
 
-/// Functions for converting `f32`` values to other formats.
+/// Functions for converting `f32` values to other formats.
 pub(crate) mod fp {
     #[inline(always)]
     pub fn n8(x: f32) -> u8 {
@@ -472,63 +472,223 @@ pub(crate) mod fp {
     }
 }
 
-// TODO: Check whether these methods correctly implement the DirectX spec:
-// https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm#3.2.2%20Floating%20Point%20Conversion
+/// Functions for converting `f16` values to other formats.
+pub(crate) mod fp16 {
+    use crate::util::{two_powi, unlikely_branch};
 
-pub(crate) fn f16_to_f32(half: u16) -> f32 {
-    // https://stackoverflow.com/questions/36008434/how-can-i-decode-f16-to-f32-using-only-the-stable-standard-library
-    let exp: u16 = half >> 10 & 0b1_1111;
-    let mant: u16 = half & 0b11_1111_1111;
-    let val: f32 = if exp == 0 {
-        // denorm
-        mant as f32 * two_powi(-24)
-    } else if exp != 31 {
-        (mant as f32 + 1024_f32) * two_powi(exp as i8 - 25)
-    } else if mant == 0 {
-        f32::INFINITY
-    } else {
-        f32::NAN
-    };
-    if half & 0x8000 != 0 {
-        -val
-    } else {
-        val
+    #[inline]
+    pub fn n8(x: u16) -> u8 {
+        // This is optimized implementation, combining fp16::f32 -> fp::n8 into one step.
+        let exp: u16 = x >> 10 & 0b1_1111;
+        let mant: u16 = x & 0b11_1111_1111;
+        // Note: denorm all go to zero after rounding, so they don't need an extra branch.
+        let val: u8 = if exp != 31 {
+            ((mant as f32 + 1024_f32) * two_powi(exp as i8 - 25) * 255.0 + 0.5) as u8
+        } else {
+            unlikely_branch();
+            if mant == 0 {
+                // Inf goes to u8::MAX
+                u8::MAX
+            } else {
+                // NaN goes to zero
+                0
+            }
+        };
+        if x & 0x8000 != 0 {
+            // negative numbers go to zero
+            0
+        } else {
+            val
+        }
+    }
+    #[inline]
+    pub fn n16(x: u16) -> u16 {
+        // This is optimized implementation, combining fp16::f32 -> fp::n16 into one step.
+        let exp: u16 = x >> 10 & 0b1_1111;
+        let mant: u16 = x & 0b11_1111_1111;
+        let val: u16 = if exp == 0 {
+            // denorm
+            unlikely_branch();
+            const F: f32 = 65535.0 / 16777216.0;
+            (mant as f32 * F + 0.5) as u16
+        } else if exp != 31 {
+            ((mant as f32 + 1024_f32) * two_powi(exp as i8 - 25) * 65535.0 + 0.5) as u16
+        } else {
+            unlikely_branch();
+            if mant == 0 {
+                // Inf goes to u16::MAX
+                u16::MAX
+            } else {
+                // NaN goes to zero
+                0
+            }
+        };
+        if x & 0x8000 != 0 {
+            // negative numbers go to zero
+            0
+        } else {
+            val
+        }
+    }
+    #[inline]
+    pub fn f32(x: u16) -> f32 {
+        // https://stackoverflow.com/questions/36008434/how-can-i-decode-f16-to-f32-using-only-the-stable-standard-library
+        let exp: u16 = x >> 10 & 0b1_1111;
+        let mant: u16 = x & 0b11_1111_1111;
+        let val: f32 = if exp == 0 {
+            // denorm
+            unlikely_branch();
+            mant as f32 * two_powi(-24)
+        } else if exp != 31 {
+            (mant as f32 + 1024_f32) * two_powi(exp as i8 - 25)
+        } else {
+            unlikely_branch();
+            if mant == 0 {
+                f32::INFINITY
+            } else {
+                f32::NAN
+            }
+        };
+        if x & 0x8000 != 0 {
+            -val
+        } else {
+            val
+        }
     }
 }
-pub(crate) fn f11_to_f32(half: u16) -> f32 {
-    // based on f16_to_f32
-    let exp: u16 = half >> 6 & 0b1_1111;
-    let mant: u16 = half & 0b11_1111;
-    let val: f32 = if exp == 0 {
-        // denorm
-        mant as f32 * two_powi(-20)
-    } else if exp != 31 {
-        (mant as f32 + 64_f32) * two_powi(exp as i8 - 21)
-    } else if mant == 0 {
-        f32::INFINITY
-    } else {
-        f32::NAN
-    };
-    // no sign bit
-    val
+
+/// Functions for converting `f11` values to other formats.
+pub(crate) mod fp11 {
+    use crate::util::{two_powi, unlikely_branch};
+
+    #[inline]
+    pub fn n8(x: u16) -> u8 {
+        let exp: u16 = x >> 6 & 0b1_1111;
+        let mant: u16 = x & 0b11_1111;
+        // no sign bit
+
+        if exp != 31 {
+            ((mant as f32 + 64_f32) * two_powi(exp as i8 - 21) * 255.0 + 0.5) as u8
+        } else {
+            unlikely_branch();
+            if mant == 0 {
+                255
+            } else {
+                0
+            }
+        }
+    }
+    #[inline]
+    pub fn n16(x: u16) -> u16 {
+        let exp: u16 = x >> 6 & 0b1_1111;
+        let mant: u16 = x & 0b11_1111;
+        // no sign bit
+
+        if exp == 0 {
+            // denorm
+            // (mant as f32 * two_powi(-20) * 65535.0 + 0.5) as u16
+            (mant + 7) >> 4
+        } else if exp != 31 {
+            ((mant as f32 + 64_f32) * two_powi(exp as i8 - 21) * 65535.0 + 0.5) as u16
+        } else {
+            unlikely_branch();
+            if mant == 0 {
+                u16::MAX
+            } else {
+                0
+            }
+        }
+    }
+    #[inline]
+    pub fn f32(x: u16) -> f32 {
+        // based on f16_to_f32
+        let exp: u16 = x >> 6 & 0b1_1111;
+        let mant: u16 = x & 0b11_1111;
+        // no sign bit
+
+        if exp == 0 {
+            // denorm
+            mant as f32 * two_powi(-20)
+        } else if exp != 31 {
+            (mant as f32 + 64_f32) * two_powi(exp as i8 - 21)
+        } else {
+            unlikely_branch();
+            if mant == 0 {
+                f32::INFINITY
+            } else {
+                f32::NAN
+            }
+        }
+    }
 }
-pub(crate) fn f10_to_f32(half: u16) -> f32 {
-    // based on f16_to_f32
-    let exp: u16 = half >> 5 & 0b1_1111;
-    let mant: u16 = half & 0b1_1111;
-    let val: f32 = if exp == 0 {
-        // denorm
-        mant as f32 * two_powi(-19)
-    } else if exp != 31 {
-        (mant as f32 + 32_f32) * two_powi(exp as i8 - 20)
-    } else if mant == 0 {
-        f32::INFINITY
-    } else {
-        f32::NAN
-    };
-    // no sign bit
-    val
+
+/// Functions for converting `f10` values to other formats.
+pub(crate) mod fp10 {
+    use crate::util::{two_powi, unlikely_branch};
+
+    #[inline]
+    pub fn n8(x: u16) -> u8 {
+        let exp: u16 = x >> 5 & 0b1_1111;
+        let mant: u16 = x & 0b1_1111;
+        // no sign bit
+
+        if exp != 31 {
+            ((mant as f32 + 32_f32) * two_powi(exp as i8 - 20) * 255.0 + 0.5) as u8
+        } else {
+            unlikely_branch();
+            if mant == 0 {
+                255
+            } else {
+                0
+            }
+        }
+    }
+    #[inline]
+    pub fn n16(x: u16) -> u16 {
+        let exp: u16 = x >> 5 & 0b1_1111;
+        let mant: u16 = x & 0b1_1111;
+        // no sign bit
+
+        if exp == 0 {
+            // denorm
+            // (mant as f32 * two_powi(-19) * 65535.0 + 0.5) as u16
+            (mant + 3) >> 3
+        } else if exp != 31 {
+            ((mant as f32 + 32_f32) * two_powi(exp as i8 - 20) * 65535.0 + 0.5) as u16
+        } else {
+            unlikely_branch();
+            if mant == 0 {
+                u16::MAX
+            } else {
+                0
+            }
+        }
+    }
+    #[inline]
+    pub fn f32(x: u16) -> f32 {
+        // based on f16_to_f32
+        let exp: u16 = x >> 5 & 0b1_1111;
+        let mant: u16 = x & 0b1_1111;
+        // no sign bit
+
+        if exp == 0 {
+            // denorm
+            mant as f32 * two_powi(-19)
+        } else if exp != 31 {
+            (mant as f32 + 32_f32) * two_powi(exp as i8 - 20)
+        } else {
+            unlikely_branch();
+            if mant == 0 {
+                f32::INFINITY
+            } else {
+                f32::NAN
+            }
+        }
+    }
 }
+
+// TODO: Check whether these methods correctly implement the DirectX spec:
+// https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm#3.2.2%20Floating%20Point%20Conversion
 
 /// Optimized functions for the R9G9B9E5_SHAREDEXP format.
 pub(crate) mod rgb9995f {
@@ -644,7 +804,7 @@ impl<T: Norm> ToRgba for [T; 3] {
     #[inline(always)]
     fn to_rgba(self) -> [T; 4] {
         let [r, g, b] = self;
-        [r, g, b, T::NORM_ONE]
+        [r, g, b, Norm::ONE]
     }
 }
 impl<T: Norm> ToRgba for [T; 1] {
@@ -653,7 +813,7 @@ impl<T: Norm> ToRgba for [T; 1] {
     #[inline(always)]
     fn to_rgba(self) -> [T; 4] {
         let [gray] = self;
-        [gray, gray, gray, T::NORM_ONE]
+        [gray, gray, gray, Norm::ONE]
     }
 }
 
@@ -699,24 +859,24 @@ impl<T> SwapRB for [T; 4] {
 }
 
 pub(crate) trait Norm: Copy + Default {
-    const NORM_ZERO: Self;
-    const NORM_HALF: Self;
-    const NORM_ONE: Self;
+    const ZERO: Self;
+    const HALF: Self;
+    const ONE: Self;
 }
 impl Norm for u8 {
-    const NORM_ZERO: Self = 0;
-    const NORM_HALF: Self = 128;
-    const NORM_ONE: Self = u8::MAX;
+    const ZERO: Self = 0;
+    const HALF: Self = 128;
+    const ONE: Self = u8::MAX;
 }
 impl Norm for u16 {
-    const NORM_ZERO: Self = 0;
-    const NORM_HALF: Self = 32768;
-    const NORM_ONE: Self = u16::MAX;
+    const ZERO: Self = 0;
+    const HALF: Self = 32768;
+    const ONE: Self = u16::MAX;
 }
 impl Norm for f32 {
-    const NORM_ZERO: Self = 0.0;
-    const NORM_HALF: Self = 0.5;
-    const NORM_ONE: Self = 1.0;
+    const ZERO: Self = 0.0;
+    const HALF: Self = 0.5;
+    const ONE: Self = 1.0;
 }
 
 #[cfg(test)]
@@ -911,6 +1071,57 @@ mod test {
         assert_eq!(fp::n16(f32::INFINITY), u16::MAX);
 
         assert_eq!(fp::n16(f32::NAN), 0);
+    }
+
+    #[test]
+    fn fp16_to_n8() {
+        for i in 0..=u16::MAX {
+            let expected = super::fp::n8(super::fp16::f32(i));
+            let actual = super::fp16::n8(i);
+            assert_eq!(actual, expected, "failed for i={}", i);
+        }
+    }
+    #[test]
+    fn fp16_to_n16() {
+        for i in 0..=u16::MAX {
+            let expected = super::fp::n16(super::fp16::f32(i));
+            let actual = super::fp16::n16(i);
+            assert_eq!(actual, expected, "failed for i={}", i);
+        }
+    }
+
+    #[test]
+    fn fp11_to_n8() {
+        for i in 0..2048 {
+            let expected = super::fp::n8(super::fp11::f32(i));
+            let actual = super::fp11::n8(i);
+            assert_eq!(actual, expected, "failed for i={}", i);
+        }
+    }
+    #[test]
+    fn fp11_to_n16() {
+        for i in 0..2048 {
+            let expected = super::fp::n16(super::fp11::f32(i));
+            let actual = super::fp11::n16(i);
+            assert_eq!(actual, expected, "failed for i={}", i);
+        }
+    }
+
+    #[test]
+    fn fp10_to_n8() {
+        for i in 0..1024 {
+            let expected = super::fp::n8(super::fp10::f32(i));
+            let actual = super::fp10::n8(i);
+            assert_eq!(actual, expected, "failed for i={}", i);
+        }
+    }
+    #[test]
+    fn fp10_to_n16() {
+        for i in 0..1024 {
+            let expected = super::fp::n16(super::fp10::f32(i));
+            let actual = super::fp10::n16(i);
+            assert_eq!(actual, expected, "failed for i={}", i);
+        }
     }
 
     #[test]

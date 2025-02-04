@@ -2,7 +2,7 @@ use std::io::{Read, Seek};
 
 use crate::{
     cast,
-    decode::{self, Decoder, DecoderSet, ReadSeek},
+    decode::{self, DecoderSet, ReadSeek},
     detect, DecodeError, DxgiFormat, FourCC, Header, TinyEnum, TinySet,
 };
 
@@ -199,7 +199,7 @@ impl SupportedFormat {
     /// [`Channels`], the next larger type is used. For example, a format with
     /// only R and G channels will be described as [`Channels::Rgb`].
     pub const fn channels(&self) -> Channels {
-        get_decoders(*self).main().channels
+        get_decoders(*self).native_channels()
     }
     /// The precision/bit depth closest to the values in the surface.
     ///
@@ -213,7 +213,7 @@ impl SupportedFormat {
     /// `B5G6R5_UNORM` values, it is not exact. E.g. a 5-bit UNORM value of 11
     /// is 90.48 as an 8-bit UNORM value exactly but will be rounded to 90.
     pub const fn precision(&self) -> Precision {
-        get_decoders(*self).main().precision
+        get_decoders(*self).native_precision()
     }
 
     pub const fn color_format(&self) -> ColorFormat {
@@ -225,14 +225,14 @@ impl SupportedFormat {
     /// This list is guaranteed to be without duplicates and to contain
     /// `self.channels()`.
     pub fn supported_channels(&self) -> TinySet<Channels> {
-        get_decoders(*self).supported_channels
+        get_decoders(*self).supported_channels()
     }
     /// A set of all precisions this formats supports for decoding.
     ///
     /// This list is guaranteed to be without duplicates and to contain
     /// `self.precision()`.
     pub fn supported_precisions(&self) -> TinySet<Precision> {
-        get_decoders(*self).supported_precisions
+        get_decoders(*self).supported_precisions()
     }
 
     /// Returns `true` if this format supports decoding as the given color
@@ -247,25 +247,6 @@ impl SupportedFormat {
     pub fn supports(&self, color: ColorFormat) -> bool {
         self.supported_channels().contains(color.channels)
             && self.supported_precisions().contains(color.precision)
-    }
-
-    fn get_decoder(&self, color: ColorFormat) -> Result<&'static Decoder, DecodeError> {
-        let decoders = get_decoders(*self).decoders;
-        let found = decoders
-            .iter()
-            .find(|d| d.channels == color.channels && d.precision == color.precision);
-
-        if let Some(decoder) = found {
-            if !decoder.disabled {
-                return Ok(decoder);
-            }
-        }
-
-        Err(DecodeError::UnsupportedColorFormat {
-            format: *self,
-            color,
-            missing_feature: found.is_some(),
-        })
     }
 
     /// Decodes the image data of a surface from the given reader and writes it
@@ -312,7 +293,7 @@ impl SupportedFormat {
         color: ColorFormat,
         output: &mut [u8],
     ) -> Result<(), DecodeError> {
-        self.get_decoder(color)?.decode(reader, size, output)
+        get_decoders(*self).decode(color, reader, size, output)
     }
 
     /// A convenience method to decode with [`Precision::U8`].
@@ -410,8 +391,7 @@ impl SupportedFormat {
         row_pitch: usize,
     ) -> Result<(), DecodeError> {
         let reader = reader as &mut dyn ReadSeek;
-        self.get_decoder(color)?
-            .decode_rect(reader, size, rect, output, row_pitch)
+        get_decoders(*self).decode_rect(color, reader, size, rect, output, row_pitch)
     }
 }
 
