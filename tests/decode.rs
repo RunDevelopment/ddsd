@@ -197,8 +197,18 @@ fn decode_all_color_formats() {
         let (reference, reader) = util::read_dds::<u8>(dds_path)?;
         let format = reader.format();
 
-        for channels in format.supported_channels() {
-            if format.supported_precisions().contains(U8) && channels != reference.channels {
+        let all_channels = [
+            Channels::Alpha,
+            Channels::Grayscale,
+            Channels::Rgb,
+            Channels::Rgba,
+        ];
+        for channels in all_channels
+            .iter()
+            .copied()
+            .filter(|x| format.supports_channels(*x))
+        {
+            if format.supports_precision(U8) && channels != reference.channels {
                 let image = util::read_dds_with_channels::<u8>(dds_path, channels)?.0;
                 let reference =
                     util::convert_channels(&reference.data, reference.channels, channels);
@@ -209,7 +219,7 @@ fn decode_all_color_formats() {
                     dds_path
                 );
             }
-            if format.supported_precisions().contains(U16) {
+            if format.supports_precision(U16) {
                 let image = util::read_dds_with_channels::<u16>(dds_path, channels)?.0;
                 let reference =
                     util::convert_channels(&reference.data, reference.channels, channels);
@@ -220,7 +230,7 @@ fn decode_all_color_formats() {
                     dds_path
                 )
             }
-            if format.supported_precisions().contains(F32) {
+            if format.supports_precision(F32) {
                 let image = util::read_dds_with_channels::<f32>(dds_path, channels)?.0;
                 let reference =
                     util::convert_channels(&reference.data, reference.channels, channels);

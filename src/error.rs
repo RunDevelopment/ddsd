@@ -26,7 +26,6 @@ pub enum DecodeError {
     },
     UnexpectedBufferSize {
         expected: usize,
-        actual: usize,
     },
 
     /// When decoding a rectangle, the rectangle is out of bounds of the size
@@ -34,17 +33,15 @@ pub enum DecodeError {
     RectOutOfBounds,
     /// When decoding a rectangle, the row pitch is too small.
     ///
-    /// A row pitch must be at least `channels.count() * precision.size() * rect.width` bytes.
+    /// A row pitch must be at least `color.bytes_per_pixel() * rect.width` bytes.
     RowPitchTooSmall {
         required_minimum: usize,
-        actual: usize,
     },
     /// When decoding a rectangle, the buffer is too small.
     ///
     /// A buffer much have at least `row_pitch * rect.height` bytes.
     RectBufferTooSmall {
         required_minimum: usize,
-        actual: usize,
     },
 
     Header(HeaderError),
@@ -54,7 +51,7 @@ pub enum DecodeError {
 const _SIZE_CHECK: () = {
     let error_size = std::mem::size_of::<DecodeError>();
     assert!(
-        error_size <= 24,
+        error_size <= 16,
         "The size a decoder error should not be more than 3 words."
     );
 };
@@ -97,35 +94,25 @@ impl std::fmt::Display for DecodeError {
                     color, format,
                 )
             }
-            DecodeError::UnexpectedBufferSize { expected, actual } => {
-                write!(
-                    f,
-                    "Unexpected buffer size: expected {} bytes, got {} bytes",
-                    expected, actual
-                )
+            DecodeError::UnexpectedBufferSize { expected } => {
+                write!(f, "Unexpected buffer size: expected {} bytes", expected)
             }
 
             DecodeError::RectOutOfBounds => {
                 write!(f, "Rectangle is out of bounds of the image size")
             }
-            DecodeError::RowPitchTooSmall {
-                required_minimum,
-                actual,
-            } => {
+            DecodeError::RowPitchTooSmall { required_minimum } => {
                 write!(
                     f,
-                    "Row pitch too small: required at least {} bytes, got {} bytes",
-                    required_minimum, actual
+                    "Row pitch too small: Must be at least `color.bytes_per_pixel() * rect.width` == {} bytes",
+                    required_minimum
                 )
             }
-            DecodeError::RectBufferTooSmall {
-                required_minimum,
-                actual,
-            } => {
+            DecodeError::RectBufferTooSmall { required_minimum } => {
                 write!(
                     f,
-                    "Buffer too small for rectangle: required at least {} bytes, got {} bytes",
-                    required_minimum, actual
+                    "Buffer too small for rectangle: required at least {} bytes",
+                    required_minimum
                 )
             }
 

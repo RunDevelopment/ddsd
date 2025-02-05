@@ -97,12 +97,12 @@ pub fn read_dds_with_channels_select<T: WithPrecision + Default + Copy + Castabl
     let decoder = DdsDecoder::new(&mut file)?;
     let size = decoder.header().size();
     let format = decoder.format();
-    if !format.supported_precisions().contains(T::PRECISION) {
+    if !format.supports_precision(T::PRECISION) {
         return Err(format!("Format does not support decoding as {:?}", T::PRECISION).into());
     }
 
     let channels = select_channels(format);
-    if !format.supported_channels().contains(channels) {
+    if !format.supports_channels(channels) {
         // can't read in a way PNG likes
         return Err("Unsupported channels".into());
     }
@@ -140,12 +140,12 @@ pub fn read_dds_rect_as_u8(
     let decoder = DdsDecoder::new(&mut file)?;
     let size = decoder.header().size();
     let format = decoder.format();
-    if !format.supported_precisions().contains(Precision::U8) {
+    if !format.supports_precision(Precision::U8) {
         return Err("Format does not support decoding as U8".into());
     }
 
     let channels = to_png_compatible_channels(format.channels()).0;
-    if !format.supported_channels().contains(channels) {
+    if !format.supports_channels(channels) {
         // can't read in a way PNG likes
         return Err("Unsupported channels".into());
     }

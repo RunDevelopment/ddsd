@@ -3,7 +3,7 @@ use std::mem::size_of;
 
 use crate::{
     decode::read_write::for_each_pixel_rect_untyped, Channels, ColorFormat, DecodeError, Precision,
-    Rect, Size, TinyEnum, TinySet,
+    Rect, Size,
 };
 
 use super::{
@@ -86,7 +86,6 @@ fn check_buffer_len(
     if buf.len() != required_bytes {
         Err(DecodeError::UnexpectedBufferSize {
             expected: required_bytes,
-            actual: buf.len(),
         })
     } else {
         Ok(())
@@ -115,7 +114,6 @@ fn check_rect_buffer_len(
     if row_pitch < min_row_pitch {
         return Err(DecodeError::RowPitchTooSmall {
             required_minimum: min_row_pitch,
-            actual: row_pitch,
         });
     }
 
@@ -125,7 +123,6 @@ fn check_rect_buffer_len(
     if buf.len() < required_bytes {
         return Err(DecodeError::RectBufferTooSmall {
             required_minimum: required_bytes,
-            actual: buf.len(),
         });
     }
 
@@ -137,18 +134,40 @@ const fn color_key(color: ColorFormat) -> u8 {
     color.channels as u8 * Precision::VARIANTS.len() as u8 + color.precision as u8
 }
 
+#[derive(Clone, Copy)]
+pub(crate) struct TinySet {
+    bits: u8,
+}
+impl TinySet {
+    pub const ALL: Self = Self { bits: 0xFF };
+
+    pub const fn new(bits: u8) -> Self {
+        Self { bits }
+    }
+    pub const fn contains(&self, value: u8) -> bool {
+        debug_assert!(value < 8);
+        (self.bits & (1 << value)) != 0
+    }
+    pub const fn contains_channels(&self, channels: Channels) -> bool {
+        self.contains(channels as u8)
+    }
+    pub const fn contains_precision(&self, precision: Precision) -> bool {
+        self.contains(precision as u8)
+    }
+}
+
 pub(crate) struct SimpleDecoderList {
     decoders: &'static [Decoder],
     pub native_channels: Channels,
     pub native_precision: Precision,
-    pub supported_channels: TinySet<Channels>,
-    pub supported_precisions: TinySet<Precision>,
+    pub supported_channels: TinySet,
+    pub supported_precisions: TinySet,
 }
 impl SimpleDecoderList {
     pub const fn new(decoders: &'static [Decoder]) -> Self {
         assert!(!decoders.is_empty());
 
-        let channels = TinySet::from_raw_unchecked({
+        let channels = TinySet::new({
             let mut set: u8 = 0;
 
             let mut i = 0;
@@ -159,7 +178,7 @@ impl SimpleDecoderList {
             }
             set
         });
-        let precisions = TinySet::from_raw_unchecked({
+        let precisions = TinySet::new({
             let mut set: u8 = 0;
 
             let mut i = 0;
@@ -445,18 +464,16 @@ impl DecoderSet {
         }
     }
 
-    pub const fn supported_channels(&self) -> TinySet<Channels> {
-        let all = TinySet::from_raw_unchecked(0b1111);
+    pub const fn supported_channels(&self) -> TinySet {
         match &self.decoders {
             Inner::List(list) => list.supported_channels,
-            Inner::Uncompressed(_) => all,
+            Inner::Uncompressed(_) => TinySet::ALL,
         }
     }
-    pub const fn supported_precisions(&self) -> TinySet<Precision> {
-        let all = TinySet::from_raw_unchecked(0b111);
+    pub const fn supported_precisions(&self) -> TinySet {
         match &self.decoders {
             Inner::List(list) => list.supported_precisions,
-            Inner::Uncompressed(_) => all,
+            Inner::Uncompressed(_) => TinySet::ALL,
         }
     }
 

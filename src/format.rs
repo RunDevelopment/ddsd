@@ -3,7 +3,7 @@ use std::io::{Read, Seek};
 use crate::{
     cast,
     decode::{self, DecoderSet, ReadSeek},
-    detect, DecodeError, DxgiFormat, FourCC, Header, TinyEnum, TinySet,
+    detect, DecodeError, DxgiFormat, FourCC, Header,
 };
 
 /// The number and semantics of the color channels in a surface.
@@ -21,6 +21,8 @@ pub enum Channels {
     Rgba,
 }
 impl Channels {
+    pub(crate) const VARIANTS: [Self; 4] = [Self::Grayscale, Self::Alpha, Self::Rgb, Self::Rgba];
+
     /// Returns the number of channels.
     pub const fn count(&self) -> u8 {
         match self {
@@ -28,13 +30,6 @@ impl Channels {
             Self::Rgb => 3,
             Self::Rgba => 4,
         }
-    }
-}
-impl TinyEnum for Channels {
-    const VARIANTS: &'static [Self] = &[Self::Grayscale, Self::Alpha, Self::Rgb, Self::Rgba];
-
-    fn bit_mask(self) -> u8 {
-        1 << self as u8
     }
 }
 
@@ -55,6 +50,8 @@ pub enum Precision {
     F32,
 }
 impl Precision {
+    pub(crate) const VARIANTS: [Self; 3] = [Self::U8, Self::U16, Self::F32];
+
     /// Returns the size of a single value of this precision in bytes.
     pub const fn size(&self) -> u8 {
         match self {
@@ -62,13 +59,6 @@ impl Precision {
             Self::U16 => 2,
             Self::F32 => 4,
         }
-    }
-}
-impl TinyEnum for Precision {
-    const VARIANTS: &'static [Self] = &[Self::U8, Self::U16, Self::F32];
-
-    fn bit_mask(self) -> u8 {
-        1 << self as u8
     }
 }
 
@@ -204,35 +194,23 @@ impl SupportedFormat {
     /// The precision/bit depth closest to the values in the surface.
     ///
     /// DDS supports formats with various precisions and ranges, and not all of
-    /// them can be represented *exactly* by the `Precision` enum. The closest
+    /// them can be represented *exactly* by the [`Precision`] enum. The closest
     /// precision is chosen based on the format's range and encoded bit depth.
     /// It is typically larger than the encoded bit depth.
     ///
     /// E.g. the format `B5G6R5_UNORM` is a 5/6-bit per channel format and the
-    /// closest precision is `U8`. While `U8` can closely approximate all
-    /// `B5G6R5_UNORM` values, it is not exact. E.g. a 5-bit UNORM value of 11
-    /// is 90.48 as an 8-bit UNORM value exactly but will be rounded to 90.
+    /// closest precision is [`Precision::U8`]. While `U8` can closely
+    /// approximate all `B5G6R5_UNORM` values, it is not exact. E.g. a 5-bit
+    /// UNORM value of 11 is 90.48 as an 8-bit UNORM value exactly but will be
+    /// rounded to 90.
     pub const fn precision(&self) -> Precision {
         get_decoders(*self).native_precision()
     }
-
+    /// The native color format of the surface.
+    ///
+    /// This is simply [`Self::channels`] and [`Self::precision`] combined.
     pub const fn color_format(&self) -> ColorFormat {
         ColorFormat::new(self.channels(), self.precision())
-    }
-
-    /// A set of all channels this formats supports for decoding.
-    ///
-    /// This list is guaranteed to be without duplicates and to contain
-    /// `self.channels()`.
-    pub fn supported_channels(&self) -> TinySet<Channels> {
-        get_decoders(*self).supported_channels()
-    }
-    /// A set of all precisions this formats supports for decoding.
-    ///
-    /// This list is guaranteed to be without duplicates and to contain
-    /// `self.precision()`.
-    pub fn supported_precisions(&self) -> TinySet<Precision> {
-        get_decoders(*self).supported_precisions()
     }
 
     /// Returns `true` if this format supports decoding as the given color
@@ -242,11 +220,26 @@ impl SupportedFormat {
     ///
     /// All color formats that consist of a supported channels type and
     /// supported precision are supported. This means that all combinations
-    /// of channel and precisions from `supported_channels()` and
-    /// `supported_precisions()` respectively are supported color formats.
+    /// of channel and precisions from [`Self::supports_channels`] and
+    /// [`Self::supports_precision`] respectively are supported color formats.
     pub fn supports(&self, color: ColorFormat) -> bool {
-        self.supported_channels().contains(color.channels)
-            && self.supported_precisions().contains(color.precision)
+        self.supports_channels(color.channels) && self.supports_precision(color.precision)
+    }
+    /// Whether this format supports decoding with the given channels.
+    ///
+    /// `self.supports_channels(self.channels())` is always `true`.
+    pub fn supports_channels(&self, channels: Channels) -> bool {
+        get_decoders(*self)
+            .supported_channels()
+            .contains_channels(channels)
+    }
+    /// Whether this format supports decoding with the given precision.
+    ///
+    /// `self.supports_precision(self.precision())` is always `true`.
+    pub fn supports_precision(&self, precision: Precision) -> bool {
+        get_decoders(*self)
+            .supported_precisions()
+            .contains_precision(precision)
     }
 
     /// Decodes the image data of a surface from the given reader and writes it

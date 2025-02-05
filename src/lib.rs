@@ -8,7 +8,6 @@ mod format;
 mod header;
 mod layout;
 mod pixel;
-mod tiny_set;
 mod util;
 
 use std::io::Read;
@@ -18,7 +17,6 @@ pub use format::*;
 pub use header::*;
 pub use layout::*;
 pub use pixel::*;
-pub use tiny_set::*;
 
 /// Additional options for the DDS decoder specifying how to read and interpret
 /// the header.
