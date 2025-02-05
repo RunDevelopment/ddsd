@@ -9,17 +9,11 @@ use crate::{cast, util::div_ceil, DecodeError, Rect, Size};
 use super::ReadSeek;
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct InOutSize {
-    pub in_size: u8,
-    pub out_size: u8,
-}
-impl InOutSize {
-    pub const fn from<InPixel, OutPixel>() -> InOutSize {
-        InOutSize {
-            in_size: size_of::<InPixel>() as u8,
-            out_size: size_of::<OutPixel>() as u8,
-        }
-    }
+pub(crate) struct PixelSize {
+    /// The size of an encoded pixel in bytes.
+    pub encoded_size: u8,
+    /// The size of a decoded pixel in bytes.
+    pub decoded_size: u8,
 }
 
 /// A function that processes a row of pixels.
@@ -91,7 +85,7 @@ pub(crate) fn process_pixels_helper_unroll<const UNROLL: usize, InPixel, OutPixe
 pub(crate) fn for_each_pixel_untyped(
     r: &mut dyn Read,
     buf: &mut [u8],
-    pixel_size: InOutSize,
+    pixel_size: PixelSize,
     process_pixels: impl Fn(&[u8], &mut [u8]),
 ) -> Result<(), DecodeError> {
     fn inner(
@@ -118,8 +112,8 @@ pub(crate) fn for_each_pixel_untyped(
     inner(
         r,
         buf,
-        pixel_size.in_size as usize,
-        pixel_size.out_size as usize,
+        pixel_size.encoded_size as usize,
+        pixel_size.decoded_size as usize,
         process_pixels,
     )
 }
@@ -133,7 +127,7 @@ pub(crate) fn for_each_pixel_rect_untyped(
     row_pitch: usize,
     size: Size,
     rect: Rect,
-    pixel_size: InOutSize,
+    pixel_size: PixelSize,
     process_pixels: impl Fn(&[u8], &mut [u8]),
 ) -> Result<(), DecodeError> {
     #[allow(clippy::too_many_arguments)]
@@ -201,8 +195,8 @@ pub(crate) fn for_each_pixel_rect_untyped(
         row_pitch,
         size,
         rect,
-        pixel_size.in_size as usize,
-        pixel_size.out_size as usize,
+        pixel_size.encoded_size as usize,
+        pixel_size.decoded_size as usize,
         process_pixels,
     )
 }

@@ -1,11 +1,11 @@
-use super::convert::{Norm, ToRgb, ToRgba};
+use super::convert::{Norm, ToRgb, ToRgba, WithPrecision};
 use super::read_write::{
     for_each_block_rect_untyped, for_each_block_untyped, process_4x4_blocks_helper, PixelRange,
 };
-use super::{Args, Decoder, DecoderSet, RArgs, WithPrecision};
+use super::{Args, DecoderSet, DirectDecoder, RArgs};
 
 use crate::util::closure_types;
-use crate::Channels::*;
+use crate::{Channels::*, ColorFormat};
 
 // helpers
 
@@ -25,9 +25,8 @@ macro_rules! underlying {
             process_4x4_blocks_helper(encoded_blocks, decoded, stride, range, f)
         }
 
-        Decoder::new(
-            $channels,
-            <$out as WithPrecision>::PRECISION,
+        DirectDecoder::new(
+            ColorFormat::new($channels, <$out as WithPrecision>::PRECISION),
             |Args(r, out, context)| {
                 for_each_block_untyped::<4, 4, BYTES_PER_BLOCK, OutPixel>(
                     r,

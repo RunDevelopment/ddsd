@@ -3,7 +3,7 @@
 //! Most magic constants for the U/SNorm conversion are from:
 //! https://rundevelopment.github.io/projects/multiply-add-constants-finder
 
-use crate::util::two_powi;
+use crate::Precision;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct B5G6R5 {
@@ -877,6 +877,19 @@ impl Norm for f32 {
     const ZERO: Self = 0.0;
     const HALF: Self = 0.5;
     const ONE: Self = 1.0;
+}
+
+pub(crate) trait WithPrecision {
+    const PRECISION: Precision;
+}
+impl WithPrecision for u8 {
+    const PRECISION: Precision = Precision::U8;
+}
+impl WithPrecision for u16 {
+    const PRECISION: Precision = Precision::U16;
+}
+impl WithPrecision for f32 {
+    const PRECISION: Precision = Precision::F32;
 }
 
 #[cfg(test)]

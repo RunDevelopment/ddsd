@@ -21,8 +21,6 @@ pub enum Channels {
     Rgba,
 }
 impl Channels {
-    pub(crate) const VARIANTS: [Self; 4] = [Self::Grayscale, Self::Alpha, Self::Rgb, Self::Rgba];
-
     /// Returns the number of channels.
     pub const fn count(&self) -> u8 {
         match self {
@@ -50,7 +48,8 @@ pub enum Precision {
     F32,
 }
 impl Precision {
-    pub(crate) const VARIANTS: [Self; 3] = [Self::U8, Self::U16, Self::F32];
+    /// The number of different precisions.
+    pub(crate) const COUNT: usize = 3;
 
     /// Returns the size of a single value of this precision in bytes.
     pub const fn size(&self) -> u8 {
@@ -81,6 +80,13 @@ impl ColorFormat {
     /// This is calculated as simply `channels.count() * precision.size()`.
     pub const fn bytes_per_pixel(&self) -> u8 {
         self.channels.count() * self.precision.size()
+    }
+
+    /// Returns a unique key for this color format.
+    ///
+    /// The key is guaranteed to be less than 32.
+    pub(crate) const fn key(&self) -> u8 {
+        self.channels as u8 * Precision::COUNT as u8 + self.precision as u8
     }
 }
 impl core::fmt::Display for ColorFormat {
@@ -189,7 +195,7 @@ impl SupportedFormat {
     /// [`Channels`], the next larger type is used. For example, a format with
     /// only R and G channels will be described as [`Channels::Rgb`].
     pub const fn channels(&self) -> Channels {
-        get_decoders(*self).native_channels()
+        self.color().channels
     }
     /// The precision/bit depth closest to the values in the surface.
     ///
@@ -204,13 +210,13 @@ impl SupportedFormat {
     /// UNORM value of 11 is 90.48 as an 8-bit UNORM value exactly but will be
     /// rounded to 90.
     pub const fn precision(&self) -> Precision {
-        get_decoders(*self).native_precision()
+        self.color().precision
     }
     /// The native color format of the surface.
     ///
     /// This is simply [`Self::channels`] and [`Self::precision`] combined.
-    pub const fn color_format(&self) -> ColorFormat {
-        ColorFormat::new(self.channels(), self.precision())
+    pub const fn color(&self) -> ColorFormat {
+        get_decoders(*self).native_color()
     }
 
     /// Returns `true` if this format supports decoding as the given color
@@ -286,6 +292,13 @@ impl SupportedFormat {
         color: ColorFormat,
         output: &mut [u8],
     ) -> Result<(), DecodeError> {
+        if !self.supports(color) {
+            return Err(DecodeError::UnsupportedColorFormat {
+                color,
+                format: *self,
+            });
+        }
+
         get_decoders(*self).decode(color, reader, size, output)
     }
 
@@ -383,8 +396,16 @@ impl SupportedFormat {
         output: &mut [u8],
         row_pitch: usize,
     ) -> Result<(), DecodeError> {
+        if !self.supports(color) {
+            return Err(DecodeError::UnsupportedColorFormat {
+                color,
+                format: *self,
+            });
+        }
+
         let reader = reader as &mut dyn ReadSeek;
-        get_decoders(*self).decode_rect(color, reader, size, rect, output, row_pitch)
+        let decoders = get_decoders(*self);
+        decoders.decode_rect(color, reader, size, rect, output, row_pitch)
     }
 }
 
@@ -427,7 +448,7 @@ impl Rect {
         }
     }
 
-    pub fn size(&self) -> Size {
+    pub const fn size(&self) -> Size {
         Size::new(self.width, self.height)
     }
 
@@ -436,7 +457,7 @@ impl Rect {
     ///
     /// This means that `self.x + self.width <= size.width` and
     /// `self.y + self.height <= size.height`.
-    pub fn is_within_bounds(&self, size: Size) -> bool {
+    pub(crate) fn is_within_bounds(&self, size: Size) -> bool {
         // use u64 to prevent overflow
         let end_x = self.x as u64 + self.width as u64;
         let end_y = self.y as u64 + self.height as u64;

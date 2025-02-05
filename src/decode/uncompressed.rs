@@ -1,13 +1,12 @@
 use super::convert::{
     fp, fp10, fp11, fp16, n10, n16, n2, n4, n8, rgb9995f, s16, s8, xr10, Norm, SwapRB, ToRgba,
-    B5G5R5A1, B5G6R5,
+    WithPrecision, B5G5R5A1, B5G6R5,
 };
 use super::read_write::{process_pixels_helper, process_pixels_helper_unroll, ProcessPixelsFn};
-use super::{Args, DecodeFn, DecoderSet, UncompressedProcessFn, WithPrecision};
+use super::{Args, DecodeFn, DecoderSet, UncompressedDecoder};
 
 use crate::util::{closure_types, le_to_native_endian_16, le_to_native_endian_32};
-use crate::Channels::*;
-use crate::Precision::*;
+use crate::{Channels::*, ColorFormat, Precision::*};
 
 // helpers
 
@@ -17,9 +16,8 @@ macro_rules! underlying {
         type InPixel = $in_pixel;
         type OutPixel = [$out; OUT_COUNT];
 
-        UncompressedProcessFn::new::<InPixel, OutPixel>(
-            $channels,
-            <$out as WithPrecision>::PRECISION,
+        UncompressedDecoder::new::<InPixel, OutPixel>(
+            ColorFormat::new($channels, <$out as WithPrecision>::PRECISION),
             $f,
         )
     }};
@@ -33,9 +31,8 @@ macro_rules! underlying {
             process_pixels_helper(encoded, decoded, f);
         }
 
-        UncompressedProcessFn::new::<InPixel, OutPixel>(
-            $channels,
-            <$out as WithPrecision>::PRECISION,
+        UncompressedDecoder::new::<InPixel, OutPixel>(
+            ColorFormat::new($channels, <$out as WithPrecision>::PRECISION),
             process_pixels,
         )
     }};

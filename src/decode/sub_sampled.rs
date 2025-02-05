@@ -1,11 +1,11 @@
 use crate::util::closure_types;
-use crate::Channels::*;
+use crate::{Channels::*, ColorFormat};
 
-use super::convert::{n8, ToRgba};
+use super::convert::{n8, ToRgba, WithPrecision};
 use super::read_write::{
     for_each_block_rect_untyped, for_each_block_untyped, process_2x1_blocks_helper, PixelRange,
 };
-use super::{Args, Decoder, DecoderSet, RArgs, WithPrecision};
+use super::{Args, DecoderSet, DirectDecoder, RArgs};
 
 // helpers
 
@@ -25,9 +25,8 @@ macro_rules! underlying {
             process_2x1_blocks_helper(encoded_blocks, decoded, range, f)
         }
 
-        Decoder::new(
-            $channels,
-            <$out as WithPrecision>::PRECISION,
+        DirectDecoder::new(
+            ColorFormat::new($channels, <$out as WithPrecision>::PRECISION),
             |Args(r, out, context)| {
                 for_each_block_untyped::<2, 1, BYTES_PER_BLOCK, OutPixel>(
                     r,
