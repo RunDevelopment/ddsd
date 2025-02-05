@@ -64,6 +64,10 @@ impl Decoder {
             decode_rect_fn,
         }
     }
+
+    const fn color(&self) -> ColorFormat {
+        ColorFormat::new(self.channels, self.precision)
+    }
 }
 
 /// Verifies that the buffer is exactly as long as expected.
@@ -128,6 +132,11 @@ fn check_rect_buffer_len(
     Ok(())
 }
 
+/// Returns a unique number for each color format.
+const fn color_key(color: ColorFormat) -> u8 {
+    color.channels as u8 * Precision::VARIANTS.len() as u8 + color.precision as u8
+}
+
 pub(crate) struct SimpleDecoderList {
     decoders: &'static [Decoder],
     pub native_channels: Channels,
@@ -169,6 +178,7 @@ impl SimpleDecoderList {
             supported_channels: channels,
             supported_precisions: precisions,
         };
+        #[cfg(debug_assertions)]
         value.verify();
         value
     }
@@ -180,6 +190,7 @@ impl SimpleDecoderList {
             .cloned()
     }
 
+    #[cfg(debug_assertions)]
     const fn verify(&self) {
         // 1. The list must be non-empty.
         assert!(!self.decoders.is_empty());
@@ -191,8 +202,7 @@ impl SimpleDecoderList {
             while i < self.decoders.len() {
                 let decoder = &self.decoders[i];
 
-                let key = decoder.channels as u32 * Precision::VARIANTS.len() as u32
-                    + decoder.precision as u32;
+                let key = color_key(decoder.color());
                 assert!(key < 32);
 
                 let bit_mask = 1 << key;
@@ -230,7 +240,7 @@ impl SimpleDecoderList {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct UncompressedProcessFn {
     pub process_fn: ProcessPixelsFn,
     pub color: ColorFormat,
@@ -252,7 +262,7 @@ impl UncompressedProcessFn {
         }
     }
     fn fn_for(&self, color: ColorFormat) -> (impl Fn(&[u8], &mut [u8]), InOutSize) {
-        debug_assert!(self.color.precision == color.precision);
+        assert!(self.color.precision == color.precision);
 
         let from_channels = self.color.channels;
         let to_channels = color.channels;
@@ -284,8 +294,54 @@ pub(crate) struct UncompressedDecoders {
 }
 impl UncompressedDecoders {
     pub const fn new(decoders: &'static [UncompressedProcessFn]) -> Self {
-        // TODO: verify
+        #[cfg(debug_assertions)]
+        Self::verify(decoders);
+
         Self { decoders }
+    }
+
+    #[cfg(debug_assertions)]
+    const fn verify(decoders: &'static [UncompressedProcessFn]) {
+        // 1. The list must be non-empty.
+        assert!(!decoders.is_empty());
+
+        // 2. No color channel-precision combination may be repeated.
+        {
+            let mut bitset: u32 = 0;
+            let mut i = 0;
+            while i < decoders.len() {
+                let decoder = &decoders[i];
+
+                let key = color_key(decoder.color);
+                assert!(key < 32);
+
+                let bit_mask = 1 << key;
+                if bitset & bit_mask != 0 {
+                    panic!("Repeated color channel-precision combination");
+                }
+                bitset |= bit_mask;
+
+                i += 1;
+            }
+        }
+
+        // 3. All precisions must be present
+        {
+            let mut precision_bitset: u32 = 0;
+
+            let mut i = 0;
+            while i < decoders.len() {
+                let decoder = &decoders[i];
+                precision_bitset |= 1 << decoder.color.precision as u32;
+
+                i += 1;
+            }
+
+            let precision_count = precision_bitset.count_ones();
+            if precision_count != Precision::VARIANTS.len() as u32 {
+                panic!("Missing color channel-precision combination");
+            }
+        }
     }
 
     pub const fn native_channels(&self) -> Channels {
@@ -298,9 +354,9 @@ impl UncompressedDecoders {
     pub fn get_process_fn(&self, color: ColorFormat) -> Option<UncompressedProcessFn> {
         self.decoders.iter().find(|d| d.color == color).cloned()
     }
-    pub fn get_closest_process_fn(&self, color: ColorFormat) -> Option<UncompressedProcessFn> {
+    pub fn get_closest_process_fn(&self, color: ColorFormat) -> UncompressedProcessFn {
         if let Some(perfect_match) = self.get_process_fn(color) {
-            return Some(perfect_match);
+            return perfect_match;
         }
 
         let precision = color.precision;
@@ -316,15 +372,20 @@ impl UncompressedDecoders {
         for &channels in channel_preference {
             let color = ColorFormat::new(channels, precision);
             if let Some(process_fn) = self.get_process_fn(color) {
-                return Some(process_fn);
+                return process_fn;
             }
         }
 
         // we give up. Find any with the same precision
-        self.decoders
+        if let Some(process_fn) = self
+            .decoders
             .iter()
             .find(|d| d.color.precision == precision)
-            .cloned()
+        {
+            return *process_fn;
+        }
+
+        unreachable!("This object is invalid, because it should have at least one process function of every precision");
     }
 }
 
@@ -432,7 +493,7 @@ impl DecoderSet {
                 (decoder.decode_fn)(args)
             }
             Inner::Uncompressed(list) => {
-                let decoder = list.get_closest_process_fn(color).ok_or(unsupported)?;
+                let decoder = list.get_closest_process_fn(color);
                 let (process_fn, pixel_size) = decoder.fn_for(color);
                 for_each_pixel_untyped(reader, output, pixel_size, process_fn)
             }
@@ -474,7 +535,7 @@ impl DecoderSet {
                 (decoder.decode_rect_fn)(args)
             }
             Inner::Uncompressed(list) => {
-                let decoder = list.get_closest_process_fn(color).ok_or(unsupported)?;
+                let decoder = list.get_closest_process_fn(color);
                 let (process_fn, pixel_size) = decoder.fn_for(color);
                 for_each_pixel_rect_untyped(
                     reader, output, row_pitch, size, rect, pixel_size, process_fn,
