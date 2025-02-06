@@ -9,17 +9,18 @@ pub(crate) fn adapt(mut adapter: impl Adapter, from: Channels, to: Channels, pre
     }
 
     match precision {
-        Precision::U8 => adapt_for::<u8>(adapter, from, to),
-        Precision::U16 => adapt_for::<u16>(adapter, from, to),
-        Precision::F32 => adapt_for::<f32>(adapter, from, to),
+        Precision::U8 => adapt_for::<u8, _>(adapter, from, to),
+        Precision::U16 => adapt_for::<u16, _>(adapter, from, to),
+        Precision::F32 => adapt_for::<f32, _>(adapter, from, to),
     }
 }
-pub(crate) fn adapt_for<Precision>(mut adapter: impl Adapter, from: Channels, to: Channels)
+pub(crate) fn adapt_for<Precision, A>(mut adapter: A, from: Channels, to: Channels)
 where
     Precision: Norm + cast::Castable + cast::IntoNeBytes,
     [Precision; 1]: cast::IntoNeBytes,
     [Precision; 3]: cast::IntoNeBytes,
     [Precision; 4]: cast::IntoNeBytes,
+    A: Adapter,
 {
     match (from, to) {
         // no conversion needed

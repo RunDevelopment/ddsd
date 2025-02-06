@@ -45,15 +45,16 @@ pub(crate) fn process_pixels_helper<InPixel: cast::FromLeBytes, OutPixel: cast::
     }
 }
 #[inline]
-pub(crate) fn process_pixels_helper_unroll<const UNROLL: usize, InPixel, OutPixel>(
+pub(crate) fn process_pixels_helper_unroll<const UNROLL: usize, InPixel, OutPixel, F>(
     encoded: &[u8],
     decoded: &mut [u8],
-    f: impl Copy + Fn(InPixel) -> OutPixel,
+    f: F,
 ) where
     InPixel: cast::FromLeBytes,
     OutPixel: cast::IntoNeBytes,
     [InPixel; UNROLL]: cast::FromLeBytes,
     [OutPixel; UNROLL]: cast::IntoNeBytes,
+    F: Copy + Fn(InPixel) -> OutPixel,
 {
     let pixels = encoded.len() / size_of::<InPixel>();
     let rolled_chunks = pixels / UNROLL;
@@ -62,10 +63,10 @@ pub(crate) fn process_pixels_helper_unroll<const UNROLL: usize, InPixel, OutPixe
     let decoded_chunks_bytes = rolled_chunks * size_of::<[OutPixel; UNROLL]>();
 
     // process unrolled chunks
-    process_pixels_helper::<[InPixel; UNROLL], [OutPixel; UNROLL]>(
+    process_pixels_helper(
         &encoded[..encoded_chunks_bytes],
         &mut decoded[..decoded_chunks_bytes],
-        move |input| input.map(f),
+        move |input: [InPixel; UNROLL]| input.map(f),
     );
 
     // process the rest

@@ -132,9 +132,9 @@ const S16_TO_F32: ProcessPixelsFn = foo!(s16::uf32);
 
 const F16_TO_U8: ProcessPixelsFn = foo!(fp16::n8);
 const F16_TO_U16: ProcessPixelsFn =
-    |encoded, decoded| process_pixels_helper_unroll::<4, _, _>(encoded, decoded, fp16::n16);
+    |encoded, decoded| process_pixels_helper_unroll::<4, _, _, _>(encoded, decoded, fp16::n16);
 const F16_TO_F32: ProcessPixelsFn =
-    |encoded, decoded| process_pixels_helper_unroll::<4, _, _>(encoded, decoded, fp16::f32);
+    |encoded, decoded| process_pixels_helper_unroll::<4, _, _, _>(encoded, decoded, fp16::f32);
 
 const F32_TO_U8: ProcessPixelsFn = foo!(fp::n8);
 const F32_TO_U16: ProcessPixelsFn = foo!(fp::n16);

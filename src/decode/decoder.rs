@@ -115,7 +115,7 @@ macro_rules! const_for {
 }
 
 /// Contains decode functions directly. These functions can be used as is.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub(crate) struct DirectDecoder {
     color: ColorFormat,
     decode_fn: DecodeFn,
@@ -137,7 +137,7 @@ impl DirectDecoder {
 
 /// A decoder for uncompressed pixel formats. This contains only a single
 /// [`ProcessPixelsFn`] that can be used for both full images and rects.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub(crate) struct UncompressedDecoder {
     process_fn: ProcessPixelsFn,
     color: ColorFormat,
