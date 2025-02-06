@@ -1,12 +1,12 @@
 mod adapt;
 mod bc;
 mod bc7;
+mod bcn_util;
 mod convert;
 mod decoder;
 mod read_write;
 mod sub_sampled;
 mod uncompressed;
-mod bcn_util;
 
 pub(crate) use bc::*;
 pub(crate) use decoder::*;
