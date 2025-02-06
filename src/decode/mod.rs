@@ -6,6 +6,7 @@ mod decoder;
 mod read_write;
 mod sub_sampled;
 mod uncompressed;
+mod bcn_util;
 
 pub(crate) use bc::*;
 pub(crate) use decoder::*;

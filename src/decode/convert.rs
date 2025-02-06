@@ -60,17 +60,6 @@ impl B5G6R5 {
         let b = ((b * 351 + 61) >> 7) as u8;
         [r, g, b]
     }
-    // The nearest RGB8 color that represents `self * 1/3 + color * 2/3`.
-    pub(crate) fn two_third_color_rgb8(self, color: Self) -> [u8; 3] {
-        let r = self.r5 + color.r5 * 2;
-        let g = self.g6 + color.g6 * 2;
-        let b = self.b5 + color.b5 * 2;
-
-        let r = ((r * 351 + 61) >> 7) as u8;
-        let g = ((g as u32 * 2763 + 1039) >> 11) as u8;
-        let b = ((b * 351 + 61) >> 7) as u8;
-        [r, g, b]
-    }
     // The nearest RGB8 color that represents `self * 1/2 + color * 1/2`.
     pub(crate) fn mid_color_rgb8(self, color: Self) -> [u8; 3] {
         let r = self.r5 + color.r5;
@@ -345,12 +334,13 @@ pub(crate) mod n16 {
 pub(crate) mod s8 {
     /// Brings it in the range `[0, 254]`.
     #[inline(always)]
-    fn norm(x: u8) -> u8 {
+    pub fn norm(x: u8) -> u8 {
         // If you think that we can just do `x.wrapping_add(128)`, you'd be wrong.
         // https://learn.microsoft.com/en-us/windows/win32/api/dxgiformat/ne-dxgiformat-dxgi_format#format-modifiers
         // Both -128 and -127 map to -1.0. So we have to do more work:
         x.wrapping_add(128).saturating_sub(1)
     }
+
     #[inline(always)]
     pub fn n8(mut x: u8) -> u8 {
         x = norm(x);
@@ -384,10 +374,11 @@ pub(crate) mod s8 {
 pub(crate) mod s16 {
     /// Brings it in the range `[0, 65534]`.
     #[inline(always)]
-    fn norm(x: u16) -> u16 {
+    pub fn norm(x: u16) -> u16 {
         // Same for as for Snorm8.
         x.wrapping_add(32768).saturating_sub(1)
     }
+
     #[inline(always)]
     pub fn n8(mut x: u16) -> u8 {
         x = norm(x);
@@ -877,6 +868,52 @@ impl Norm for f32 {
     const ZERO: Self = 0.0;
     const HALF: Self = 0.5;
     const ONE: Self = 1.0;
+}
+
+pub(crate) trait NormConvert<To> {
+    fn to(self) -> To;
+}
+impl<T> NormConvert<T> for T {
+    #[inline(always)]
+    fn to(self) -> T {
+        self
+    }
+}
+impl NormConvert<u16> for u8 {
+    #[inline(always)]
+    fn to(self) -> u16 {
+        n8::n16(self)
+    }
+}
+impl NormConvert<f32> for u8 {
+    #[inline(always)]
+    fn to(self) -> f32 {
+        n8::f32(self)
+    }
+}
+impl NormConvert<u8> for u16 {
+    #[inline(always)]
+    fn to(self) -> u8 {
+        n16::n8(self)
+    }
+}
+impl NormConvert<f32> for u16 {
+    #[inline(always)]
+    fn to(self) -> f32 {
+        n16::f32(self)
+    }
+}
+impl NormConvert<u8> for f32 {
+    #[inline(always)]
+    fn to(self) -> u8 {
+        fp::n8(self)
+    }
+}
+impl NormConvert<u16> for f32 {
+    #[inline(always)]
+    fn to(self) -> u16 {
+        fp::n16(self)
+    }
 }
 
 pub(crate) trait WithPrecision {

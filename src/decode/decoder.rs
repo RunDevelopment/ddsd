@@ -269,6 +269,14 @@ impl DirectDecoderSet {
                 panic!("Missing color channel-precision combination");
             }
         }
+
+        // 4. All precisions must be supported
+        {
+            let precision_count = self.supported_precisions.0.count_ones();
+            if precision_count != Precision::COUNT as u32 {
+                panic!("All precisions must be supported");
+            }
+        }
     }
 
     fn get_decoder(&self, color: ColorFormat) -> &DirectDecoder {
