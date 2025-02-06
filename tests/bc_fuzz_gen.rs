@@ -85,7 +85,7 @@ fn set_lsb(block: &mut u128, count: u8, value: u128) {
     *block &= !((1 << count) - 1);
     *block |= value;
 }
-fn push_mode(block: &mut u128, mode: u8) {
+fn push_bc7_mode(block: &mut u128, mode: u8) {
     *block = (*block << (mode + 1)) | (1 << mode);
 }
 
@@ -98,7 +98,7 @@ fn bc7_mode_0() {
         let mut block = u128::from_le_bytes(random_block(&mut rng));
 
         set_lsb(&mut block, 4, y as u128);
-        push_mode(&mut block, 0);
+        push_bc7_mode(&mut block, 0);
         block.to_le_bytes()
     })
     .unwrap();
@@ -115,7 +115,7 @@ fn bc7_mode_1_2_3() {
             let mut block = u128::from_le_bytes(random_block(&mut rng));
 
             set_lsb(&mut block, 6, y as u128);
-            push_mode(&mut block, mode);
+            push_bc7_mode(&mut block, mode);
             block.to_le_bytes()
         })
         .unwrap();
@@ -131,7 +131,7 @@ fn bc7_mode_4() {
         let mut block = u128::from_le_bytes(random_block(&mut rng));
 
         set_lsb(&mut block, 3, y as u128);
-        push_mode(&mut block, 4);
+        push_bc7_mode(&mut block, 4);
         block.to_le_bytes()
     })
     .unwrap();
@@ -146,7 +146,7 @@ fn bc7_mode_5() {
         let mut block = u128::from_le_bytes(random_block(&mut rng));
 
         set_lsb(&mut block, 2, y as u128);
-        push_mode(&mut block, 5);
+        push_bc7_mode(&mut block, 5);
         block.to_le_bytes()
     })
     .unwrap();
@@ -159,7 +159,7 @@ fn bc7_mode_6() {
     let mut rng = create_rng();
     create_bc_data(&mut file, 64, 64, DxgiFormat::BC7_UNORM, |_, _| {
         let mut block = u128::from_le_bytes(random_block(&mut rng));
-        push_mode(&mut block, 6);
+        push_bc7_mode(&mut block, 6);
         block.to_le_bytes()
     })
     .unwrap();
@@ -174,8 +174,37 @@ fn bc7_mode_7() {
         let mut block = u128::from_le_bytes(random_block(&mut rng));
 
         set_lsb(&mut block, 6, y as u128);
-        push_mode(&mut block, 7);
+        push_bc7_mode(&mut block, 7);
         block.to_le_bytes()
     })
     .unwrap();
+}
+
+#[test]
+fn bc6_modes() {
+    let pure_random = |file: &mut File, mode: u8, mode_bits: u8| {
+        let mut rng = create_rng();
+        create_bc_data(file, 64, 32, DxgiFormat::BC6H_UF16, |_, _| {
+            let mut block = u128::from_le_bytes(random_block(&mut rng));
+            set_lsb(&mut block, mode_bits, mode as u128);
+            block.to_le_bytes()
+        })
+        .unwrap();
+    };
+
+    let dir = "test-data/images/bc fuzz";
+    for mode in [0b00, 0b01] {
+        let mut file = File::create(format!("{dir}/bc6 mode two {:0>2b}.dds", mode)).unwrap();
+        pure_random(&mut file, mode, 2);
+    }
+    for mode in [
+        0b00010, 0b00110, 0b01010, 0b01110, 0b10010, 0b10110, 0b11010, 0b11110,
+    ] {
+        let mut file = File::create(format!("{dir}/bc6 mode two {:0>5b}.dds", mode)).unwrap();
+        pure_random(&mut file, mode, 5);
+    }
+    for mode in [0b00011, 0b00111, 0b01011, 0b01111] {
+        let mut file = File::create(format!("{dir}/bc6 mode one {:0>5b}.dds", mode)).unwrap();
+        pure_random(&mut file, mode, 5);
+    }
 }

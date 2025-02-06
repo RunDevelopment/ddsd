@@ -292,6 +292,28 @@ impl BitStream {
         self.skip(count);
         bits
     }
+
+    #[inline]
+    pub fn consume_bits_32(&mut self, count: u8) -> i32 {
+        debug_assert!(0 < count && count <= 31);
+        let mask = (1_u32 << count).wrapping_sub(1);
+        let bits = self.state as u32 & mask;
+        self.skip(count);
+        bits as i32
+    }
+    // Consumes the bits in reverse order.
+    #[inline]
+    pub fn consume_bits_rev(&mut self, count: u8) -> u8 {
+        debug_assert!(count <= 8);
+        let mask = (1_u16 << count).wrapping_sub(1) as u8;
+        let bits = self.state as u8 & mask;
+        self.skip(count);
+        if count >= 2 {
+            bits.reverse_bits() >> (8 - count)
+        } else {
+            bits
+        }
+    }
 }
 
 /// A list of uncompressed indexes.
@@ -371,6 +393,8 @@ impl Indexes {
     }
 
     pub fn get_index(&self, pixel_index: u8) -> u8 {
+        debug_assert!(pixel_index < 16);
+
         ((self.uncompressed >> (pixel_index * self.bits)) & self.mask) as u8
     }
 }
