@@ -128,20 +128,47 @@ pub fn uncompressed(c: &mut Criterion) {
 
     // uncompressed formats
     bench_decoder(c, DxgiFormat::R8G8B8A8_UNORM, Rgba, U8);
-    bench_decoder(c, DxgiFormat::R8G8B8A8_SNORM, Rgba, U8);
     bench_decoder(c, DxgiFormat::R8G8B8A8_UNORM, Rgba, U16);
     bench_decoder(c, DxgiFormat::R8G8B8A8_UNORM, Rgba, F32);
     bench_decoder(c, DxgiFormat::R8G8B8A8_UNORM, Rgb, U8);
+    bench_decoder(c, DxgiFormat::R8G8B8A8_UNORM, Rgb, U16);
+    bench_decoder(c, DxgiFormat::R8G8B8A8_UNORM, Rgb, F32);
+
+    bench_decoder(c, DxgiFormat::R8G8B8A8_SNORM, Rgba, U8);
+    bench_decoder(c, DxgiFormat::R8G8B8A8_SNORM, Rgba, U16);
+    bench_decoder(c, DxgiFormat::R8G8B8A8_SNORM, Rgba, F32);
+    bench_decoder(c, DxgiFormat::R8G8B8A8_SNORM, Rgb, U8);
+    bench_decoder(c, DxgiFormat::R8G8B8A8_SNORM, Rgb, U16);
+    bench_decoder(c, DxgiFormat::R8G8B8A8_SNORM, Rgb, F32);
+
     bench_decoder(c, DxgiFormat::R16G16_SNORM, Rgba, U8);
     bench_decoder(c, DxgiFormat::B8G8R8X8_UNORM, Rgba, U8);
     bench_decoder(c, DxgiFormat::R9G9B9E5_SHAREDEXP, Rgb, U8);
+
+    bench_decoder(c, DxgiFormat::R16G16B16A16_FLOAT, Rgba, U8);
+    bench_decoder(c, DxgiFormat::R16G16B16A16_FLOAT, Rgba, U16);
+    bench_decoder(c, DxgiFormat::R16G16B16A16_FLOAT, Rgba, F32);
+
+    bench_decoder(c, DxgiFormat::R32G32B32A32_FLOAT, Rgba, U8);
+    bench_decoder(c, DxgiFormat::R32G32B32A32_FLOAT, Rgba, U16);
+    bench_decoder(c, DxgiFormat::R32G32B32A32_FLOAT, Rgba, F32);
+
+    bench_decoder(c, DxgiFormat::R11G11B10_FLOAT, Rgba, U8);
+    bench_decoder(c, DxgiFormat::R11G11B10_FLOAT, Rgba, U16);
+    bench_decoder(c, DxgiFormat::R11G11B10_FLOAT, Rgba, F32);
 
     // sub-sampled formats
     bench_decoder(c, DxgiFormat::R8G8_B8G8_UNORM, Rgb, U8);
 
     // block-compressed formats
     bench_decoder(c, DxgiFormat::BC1_UNORM, Rgba, U8);
+    bench_decoder_with(c, DxgiFormat::BC1_UNORM, Rgba, U8, |c| {
+        c.size = (4095, 4095).into();
+    });
     bench_decoder(c, DxgiFormat::BC1_UNORM, Rgb, U8);
+    bench_decoder_with(c, DxgiFormat::BC1_UNORM, Rgb, U8, |c| {
+        c.size = (4095, 4095).into();
+    });
     bench_decoder(c, DxgiFormat::BC4_UNORM, Grayscale, U8);
     bench_decoder(c, DxgiFormat::BC4_SNORM, Grayscale, U8);
     bench_decoder_with(c, DxgiFormat::BC7_UNORM, Rgba, U8, |c| {
