@@ -25,7 +25,10 @@ pub(crate) struct PixelSize {
 /// guaranteed te have a length that is a multiple of `size_of::<OutputPixel>()`.
 ///
 /// Both slices are guaranteed to have the same number of pixels.
-pub(crate) type ProcessPixelsFn = fn(encoded_decoded: (&[u8], &mut [u8]));
+pub(crate) type ProcessPixelsFn = fn(encoded_decoded: PixelArgs);
+// Another hack to work around that mutable references aren't allowed in const
+// environments on MSRV.
+pub(crate) struct PixelArgs<'a, 'b>(pub &'a [u8], pub &'b mut [u8]);
 
 /// A helper function for implementing [`ProcessPixelsFn`]s.
 #[inline]
