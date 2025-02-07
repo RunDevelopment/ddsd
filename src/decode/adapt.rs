@@ -67,7 +67,7 @@ pub(crate) struct UncompressedAdapter<'a, 'b> {
 }
 impl Adapter for UncompressedAdapter<'_, '_> {
     fn direct(&mut self) {
-        (self.process_fn)(self.encoded, self.decoded)
+        (self.process_fn)((self.encoded, self.decoded))
     }
 
     fn fill<T: cast::IntoNeBytes>(&mut self, value: T) {
@@ -107,7 +107,7 @@ impl Adapter for UncompressedAdapter<'_, '_> {
             debug_assert!(encoded.len() / encoded_bpp == decoded.len());
 
             // decode pixels into buffer
-            (self.process_fn)(encoded, cast::as_bytes_mut(&mut buffer[..decoded.len()]));
+            (self.process_fn)((encoded, cast::as_bytes_mut(&mut buffer[..decoded.len()])));
 
             // convert pixels
             for (decoded, pixel) in decoded.iter_mut().zip(&buffer) {

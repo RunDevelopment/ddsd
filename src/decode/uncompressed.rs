@@ -26,7 +26,7 @@ macro_rules! underlying {
         type InPixel = $in_pixel;
         type OutPixel = [$out; OUT_COUNT];
 
-        fn process_pixels(encoded: &[u8], decoded: &mut [u8]) {
+        fn process_pixels((encoded, decoded): (&[u8], &mut [u8])) {
             let f = closure_types::<InPixel, OutPixel, _>($f);
             process_pixels_helper(encoded, decoded, f);
         }
@@ -105,11 +105,11 @@ const COPY_S8: DecodeFn = |Args(r, out, _)| {
 // TODO: rename
 macro_rules! foo {
     ($f:expr) => {
-        |encoded, decoded| process_pixels_helper(encoded, decoded, $f)
+        |(encoded, decoded)| process_pixels_helper(encoded, decoded, $f)
     };
 }
 
-const PROCESS_COPY: ProcessPixelsFn = |encoded, decoded| {
+const PROCESS_COPY: ProcessPixelsFn = |(encoded, decoded)| {
     debug_assert!(encoded.len() == decoded.len());
     decoded.copy_from_slice(encoded);
 };
@@ -132,9 +132,9 @@ const S16_TO_F32: ProcessPixelsFn = foo!(s16::uf32);
 
 const F16_TO_U8: ProcessPixelsFn = foo!(fp16::n8);
 const F16_TO_U16: ProcessPixelsFn =
-    |encoded, decoded| process_pixels_helper_unroll::<4, _, _, _>(encoded, decoded, fp16::n16);
+    |(encoded, decoded)| process_pixels_helper_unroll::<4, _, _, _>(encoded, decoded, fp16::n16);
 const F16_TO_F32: ProcessPixelsFn =
-    |encoded, decoded| process_pixels_helper_unroll::<4, _, _, _>(encoded, decoded, fp16::f32);
+    |(encoded, decoded)| process_pixels_helper_unroll::<4, _, _, _>(encoded, decoded, fp16::f32);
 
 const F32_TO_U8: ProcessPixelsFn = foo!(fp::n8);
 const F32_TO_U16: ProcessPixelsFn = foo!(fp::n16);

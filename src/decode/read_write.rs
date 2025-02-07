@@ -25,7 +25,7 @@ pub(crate) struct PixelSize {
 /// guaranteed te have a length that is a multiple of `size_of::<OutputPixel>()`.
 ///
 /// Both slices are guaranteed to have the same number of pixels.
-pub(crate) type ProcessPixelsFn = fn(encoded: &[u8], decoded: &mut [u8]);
+pub(crate) type ProcessPixelsFn = fn(encoded_decoded: (&[u8], &mut [u8]));
 
 /// A helper function for implementing [`ProcessPixelsFn`]s.
 #[inline]
