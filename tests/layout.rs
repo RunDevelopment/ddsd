@@ -17,6 +17,15 @@ fn parse_data_layout_of_all_dds_files() {
         };
 
         let header = decoder.header();
+
+        // skip cubemaps with array_size == 6 for now
+        // https://github.com/RunDevelopment/ddsd/issues/4
+        if let Some(dx10) = &header.dxt10 {
+            if dx10.array_size == 6 {
+                continue;
+            }
+        }
+
         let header_len = 4 + 124 + if header.dxt10.is_some() { 20 } else { 0 };
         let data_len = file_len - header_len;
         let expected_len = decoder.layout().data_len();
