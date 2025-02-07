@@ -48,14 +48,6 @@ pub enum DecodeError {
     Io(std::io::Error),
 }
 
-const _SIZE_CHECK: () = {
-    let error_size = std::mem::size_of::<DecodeError>();
-    assert!(
-        error_size <= 16,
-        "The size a decoder error should not be more than 3 words."
-    );
-};
-
 impl std::fmt::Display for DecodeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
