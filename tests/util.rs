@@ -37,12 +37,20 @@ pub fn test_data_dir() -> PathBuf {
 }
 
 pub fn example_dds_files() -> Vec<PathBuf> {
-    glob::glob(test_data_dir().join("images/**/*.dds").to_str().unwrap())
-        .expect("Failed to read glob pattern")
-        .map(|x| x.unwrap())
-        // ignore files starting with "_"
-        .filter(|x| !x.file_name().unwrap().to_str().unwrap().starts_with('_'))
-        .collect()
+    example_dds_files_in("**")
+}
+pub fn example_dds_files_in(parent_dir: &str) -> Vec<PathBuf> {
+    glob::glob(
+        test_data_dir()
+            .join(format!("images/{parent_dir}/*.dds"))
+            .to_str()
+            .unwrap(),
+    )
+    .expect("Failed to read glob pattern")
+    .map(|x| x.unwrap())
+    // ignore files starting with "_"
+    .filter(|x| !x.file_name().unwrap().to_str().unwrap().starts_with('_'))
+    .collect()
 }
 
 pub struct Image<T> {
@@ -238,6 +246,62 @@ pub fn compare_snapshot_png_u8(
     Err("Output PNG didn't match".into())
 }
 
+pub fn compare_snapshot_dds_f32(
+    dds_path: &PathBuf,
+    image: &Image<f32>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // compare to DDS
+    let dds_exists = dds_path.exists();
+    if dds_exists {
+        let mut file = File::open(dds_path)?;
+        let dds_decoder = DdsDecoder::new(&mut file)?;
+        let size = dds_decoder.header().size();
+
+        let mut dds_image_data =
+            vec![0.0_f32; size.pixels() as usize * image.channels.count() as usize];
+        dds_decoder
+            .format()
+            .decode_f32(&mut file, size, image.channels, &mut dds_image_data)?;
+
+        assert!(dds_image_data.len() == image.data.len());
+        if dds_image_data == image.data {
+            // all good
+            return Ok(());
+        }
+    }
+
+    // write output DDS
+    if !is_ci() {
+        println!("Writing DDS: {:?}", dds_path);
+
+        let mut output = Vec::new();
+        write_simple_dds_header(
+            &mut output,
+            image.size,
+            match image.channels {
+                Channels::Grayscale => DxgiFormat::R32_FLOAT,
+                Channels::Alpha => DxgiFormat::R32_FLOAT,
+                Channels::Rgb => DxgiFormat::R32G32B32_FLOAT,
+                Channels::Rgba => DxgiFormat::R32G32B32A32_FLOAT,
+            },
+        )?;
+
+        // convert to LE
+        let mut data = image.data.clone();
+        let data_u32: &mut [u32] = cast_slice_mut(&mut data);
+        data_u32.iter_mut().for_each(|x| *x = x.to_le());
+        output.extend_from_slice(as_bytes(&data));
+
+        std::fs::create_dir_all(dds_path.parent().unwrap())?;
+        std::fs::write(dds_path, output)?;
+    }
+
+    if !dds_exists {
+        return Err("Output DDS didn't exist".into());
+    }
+    Err("Output DDS didn't match".into())
+}
+
 pub trait Norm {
     const NORM_ONE: Self;
     const NORM_ZERO: Self;
@@ -307,4 +371,46 @@ where
         (Channels::Rgba, Channels::Alpha) => convert(data, |[_, _, _, a]| [a]),
         (Channels::Rgba, Channels::Rgb) => convert(data, |[r, g, b, _]| [r, g, b]),
     }
+}
+
+pub fn write_simple_dds_header(
+    w: &mut impl std::io::Write,
+    size: Size,
+    format: DxgiFormat,
+) -> std::io::Result<()> {
+    fn write_u32(w: &mut impl std::io::Write, x: u32) -> std::io::Result<()> {
+        w.write_all(&x.to_le_bytes())
+    }
+
+    w.write_all(&Header::MAGIC)?;
+    write_u32(w, 124)?;
+    write_u32(w, DdsFlags::REQUIRED.bits())?;
+    write_u32(w, size.height)?; // height
+    write_u32(w, size.width)?; // width
+    write_u32(w, 0)?; // pitch_or_linear_size
+    write_u32(w, 0)?; // depth
+    write_u32(w, 0)?; // mip_map_count
+    for _ in 0..11 {
+        write_u32(w, 0)?;
+    }
+    write_u32(w, 32)?; // size
+    write_u32(w, PixelFormatFlags::FOURCC.bits())?; // flags
+    write_u32(w, FourCC::DX10.into())?; // four_cc
+    write_u32(w, 0)?; // rgb_bit_count
+    write_u32(w, 0)?; // r_bit_mask
+    write_u32(w, 0)?; // g_bit_mask
+    write_u32(w, 0)?; // b_bit_mask
+    write_u32(w, 0)?; // a_bit_mask
+    write_u32(w, DdsCaps::TEXTURE.bits())?; // caps
+    write_u32(w, 0)?; // caps2
+    write_u32(w, 0)?; // caps3
+    write_u32(w, 0)?; // caps4
+    write_u32(w, 0)?; // reserved2
+    write_u32(w, format.into())?; // dxgiFormat
+    write_u32(w, ResourceDimension::Texture2D.into())?; // resource_dimension
+    write_u32(w, 0)?; // misc_flag
+    write_u32(w, 1)?; // array_size
+    write_u32(w, 0)?; // misc_flags2
+
+    Ok(())
 }

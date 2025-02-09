@@ -48,6 +48,52 @@ fn decode_all_dds_files() {
 }
 
 #[test]
+fn decode_bc6_fuzz_hdr() {
+    fn get_output_dds_path(dds_path: &Path) -> PathBuf {
+        util::test_data_dir()
+            .join("output")
+            .join(dds_path.parent().unwrap().file_name().unwrap())
+            .join(dds_path.file_name().unwrap())
+            .with_extension("dds")
+    }
+    fn test(dds_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        let name = dds_path.file_name().unwrap().to_str().unwrap();
+        if name.contains("DX10 A8_UNORM") {
+            println!("debugger");
+        }
+
+        let mut file = File::open(dds_path)?;
+        let decoder = DdsDecoder::new(&mut file)?;
+        let format = decoder.format();
+        if !matches!(
+            format,
+            SupportedFormat::BC6H_SF16 | SupportedFormat::BC6H_UF16
+        ) {
+            return Ok(());
+        }
+
+        let (image, _) = util::read_dds_with_channels(dds_path, Channels::Rgb)?;
+
+        // compare to PNG
+        util::compare_snapshot_dds_f32(&get_output_dds_path(dds_path), &image)?;
+
+        Ok(())
+    }
+
+    let mut failed_count = 0;
+    for dds_path in util::example_dds_files_in("bc fuzz") {
+        if let Err(e) = test(&dds_path) {
+            let path = dds_path.strip_prefix(util::test_data_dir()).unwrap();
+            eprintln!("Failed to convert {:?}: {}", path, e);
+            failed_count += 1;
+        }
+    }
+    if failed_count > 0 {
+        panic!("{} tests failed", failed_count);
+    }
+}
+
+#[test]
 fn decode_rect() {
     let files = [
         // "normal" format

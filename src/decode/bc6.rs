@@ -622,13 +622,6 @@ fn decompress_endpoints_two(
     endpoints
 }
 
-fn extract_index_one(stream: &mut BitStream) -> Indexes {
-    Indexes::new_p1(4, stream)
-}
-fn extract_index_two(stream: &mut BitStream, p2_fixup: u8) -> Indexes {
-    Indexes::new_p2(3, stream, p2_fixup)
-}
-
 fn unquantize(mut component: i32, u_bits_per_comp: u8, format: BC6HFormat) -> i32 {
     let mut unq: i32;
     match format {

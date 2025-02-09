@@ -8,6 +8,8 @@ use std::{fs::File, io::Write};
 use ddsd::*;
 use rand::SeedableRng;
 
+mod util;
+
 fn create_bc_data<const N: usize>(
     mut w: impl Write,
     blocks_x: u32,
@@ -27,38 +29,8 @@ fn create_bc_data<const N: usize>(
         panic!("Not a block format");
     }
 
-    let write_u32 = |w: &mut dyn Write, x: u32| w.write_all(&x.to_le_bytes());
-
     // Header
-    w.write_all(&Header::MAGIC)?;
-    write_u32(&mut w, 124)?;
-    write_u32(&mut w, DdsFlags::REQUIRED.bits())?;
-    write_u32(&mut w, blocks_y * 4)?; // height
-    write_u32(&mut w, blocks_x * 4)?; // width
-    write_u32(&mut w, 0)?; // pitch_or_linear_size
-    write_u32(&mut w, 0)?; // depth
-    write_u32(&mut w, 0)?; // mip_map_count
-    for _ in 0..11 {
-        write_u32(&mut w, 0)?;
-    }
-    write_u32(&mut w, 32)?; // size
-    write_u32(&mut w, PixelFormatFlags::FOURCC.bits())?; // flags
-    write_u32(&mut w, FourCC::DX10.into())?; // four_cc
-    write_u32(&mut w, 0)?; // rgb_bit_count
-    write_u32(&mut w, 0)?; // r_bit_mask
-    write_u32(&mut w, 0)?; // g_bit_mask
-    write_u32(&mut w, 0)?; // b_bit_mask
-    write_u32(&mut w, 0)?; // a_bit_mask
-    write_u32(&mut w, DdsCaps::TEXTURE.bits())?; // caps
-    write_u32(&mut w, 0)?; // caps2
-    write_u32(&mut w, 0)?; // caps3
-    write_u32(&mut w, 0)?; // caps4
-    write_u32(&mut w, 0)?; // reserved2
-    write_u32(&mut w, format.into())?; // dxgiFormat
-    write_u32(&mut w, ResourceDimension::Texture2D.into())?; // resource_dimension
-    write_u32(&mut w, 0)?; // misc_flag
-    write_u32(&mut w, 1)?; // array_size
-    write_u32(&mut w, 0)?; // misc_flags2
+    util::write_simple_dds_header(&mut w, Size::new(blocks_x * 4, blocks_y * 4), format)?;
 
     // now for the actual data
     for y in 0..blocks_y {
@@ -182,9 +154,9 @@ fn bc7_mode_7() {
 
 #[test]
 fn bc6_modes() {
-    let pure_random = |file: &mut File, mode: u8, mode_bits: u8| {
+    let pure_random = |file: &mut File, format: DxgiFormat, mode: u8, mode_bits: u8| {
         let mut rng = create_rng();
-        create_bc_data(file, 64, 32, DxgiFormat::BC6H_UF16, |_, _| {
+        create_bc_data(file, 64, 32, format, |_, _| {
             let mut block = u128::from_le_bytes(random_block(&mut rng));
             set_lsb(&mut block, mode_bits, mode as u128);
             block.to_le_bytes()
@@ -193,18 +165,35 @@ fn bc6_modes() {
     };
 
     let dir = "test-data/images/bc fuzz";
-    for mode in [0b00, 0b01] {
-        let mut file = File::create(format!("{dir}/bc6 mode two {:0>2b}.dds", mode)).unwrap();
-        pure_random(&mut file, mode, 2);
-    }
-    for mode in [
-        0b00010, 0b00110, 0b01010, 0b01110, 0b10010, 0b10110, 0b11010, 0b11110,
-    ] {
-        let mut file = File::create(format!("{dir}/bc6 mode two {:0>5b}.dds", mode)).unwrap();
-        pure_random(&mut file, mode, 5);
-    }
-    for mode in [0b00011, 0b00111, 0b01011, 0b01111] {
-        let mut file = File::create(format!("{dir}/bc6 mode one {:0>5b}.dds", mode)).unwrap();
-        pure_random(&mut file, mode, 5);
+    for format in [DxgiFormat::BC6H_SF16, DxgiFormat::BC6H_UF16] {
+        let name = match format {
+            DxgiFormat::BC6H_SF16 => "SF16",
+            DxgiFormat::BC6H_UF16 => "UF16",
+            _ => unreachable!(),
+        };
+
+        let foo = |mode: u8, mode_bits: u8| {
+            let mode_name = match mode & 0b11 {
+                0b11 => "mode one",
+                _ => "mode two",
+            };
+            let file_path = match mode_bits {
+                2 => format!("{dir}/bc6 {name} {mode_name} {mode:0>2b}.dds"),
+                5 => format!("{dir}/bc6 {name} {mode_name} {mode:0>5b}.dds"),
+                _ => unreachable!(),
+            };
+            let mut file = File::create(file_path).unwrap();
+            pure_random(&mut file, format, mode, mode_bits);
+        };
+
+        for mode in [0b00, 0b01] {
+            foo(mode, 2);
+        }
+        for mode in [
+            0b00010, 0b00110, 0b01010, 0b01110, 0b10010, 0b10110, 0b11010, 0b11110, 0b00011,
+            0b00111, 0b01011, 0b01111,
+        ] {
+            foo(mode, 5);
+        }
     }
 }

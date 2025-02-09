@@ -1,4 +1,326 @@
-images/bc fuzz/bc6 mode one 00011.dds
+images/bc fuzz/bc6 SF16 mode one 00011.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
+        w/h: 256 x 128
+        mipmap_count: None
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC6H_SF16 (96)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC6H_SF16
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (32768 bytes)
+        Surface[0] 256x128 (32768 bytes)
+
+
+
+images/bc fuzz/bc6 SF16 mode one 00111.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
+        w/h: 256 x 128
+        mipmap_count: None
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC6H_SF16 (96)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC6H_SF16
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (32768 bytes)
+        Surface[0] 256x128 (32768 bytes)
+
+
+
+images/bc fuzz/bc6 SF16 mode one 01011.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
+        w/h: 256 x 128
+        mipmap_count: None
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC6H_SF16 (96)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC6H_SF16
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (32768 bytes)
+        Surface[0] 256x128 (32768 bytes)
+
+
+
+images/bc fuzz/bc6 SF16 mode one 01111.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
+        w/h: 256 x 128
+        mipmap_count: None
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC6H_SF16 (96)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC6H_SF16
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (32768 bytes)
+        Surface[0] 256x128 (32768 bytes)
+
+
+
+images/bc fuzz/bc6 SF16 mode two 00.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
+        w/h: 256 x 128
+        mipmap_count: None
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC6H_SF16 (96)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC6H_SF16
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (32768 bytes)
+        Surface[0] 256x128 (32768 bytes)
+
+
+
+images/bc fuzz/bc6 SF16 mode two 00010.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
+        w/h: 256 x 128
+        mipmap_count: None
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC6H_SF16 (96)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC6H_SF16
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (32768 bytes)
+        Surface[0] 256x128 (32768 bytes)
+
+
+
+images/bc fuzz/bc6 SF16 mode two 00110.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
+        w/h: 256 x 128
+        mipmap_count: None
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC6H_SF16 (96)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC6H_SF16
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (32768 bytes)
+        Surface[0] 256x128 (32768 bytes)
+
+
+
+images/bc fuzz/bc6 SF16 mode two 01.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
+        w/h: 256 x 128
+        mipmap_count: None
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC6H_SF16 (96)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC6H_SF16
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (32768 bytes)
+        Surface[0] 256x128 (32768 bytes)
+
+
+
+images/bc fuzz/bc6 SF16 mode two 01010.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
+        w/h: 256 x 128
+        mipmap_count: None
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC6H_SF16 (96)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC6H_SF16
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (32768 bytes)
+        Surface[0] 256x128 (32768 bytes)
+
+
+
+images/bc fuzz/bc6 SF16 mode two 01110.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
+        w/h: 256 x 128
+        mipmap_count: None
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC6H_SF16 (96)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC6H_SF16
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (32768 bytes)
+        Surface[0] 256x128 (32768 bytes)
+
+
+
+images/bc fuzz/bc6 SF16 mode two 10010.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
+        w/h: 256 x 128
+        mipmap_count: None
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC6H_SF16 (96)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC6H_SF16
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (32768 bytes)
+        Surface[0] 256x128 (32768 bytes)
+
+
+
+images/bc fuzz/bc6 SF16 mode two 10110.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
+        w/h: 256 x 128
+        mipmap_count: None
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC6H_SF16 (96)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC6H_SF16
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (32768 bytes)
+        Surface[0] 256x128 (32768 bytes)
+
+
+
+images/bc fuzz/bc6 SF16 mode two 11010.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
+        w/h: 256 x 128
+        mipmap_count: None
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC6H_SF16 (96)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC6H_SF16
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (32768 bytes)
+        Surface[0] 256x128 (32768 bytes)
+
+
+
+images/bc fuzz/bc6 SF16 mode two 11110.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
+        w/h: 256 x 128
+        mipmap_count: None
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC6H_SF16 (96)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC6H_SF16
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (32768 bytes)
+        Surface[0] 256x128 (32768 bytes)
+
+
+
+images/bc fuzz/bc6 UF16 mode one 00011.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
@@ -21,7 +343,7 @@ images/bc fuzz/bc6 mode one 00011.dds
 
 
 
-images/bc fuzz/bc6 mode one 00111.dds
+images/bc fuzz/bc6 UF16 mode one 00111.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
@@ -44,7 +366,7 @@ images/bc fuzz/bc6 mode one 00111.dds
 
 
 
-images/bc fuzz/bc6 mode one 01011.dds
+images/bc fuzz/bc6 UF16 mode one 01011.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
@@ -67,7 +389,7 @@ images/bc fuzz/bc6 mode one 01011.dds
 
 
 
-images/bc fuzz/bc6 mode one 01111.dds
+images/bc fuzz/bc6 UF16 mode one 01111.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
@@ -90,7 +412,7 @@ images/bc fuzz/bc6 mode one 01111.dds
 
 
 
-images/bc fuzz/bc6 mode two 00.dds
+images/bc fuzz/bc6 UF16 mode two 00.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
@@ -113,7 +435,7 @@ images/bc fuzz/bc6 mode two 00.dds
 
 
 
-images/bc fuzz/bc6 mode two 00010.dds
+images/bc fuzz/bc6 UF16 mode two 00010.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
@@ -136,7 +458,7 @@ images/bc fuzz/bc6 mode two 00010.dds
 
 
 
-images/bc fuzz/bc6 mode two 00110.dds
+images/bc fuzz/bc6 UF16 mode two 00110.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
@@ -159,7 +481,7 @@ images/bc fuzz/bc6 mode two 00110.dds
 
 
 
-images/bc fuzz/bc6 mode two 01.dds
+images/bc fuzz/bc6 UF16 mode two 01.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
@@ -182,7 +504,7 @@ images/bc fuzz/bc6 mode two 01.dds
 
 
 
-images/bc fuzz/bc6 mode two 01010.dds
+images/bc fuzz/bc6 UF16 mode two 01010.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
@@ -205,7 +527,7 @@ images/bc fuzz/bc6 mode two 01010.dds
 
 
 
-images/bc fuzz/bc6 mode two 01110.dds
+images/bc fuzz/bc6 UF16 mode two 01110.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
@@ -228,7 +550,7 @@ images/bc fuzz/bc6 mode two 01110.dds
 
 
 
-images/bc fuzz/bc6 mode two 10010.dds
+images/bc fuzz/bc6 UF16 mode two 10010.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
@@ -251,7 +573,7 @@ images/bc fuzz/bc6 mode two 10010.dds
 
 
 
-images/bc fuzz/bc6 mode two 10110.dds
+images/bc fuzz/bc6 UF16 mode two 10110.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
@@ -274,7 +596,7 @@ images/bc fuzz/bc6 mode two 10110.dds
 
 
 
-images/bc fuzz/bc6 mode two 11010.dds
+images/bc fuzz/bc6 UF16 mode two 11010.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
@@ -297,7 +619,7 @@ images/bc fuzz/bc6 mode two 11010.dds
 
 
 
-images/bc fuzz/bc6 mode two 11110.dds
+images/bc fuzz/bc6 UF16 mode two 11110.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
