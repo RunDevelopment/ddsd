@@ -94,12 +94,6 @@ enum ModeTwo {
     M6_666 = 0b11110,
 }
 impl ModeTwo {
-    fn mode_bit_count(&self) -> u8 {
-        match self {
-            ModeTwo::M10_555 | ModeTwo::M7_666 => 2,
-            _ => 5,
-        }
-    }
     fn a0_bit_count(&self) -> u8 {
         match self {
             ModeTwo::M10_555 => 10,
