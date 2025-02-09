@@ -548,6 +548,59 @@ pub(crate) mod fp16 {
     }
 }
 
+/// Functions for converting `f16` values to other formats.
+pub(crate) mod bc6h_uf16 {
+    use crate::util::{two_powi, unlikely_branch};
+
+    #[inline]
+    pub fn n8(x: u16) -> u8 {
+        // This is optimized implementation, combining fp16::f32 -> fp::n8 into one step.
+        let exp: u16 = x >> 10 & 0b1_1111;
+        let mant: u16 = x & 0b11_1111_1111;
+
+        debug_assert!(x & 0x8000 == 0, "BC6H_UF16 values are positive.");
+        debug_assert!(exp < 31, "BC6H_UF16 values cannot be +-INF and NaN.");
+
+        // Note: denorm all go to zero after rounding, so they don't need an extra branch.
+        ((mant as f32 + 1024_f32) * two_powi(exp as i8 - 25) * 255.0 + 0.5) as u8
+    }
+    #[inline]
+    pub fn n16(x: u16) -> u16 {
+        // This is optimized implementation, combining fp16::f32 -> fp::n16 into one step.
+        let exp: u16 = x >> 10 & 0b1_1111;
+        let mant: u16 = x & 0b11_1111_1111;
+
+        debug_assert!(x & 0x8000 == 0, "BC6H_UF16 values are positive.");
+        debug_assert!(exp < 31, "BC6H_UF16 values cannot be +-INF and NaN.");
+
+        if exp == 0 {
+            // denorm
+            unlikely_branch();
+            const F: f32 = 65535.0 / 16777216.0;
+            (mant as f32 * F + 0.5) as u16
+        } else {
+            ((mant as f32 + 1024_f32) * two_powi(exp as i8 - 25) * 65535.0 + 0.5) as u16
+        }
+    }
+    #[inline]
+    pub fn f32(x: u16) -> f32 {
+        // https://stackoverflow.com/questions/36008434/how-can-i-decode-f16-to-f32-using-only-the-stable-standard-library
+        let exp: u16 = x >> 10 & 0b1_1111;
+        let mant: u16 = x & 0b11_1111_1111;
+
+        debug_assert!(x & 0x8000 == 0, "BC6H_UF16 values are positive.");
+        debug_assert!(exp < 31, "BC6H_UF16 values cannot be +-INF and NaN.");
+
+        if exp == 0 {
+            // denorm
+            unlikely_branch();
+            mant as f32 * two_powi(-24)
+        } else {
+            (mant as f32 + 1024_f32) * two_powi(exp as i8 - 25)
+        }
+    }
+}
+
 /// Functions for converting `f11` values to other formats.
 pub(crate) mod fp11 {
     use crate::util::{two_powi, unlikely_branch};
@@ -1136,6 +1189,47 @@ mod test {
         for i in 0..=u16::MAX {
             let expected = super::fp::n16(super::fp16::f32(i));
             let actual = super::fp16::n16(i);
+            assert_eq!(actual, expected, "failed for i={}", i);
+        }
+    }
+
+    fn all_bc6h_uf16_values() -> impl Iterator<Item = u16> {
+        (0..=u16::MAX).filter(|&x| {
+            let value = super::fp16::f32(x);
+
+            if value.is_sign_negative() {
+                // BC6H_UF16 cannot negative values
+                return false;
+            }
+            if !value.is_finite() {
+                // BC6H_UF16 cannot produce +-Inf or NaN values.
+                return false;
+            }
+
+            true
+        })
+    }
+    #[test]
+    fn bc6h_uf16_to_n8() {
+        for i in all_bc6h_uf16_values() {
+            let expected = super::fp16::n8(i);
+            let actual = super::bc6h_uf16::n8(i);
+            assert_eq!(actual, expected, "failed for i={}", i);
+        }
+    }
+    #[test]
+    fn bc6h_uf16_to_n16() {
+        for i in all_bc6h_uf16_values() {
+            let expected = super::fp16::n16(i);
+            let actual = super::bc6h_uf16::n16(i);
+            assert_eq!(actual, expected, "failed for i={}", i);
+        }
+    }
+    #[test]
+    fn bc6h_uf16_to_f32() {
+        for i in all_bc6h_uf16_values() {
+            let expected = super::fp16::f32(i);
+            let actual = super::bc6h_uf16::f32(i);
             assert_eq!(actual, expected, "failed for i={}", i);
         }
     }

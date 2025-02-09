@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ddsd::*;
-use rand::{Rng, RngCore};
+use rand::{seq::SliceRandom, Rng, RngCore};
 
 fn simple_texture_header(size: Size, format: DxgiFormat) -> Header {
     Header {
@@ -37,17 +37,18 @@ fn random_bytes(len: usize) -> Vec<u8> {
     out
 }
 
+type DataModifier = Box<dyn FnMut(&mut [u8])>;
 struct BenchConfig {
-    data_modifier: fn(&mut [u8]),
+    data_modifier: DataModifier,
     size: Size,
-    name: &'static str,
+    name: String,
 }
 impl Default for BenchConfig {
     fn default() -> Self {
         Self {
-            data_modifier: |_| {},
+            data_modifier: Box::new(|_| {}),
             size: (4096, 4096).into(),
-            name: "",
+            name: String::new(),
         }
     }
 }
@@ -68,7 +69,7 @@ fn bench_decoder_with(
     let mut name = format!("{:?} -> {}", format, color);
     if !config.name.is_empty() {
         name += " - ";
-        name += config.name;
+        name += &config.name;
     }
 
     c.bench_function(&name, |b| {
@@ -118,6 +119,35 @@ fn set_bc7_modes(data: &mut [u8], mode: u8) {
         let mut byte = data[i];
         byte |= 1;
         byte <<= mode;
+        data[i] = byte;
+    }
+}
+
+const BC6_MODES: [(u8, u8); 15] = [
+    (0b00, 2),
+    (0b01, 2),
+    (0b00010, 5),
+    (0b00110, 5),
+    (0b01010, 5),
+    (0b01110, 5),
+    (0b10010, 5),
+    (0b10110, 5),
+    (0b11010, 5),
+    (0b11110, 5),
+    (0b00011, 5),
+    (0b00111, 5),
+    (0b01011, 5),
+    (0b01111, 5),
+    (0b11111, 5), // reserved
+];
+/// This sets the BC6 block modes such that each mode is equally likely.
+fn random_bc6_modes(data: &mut [u8]) {
+    let mut rng = rand::thread_rng();
+    for i in (0..data.len()).step_by(16) {
+        let (mode, mode_bits): (u8, u8) = *BC6_MODES.choose(&mut rng).unwrap();
+        let mut byte = data[i];
+        byte <<= mode_bits;
+        byte |= mode;
         data[i] = byte;
     }
 }
@@ -172,7 +202,31 @@ pub fn uncompressed(c: &mut Criterion) {
     bench_decoder(c, DxgiFormat::BC4_UNORM, Grayscale, U8);
     bench_decoder(c, DxgiFormat::BC4_SNORM, Grayscale, U8);
     bench_decoder_with(c, DxgiFormat::BC7_UNORM, Rgba, U8, |c| {
-        c.data_modifier = random_bc7_modes;
+        c.data_modifier = Box::new(random_bc7_modes);
+    });
+    bench_decoder_with(c, DxgiFormat::BC6H_SF16, Rgb, U8, |c| {
+        c.data_modifier = Box::new(random_bc6_modes);
+        c.size = (1024, 1024).into();
+    });
+    bench_decoder_with(c, DxgiFormat::BC6H_SF16, Rgb, U16, |c| {
+        c.data_modifier = Box::new(random_bc6_modes);
+        c.size = (1024, 1024).into();
+    });
+    bench_decoder_with(c, DxgiFormat::BC6H_SF16, Rgb, F32, |c| {
+        c.data_modifier = Box::new(random_bc6_modes);
+        c.size = (1024, 1024).into();
+    });
+    bench_decoder_with(c, DxgiFormat::BC6H_UF16, Rgb, U8, |c| {
+        c.data_modifier = Box::new(random_bc6_modes);
+        c.size = (1024, 1024).into();
+    });
+    bench_decoder_with(c, DxgiFormat::BC6H_UF16, Rgb, U16, |c| {
+        c.data_modifier = Box::new(random_bc6_modes);
+        c.size = (1024, 1024).into();
+    });
+    bench_decoder_with(c, DxgiFormat::BC6H_UF16, Rgb, F32, |c| {
+        c.data_modifier = Box::new(random_bc6_modes);
+        c.size = (1024, 1024).into();
     });
 }
 
@@ -180,62 +234,16 @@ pub fn bc7_modes(c: &mut Criterion) {
     use Channels::*;
     use Precision::*;
 
-    bench_decoder_with(c, DxgiFormat::BC7_UNORM, Rgba, U8, |c| {
-        c.data_modifier = |data| {
-            set_bc7_modes(data, 0);
-        };
-        c.name = "mode 0";
-        c.size = (1024, 1024).into();
-    });
-    bench_decoder_with(c, DxgiFormat::BC7_UNORM, Rgba, U8, |c| {
-        c.data_modifier = |data| {
-            set_bc7_modes(data, 1);
-        };
-        c.name = "mode 1";
-        c.size = (1024, 1024).into();
-    });
-    bench_decoder_with(c, DxgiFormat::BC7_UNORM, Rgba, U8, |c| {
-        c.data_modifier = |data| {
-            set_bc7_modes(data, 2);
-        };
-        c.name = "mode 2";
-        c.size = (1024, 1024).into();
-    });
-    bench_decoder_with(c, DxgiFormat::BC7_UNORM, Rgba, U8, |c| {
-        c.data_modifier = |data| {
-            set_bc7_modes(data, 3);
-        };
-        c.name = "mode 3";
-        c.size = (1024, 1024).into();
-    });
-    bench_decoder_with(c, DxgiFormat::BC7_UNORM, Rgba, U8, |c| {
-        c.data_modifier = |data| {
-            set_bc7_modes(data, 4);
-        };
-        c.name = "mode 4";
-        c.size = (1024, 1024).into();
-    });
-    bench_decoder_with(c, DxgiFormat::BC7_UNORM, Rgba, U8, |c| {
-        c.data_modifier = |data| {
-            set_bc7_modes(data, 5);
-        };
-        c.name = "mode 5";
-        c.size = (1024, 1024).into();
-    });
-    bench_decoder_with(c, DxgiFormat::BC7_UNORM, Rgba, U8, |c| {
-        c.data_modifier = |data| {
-            set_bc7_modes(data, 6);
-        };
-        c.name = "mode 6";
-        c.size = (1024, 1024).into();
-    });
-    bench_decoder_with(c, DxgiFormat::BC7_UNORM, Rgba, U8, |c| {
-        c.data_modifier = |data| {
-            set_bc7_modes(data, 7);
-        };
-        c.name = "mode 7";
-        c.size = (1024, 1024).into();
-    });
+    let modes = [0, 1, 2, 3, 4, 5, 6, 7];
+    for mode in modes {
+        bench_decoder_with(c, DxgiFormat::BC7_UNORM, Rgba, U8, |c| {
+            c.data_modifier = Box::new(move |data| {
+                set_bc7_modes(data, mode);
+            });
+            c.name = format!("mode {mode}");
+            c.size = (1024, 1024).into();
+        });
+    }
 }
 
 criterion_group!(benches, uncompressed, bc7_modes);

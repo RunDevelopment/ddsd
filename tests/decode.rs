@@ -304,3 +304,27 @@ fn decode_all_color_formats() {
         panic!("{} tests failed", failed_count);
     }
 }
+
+/// A test for BC6H SF16 blocks which decode to -INF.
+///
+/// These blocks are pretty rare, so the BC fuzz tests unfortunately don't
+/// cover them. Hence this test. The test block were found using brute force.
+#[test]
+fn neg_infinity_bc6_blocks() {
+    let blocks = [0x800000000f_u128, 0xb80000000f_u128, 0xf80000000f_u128];
+
+    for block in blocks {
+        // create a little DDS file that only contains this block
+        let mut dds_file: Vec<u8> = Vec::new();
+        util::write_simple_dds_header(&mut dds_file, Size::new(4, 4), DxgiFormat::BC6H_SF16)
+            .unwrap();
+        dds_file.extend_from_slice(&block.to_le_bytes());
+
+        // decode it
+        let (image, _) =
+            util::decode_dds_with_channels::<f32>(dds_file.as_slice(), Channels::Rgb).unwrap();
+
+        let has_non_finite = image.data.iter().copied().any(|x| !x.is_finite());
+        assert!(has_non_finite, "Block {:#x} did not decode to -INF", block);
+    }
+}

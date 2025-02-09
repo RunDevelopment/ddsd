@@ -343,7 +343,7 @@ fn extract_compressed_endpoints_two(mode: ModeTwo, stream: &mut BitStream) -> [E
     ///
     /// It has 2 modes:
     /// 1. Single bit mode: `gy[4]   == consume!(g, y, 4)`
-    /// 2. Range mode:      `rw[9:0] == consume!(r, w, 4..0)`
+    /// 2. Range mode:      `rw[9:0] == consume!(r, w, 9..0)`
     ///
     /// Note that these are NOT normal Rust ranges, I'm just misappropriating
     /// their syntax.

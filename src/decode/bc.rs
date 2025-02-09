@@ -205,7 +205,7 @@ pub(crate) const BC7_UNORM: DecoderSet = DecoderSet::new(&[
 
 /// Internal module for the underlying logic of decoding BC1-7 blocks.
 mod blocks {
-    use crate::decode::convert::{fp16, n4, n8, s8, Norm, ToRgba, B5G6R5};
+    use crate::decode::convert::{bc6h_uf16, fp16, n4, n8, s8, Norm, ToRgba, B5G6R5};
 
     /// Decodes a BC1 block into 16 RGBA pixels.
     pub(crate) fn bc1_u8_rgba(block_bytes: [u8; 8]) -> [[u8; 4]; 16] {
@@ -578,15 +578,15 @@ mod blocks {
     }
     pub(crate) fn bc6_u_f32(block_bytes: [u8; 16]) -> [[f32; 3]; 16] {
         super::super::bc6::decode_bc6_block(block_bytes, super::super::bc6::BC6HFormat::UnsignedF16)
-            .map(|p| p.map(fp16::f32))
+            .map(|p| p.map(bc6h_uf16::f32))
     }
     pub(crate) fn bc6_u_u16(block_bytes: [u8; 16]) -> [[u16; 3]; 16] {
         super::super::bc6::decode_bc6_block(block_bytes, super::super::bc6::BC6HFormat::UnsignedF16)
-            .map(|p| p.map(fp16::n16))
+            .map(|p| p.map(bc6h_uf16::n16))
     }
     pub(crate) fn bc6_u_u8(block_bytes: [u8; 16]) -> [[u8; 3]; 16] {
         super::super::bc6::decode_bc6_block(block_bytes, super::super::bc6::BC6HFormat::UnsignedF16)
-            .map(|p| p.map(fp16::n8))
+            .map(|p| p.map(bc6h_uf16::n8))
     }
 
     /// Decodes a BC7 UNORM block into 16 RGBA pixels.
