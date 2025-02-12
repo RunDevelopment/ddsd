@@ -140,7 +140,9 @@ pub enum SupportedFormat {
     // block compression formats
     BC1_UNORM,
     BC2_UNORM,
+    BC2_UNORM_PREMULTIPLIED_ALPHA,
     BC3_UNORM,
+    BC3_UNORM_PREMULTIPLIED_ALPHA,
     BC4_UNORM,
     BC4_SNORM,
     BC5_UNORM,
@@ -509,7 +511,9 @@ const fn get_decoders(format: SupportedFormat) -> DecoderSet {
         // block compression formats
         SupportedFormat::BC1_UNORM => decode::BC1_UNORM,
         SupportedFormat::BC2_UNORM => decode::BC2_UNORM,
+        SupportedFormat::BC2_UNORM_PREMULTIPLIED_ALPHA => decode::BC2_UNORM_PREMULTIPLIED_ALPHA,
         SupportedFormat::BC3_UNORM => decode::BC3_UNORM,
+        SupportedFormat::BC3_UNORM_PREMULTIPLIED_ALPHA => decode::BC3_UNORM_PREMULTIPLIED_ALPHA,
         SupportedFormat::BC4_UNORM => decode::BC4_UNORM,
         SupportedFormat::BC4_SNORM => decode::BC4_SNORM,
         SupportedFormat::BC5_UNORM => decode::BC5_UNORM,

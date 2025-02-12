@@ -231,7 +231,9 @@ impl From<SupportedFormat> for PixelInfo {
             F::BC1_UNORM | F::BC4_UNORM | F::BC4_SNORM => Self::block(8, (4, 4)),
             // 16 bytes per one 4x4 block
             F::BC2_UNORM
+            | F::BC2_UNORM_PREMULTIPLIED_ALPHA
             | F::BC3_UNORM
+            | F::BC3_UNORM_PREMULTIPLIED_ALPHA
             | F::BC3_UNORM_RXGB
             | F::BC5_UNORM
             | F::BC5_SNORM

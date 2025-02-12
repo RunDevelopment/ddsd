@@ -1421,6 +1421,56 @@ images/bc/DX9 BC5_UNORM.dds
 
 
 
+images/bc/DX9 DXT2.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
+        w/h: 129 x 66
+        mipmap_count: Some(8)
+        pixel_format: FourCC(0x32545844; DXT2)
+        caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
+        caps2: DdsCaps2(0x0)
+
+    Pixel Format:
+        format: BC2_UNORM_PREMULTIPLIED_ALPHA
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (12000 bytes)
+        Surface[0] 129x66 (8976 bytes)
+        Surface[1] 64x33 (2304 bytes)
+        Surface[2] 32x16 (512 bytes)
+        Surface[3] 16x8 (128 bytes)
+        Surface[4] 8x4 (32 bytes)
+        Surface[5] 4x2 (16 bytes)
+        Surface[6] 2x1 (16 bytes)
+        Surface[7] 1x1 (16 bytes)
+
+
+
+images/bc/DX9 DXT4.dds
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
+        w/h: 129 x 66
+        mipmap_count: Some(8)
+        pixel_format: FourCC(0x34545844; DXT4)
+        caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
+        caps2: DdsCaps2(0x0)
+
+    Pixel Format:
+        format: BC3_UNORM_PREMULTIPLIED_ALPHA
+        pixel_info: Block(16 bytes per 4x4 block)
+
+    Layout: Texture (12000 bytes)
+        Surface[0] 129x66 (8976 bytes)
+        Surface[1] 64x33 (2304 bytes)
+        Surface[2] 32x16 (512 bytes)
+        Surface[3] 16x8 (128 bytes)
+        Surface[4] 8x4 (32 bytes)
+        Surface[5] 4x2 (16 bytes)
+        Surface[6] 2x1 (16 bytes)
+        Surface[7] 1x1 (16 bytes)
+
+
+
 images/bc/dxt1-alpha.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)

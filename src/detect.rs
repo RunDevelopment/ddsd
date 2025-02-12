@@ -85,9 +85,7 @@ pub(crate) const fn dxgi_format_to_supported(dxgi_format: DxgiFormat) -> Option<
 const fn four_cc_to_dxgi(four_cc: FourCC) -> Option<DxgiFormat> {
     match four_cc {
         FourCC::DXT1 => Some(DxgiFormat::BC1_UNORM),
-        FourCC::DXT2 => Some(DxgiFormat::BC2_UNORM),
         FourCC::DXT3 => Some(DxgiFormat::BC2_UNORM),
-        FourCC::DXT4 => Some(DxgiFormat::BC3_UNORM),
         FourCC::DXT5 => Some(DxgiFormat::BC3_UNORM),
 
         FourCC::ATI1 => Some(DxgiFormat::BC4_UNORM),
@@ -131,6 +129,9 @@ pub(crate) const fn four_cc_to_supported(four_cc: FourCC) -> Option<SupportedFor
 
     // now everything that doesn't have a DXGI format equivalent
     match four_cc {
+        FourCC::DXT2 => Some(SupportedFormat::BC2_UNORM_PREMULTIPLIED_ALPHA),
+        FourCC::DXT4 => Some(SupportedFormat::BC3_UNORM_PREMULTIPLIED_ALPHA),
+
         FourCC::RXGB => Some(SupportedFormat::BC3_UNORM_RXGB),
 
         // TODO: Support later

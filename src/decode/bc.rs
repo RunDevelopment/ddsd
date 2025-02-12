@@ -115,6 +115,31 @@ pub(crate) const BC2_UNORM: DecoderSet = DecoderSet::new(&[
     rgb!(f32, 16, with_precision(blocks::bc2_u8_rgb)),
 ]);
 
+pub(crate) const BC2_UNORM_PREMULTIPLIED_ALPHA: DecoderSet = DecoderSet::new(&[
+    rgba!(u8, 16, blocks::bc2_premultiplied_alpha_u8_rgba),
+    rgba!(
+        u16,
+        16,
+        with_precision(blocks::bc2_premultiplied_alpha_u8_rgba)
+    ),
+    rgba!(
+        f32,
+        16,
+        with_precision(blocks::bc2_premultiplied_alpha_u8_rgba)
+    ),
+    rgb!(u8, 16, blocks::bc2_premultiplied_alpha_u8_rgb),
+    rgb!(
+        u16,
+        16,
+        with_precision(blocks::bc2_premultiplied_alpha_u8_rgb)
+    ),
+    rgb!(
+        f32,
+        16,
+        with_precision(blocks::bc2_premultiplied_alpha_u8_rgb)
+    ),
+]);
+
 pub(crate) const BC3_UNORM: DecoderSet = DecoderSet::new(&[
     rgba!(u8, 16, blocks::bc3_u8_rgba),
     rgba!(u16, 16, with_precision(blocks::bc3_u8_rgba)),
@@ -122,6 +147,31 @@ pub(crate) const BC3_UNORM: DecoderSet = DecoderSet::new(&[
     rgb!(u8, 16, blocks::bc3_u8_rgb),
     rgb!(u16, 16, with_precision(blocks::bc3_u8_rgb)),
     rgb!(f32, 16, with_precision(blocks::bc3_u8_rgb)),
+]);
+
+pub(crate) const BC3_UNORM_PREMULTIPLIED_ALPHA: DecoderSet = DecoderSet::new(&[
+    rgba!(u8, 16, blocks::bc3_premultiplied_alpha_u8_rgba),
+    rgba!(
+        u16,
+        16,
+        with_precision(blocks::bc3_premultiplied_alpha_u8_rgba)
+    ),
+    rgba!(
+        f32,
+        16,
+        with_precision(blocks::bc3_premultiplied_alpha_u8_rgba)
+    ),
+    rgb!(u8, 16, blocks::bc3_premultiplied_alpha_u8_rgb),
+    rgb!(
+        u16,
+        16,
+        with_precision(blocks::bc3_premultiplied_alpha_u8_rgb)
+    ),
+    rgb!(
+        f32,
+        16,
+        with_precision(blocks::bc3_premultiplied_alpha_u8_rgb)
+    ),
 ]);
 
 pub(crate) const BC3_UNORM_RXGB: DecoderSet = DecoderSet::new(&[
@@ -314,6 +364,26 @@ mod blocks {
         let pixels = bc1_no_default_u8_rgba(bc1_bytes);
         pixels.map(|[r, g, b, _]| [r, g, b])
     }
+    pub(crate) fn bc2_premultiplied_alpha_u8_rgba(block_bytes: [u8; 16]) -> [[u8; 4]; 16] {
+        let mut pixels = bc2_u8_rgba(block_bytes);
+        to_straight_alpha(&mut pixels);
+        pixels
+    }
+    pub(crate) fn bc2_premultiplied_alpha_u8_rgb(block_bytes: [u8; 16]) -> [[u8; 3]; 16] {
+        bc2_premultiplied_alpha_u8_rgba(block_bytes).map(|[r, g, b, _]| [r, g, b])
+    }
+
+    fn to_straight_alpha(pixels: &mut [[u8; 4]; 16]) {
+        for pixel in pixels.iter_mut() {
+            let mut alpha = pixel[3];
+            if alpha == 0 {
+                alpha = 255;
+            }
+            for channel in &mut pixel[..3] {
+                *channel = (*channel as u16 * 255 / alpha as u16).min(255) as u8;
+            }
+        }
+    }
 
     /// Decodes a BC3 block into 16 RGBA pixels.
     pub(crate) fn bc3_u8_rgba(block_bytes: [u8; 16]) -> [[u8; 4]; 16] {
@@ -339,6 +409,14 @@ mod blocks {
     }
     pub(crate) fn bc3_rxgb_u8_rgb(block_bytes: [u8; 16]) -> [[u8; 3]; 16] {
         bc3_u8_rgba(block_bytes).map(|[_, g, b, r]| [r, g, b])
+    }
+    pub(crate) fn bc3_premultiplied_alpha_u8_rgba(block_bytes: [u8; 16]) -> [[u8; 4]; 16] {
+        let mut pixels = bc3_u8_rgba(block_bytes);
+        to_straight_alpha(&mut pixels);
+        pixels
+    }
+    pub(crate) fn bc3_premultiplied_alpha_u8_rgb(block_bytes: [u8; 16]) -> [[u8; 3]; 16] {
+        bc3_premultiplied_alpha_u8_rgba(block_bytes).map(|[r, g, b, _]| [r, g, b])
     }
 
     pub(crate) trait BC4uOperations: Norm {
