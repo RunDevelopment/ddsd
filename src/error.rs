@@ -1,4 +1,4 @@
-use crate::{ColorFormat, DxgiFormat, FourCC, SupportedFormat};
+use crate::{ColorFormat, DxgiFormat, FourCC, Header, SupportedFormat};
 
 #[derive(Debug)]
 #[non_exhaustive]
@@ -154,8 +154,9 @@ impl std::fmt::Display for HeaderError {
             HeaderError::InvalidMagicBytes(bytes) => {
                 write!(
                     f,
-                    "Invalid magic bytes {:?}, expected [68, 68, 83, 32] (ASCII: 'DDS ')",
-                    bytes
+                    "Invalid magic bytes {:?}, expected {:?} (ASCII: 'DDS ')",
+                    bytes,
+                    Header::MAGIC
                 )
             }
             HeaderError::InvalidHeaderSize(size) => {

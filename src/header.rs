@@ -1,4 +1,4 @@
-use crate::{util::read_u32_le_array, HeaderError, Size};
+use crate::{util::read_u32_le_array, HeaderError, Options, Size};
 use bitflags::bitflags;
 use std::io::Read;
 
@@ -29,7 +29,7 @@ pub struct Header {
 }
 
 impl Header {
-    const SIZE: usize = 124;
+    pub(crate) const SIZE: usize = 124;
     const INTS: usize = Self::SIZE / 4;
 
     /// The magic bytes (`'DDS '`) at the start of every DDS file.
@@ -53,11 +53,21 @@ impl Header {
     /// Reads the header without magic bytes from a reader.
     ///
     /// If the header is read successfully, the reader will be at the start of the pixel data.
-    pub fn read<R: Read>(reader: &mut R) -> Result<Self, HeaderError> {
-        let buffer: [u32; Self::INTS] = read_u32_le_array(reader)?;
+    pub fn read<R: Read>(reader: &mut R, options: &Options) -> Result<Self, HeaderError> {
+        let mut buffer: [u32; Self::INTS] = Default::default();
+        Self::read_base_header_buffer(reader, options, &mut buffer)?;
 
-        if buffer[0] != Self::SIZE as u32 {
-            return Err(HeaderError::InvalidHeaderSize(buffer[0]));
+        // verify header size
+        let header_size = buffer[0];
+        if header_size != Self::SIZE as u32 {
+            if options.permissive && header_size == 24 {
+                // Some DDS files from the game Stalker 2 have their header size
+                // set to 24 instead of 124. This is likely a typo in the source
+                // code from the DDS encoder they used.
+                // https://github.com/microsoft/DirectXTex/issues/399
+            } else {
+                return Err(HeaderError::InvalidHeaderSize(header_size));
+            }
         }
 
         let flags = DdsFlags::from_bits_retain(buffer[1]);
@@ -70,10 +80,13 @@ impl Header {
             None
         };
 
-        let pixel_format = PixelFormat::read_buffer([
-            buffer[18], buffer[19], buffer[20], buffer[21], buffer[22], buffer[23], buffer[24],
-            buffer[25],
-        ])?;
+        let pixel_format = PixelFormat::read_buffer(
+            [
+                buffer[18], buffer[19], buffer[20], buffer[21], buffer[22], buffer[23], buffer[24],
+                buffer[25],
+            ],
+            options,
+        )?;
 
         let caps = DdsCaps::from_bits_retain(buffer[26]);
         let caps2 = DdsCaps2::from_bits_retain(buffer[27]);
@@ -87,7 +100,8 @@ impl Header {
         };
 
         let dxt10 = if pixel_format.four_cc == Some(FourCC::DX10) {
-            let dx10_buffer = read_u32_le_array(reader)?;
+            let mut dx10_buffer: [u32; 5] = Default::default();
+            read_u32_le_array(reader, &mut dx10_buffer)?;
             let dxt10 = HeaderDxt10::read_buffer(dx10_buffer)?;
             Some(dxt10)
         } else {
@@ -105,6 +119,31 @@ impl Header {
             caps2,
             dxt10,
         })
+    }
+
+    fn read_base_header_buffer<R: Read>(
+        reader: &mut R,
+        options: &Options,
+        buffer: &mut [u32; Self::INTS],
+    ) -> Result<(), HeaderError> {
+        if options.skip_magic_bytes {
+            // in this case, we don't need to check the magic bytes and read
+            // directly into the output buffer
+            read_u32_le_array(reader, &mut buffer[1..])?;
+        } else {
+            // Self::INTS + 1 for the header + magic bytes
+            let mut temp_buffer: [u32; Self::INTS + 1] = Default::default();
+            read_u32_le_array(reader, &mut temp_buffer)?;
+
+            let magic = temp_buffer[0].to_le_bytes();
+            if magic != Self::MAGIC {
+                return Err(HeaderError::InvalidMagicBytes(magic));
+            }
+
+            buffer.copy_from_slice(&temp_buffer[1..]);
+        }
+
+        Ok(())
     }
 
     pub fn size(&self) -> Size {
@@ -138,9 +177,20 @@ impl PixelFormat {
     const SIZE: usize = 32;
     const INTS: usize = Self::SIZE / 4;
 
-    fn read_buffer(buffer: [u32; Self::INTS]) -> Result<Self, HeaderError> {
-        if buffer[0] != PixelFormat::SIZE as u32 {
-            return Err(HeaderError::InvalidPixelFormatSize(buffer[0]));
+    fn read_buffer(buffer: [u32; Self::INTS], options: &Options) -> Result<Self, HeaderError> {
+        let size = buffer[0];
+        if size != PixelFormat::SIZE as u32 {
+            if options.permissive && size == 0 {
+                // Some DDS files have their pixel format size set to 0.
+                // https://github.com/microsoft/DirectXTex/issues/392
+            } else if options.permissive && size == 24 {
+                // Some DDS files from the game Flat Out 2 have their pixel
+                // format size set to 24 instead of 32. This is likely a bug in
+                // the program that created the DDS files.
+                // https://github.com/microsoft/DirectXTex/issues/392
+            } else {
+                return Err(HeaderError::InvalidPixelFormatSize(size));
+            }
         }
 
         let flags = PixelFormatFlags::from_bits_retain(buffer[1]);
@@ -201,7 +251,7 @@ pub struct HeaderDxt10 {
     pub misc_flags2: MiscFlags2,
 }
 impl HeaderDxt10 {
-    const SIZE: usize = 20;
+    pub(crate) const SIZE: usize = 20;
     const INTS: usize = Self::SIZE / 4;
 
     fn read_buffer(buffer: [u32; Self::INTS]) -> Result<Self, HeaderError> {

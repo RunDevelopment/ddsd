@@ -321,8 +321,12 @@ fn neg_infinity_bc6_blocks() {
         dds_file.extend_from_slice(&block.to_le_bytes());
 
         // decode it
-        let (image, _) =
-            util::decode_dds_with_channels::<f32>(dds_file.as_slice(), Channels::Rgb).unwrap();
+        let (image, _) = util::decode_dds_with_channels::<f32>(
+            &Options::default(),
+            dds_file.as_slice(),
+            Channels::Rgb,
+        )
+        .unwrap();
 
         let has_non_finite = image.data.iter().copied().any(|x| !x.is_finite());
         assert!(has_non_finite, "Block {:#x} did not decode to -INF", block);

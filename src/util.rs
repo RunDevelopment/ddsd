@@ -1,14 +1,14 @@
 use crate::cast;
 
-pub(crate) fn read_u32_le_array<const N: usize>(
+pub(crate) fn read_u32_le_array(
     reader: &mut impl std::io::Read,
-) -> std::io::Result<[u32; N]> {
-    let mut buffer = [0; N];
-    reader.read_exact(cast::as_bytes_mut(&mut buffer))?;
+    buffer: &mut [u32],
+) -> std::io::Result<()> {
+    reader.read_exact(cast::as_bytes_mut(buffer))?;
     for i in buffer.iter_mut() {
         *i = u32::from_le(*i);
     }
-    Ok(buffer)
+    Ok(())
 }
 
 pub(crate) fn le_to_native_endian_16(buf: &mut [u8]) {

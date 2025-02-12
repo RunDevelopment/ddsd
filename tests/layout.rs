@@ -4,13 +4,21 @@ use std::{fs::File, path::PathBuf};
 
 mod util;
 
+fn get_header_byte_len(header: &Header) -> u64 {
+    4 + 124 + if header.dxt10.is_some() { 20 } else { 0 }
+}
+
 #[test]
 fn parse_data_layout_of_all_dds_files() {
     for dds_path in util::example_dds_files() {
         let mut file = File::open(&dds_path).expect("Failed to open file");
         let file_len = file.metadata().unwrap().len();
 
-        let decoder_result = DdsDecoder::new(&mut file);
+        let mut options = Options::default();
+        options.permissive = true;
+        options.file_len = Some(file_len);
+
+        let decoder_result = DdsDecoder::new_with(&mut file, &options);
         let decoder = match decoder_result {
             Ok(decoder) => decoder,
             Err(e) => panic!("Failed to decode {}\nFile: {:?}", e, file),
@@ -26,8 +34,7 @@ fn parse_data_layout_of_all_dds_files() {
             }
         }
 
-        let header_len = 4 + 124 + if header.dxt10.is_some() { 20 } else { 0 };
-        let data_len = file_len - header_len;
+        let data_len = file_len - get_header_byte_len(header);
         let expected_len = decoder.layout().data_len();
         assert_eq!(data_len, expected_len, "File: {:?}", &dds_path);
     }
@@ -51,12 +58,39 @@ fn full_layout_snapshot() {
         .collect();
     files.sort_by(|a, b| a.0.cmp(&b.0));
 
+    fn strict_header(dds_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        let mut file = File::open(dds_path)?;
+        let file_len = file.metadata()?.len();
+
+        let mut options = Options::default();
+        options.permissive = false;
+        let decoder = DdsDecoder::new_with(&mut file, &options)?;
+
+        let data_len = file_len - get_header_byte_len(decoder.header());
+        if data_len != decoder.layout().data_len() {
+            return Err("Data length mismatch".into());
+        }
+
+        Ok(())
+    }
+
     fn collect_info(dds_path: &PathBuf) -> Result<String, Box<dyn std::error::Error>> {
-        let mut output = String::new();
-        let decoder = DdsDecoder::new(&mut File::open(dds_path)?)?;
+        let mut file = File::open(dds_path)?;
+
+        let mut options = Options::default();
+        options.permissive = true;
+        options.file_len = Some(file.metadata()?.len());
+        let decoder = DdsDecoder::new_with(&mut file, &options)?;
+
         let header = decoder.header();
         let format = decoder.format();
         let layout = decoder.layout();
+
+        let mut output = String::new();
+
+        if let Err(e) = strict_header(dds_path) {
+            output.push_str(&format!("Error if strict: {}\n\n", e));
+        }
 
         // HEADER
         output.push_str("Header:\n");

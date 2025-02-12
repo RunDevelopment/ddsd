@@ -101,20 +101,27 @@ pub fn read_dds_with_channels_select<T: WithPrecision + Default + Copy + Castabl
     select_channels: impl FnOnce(SupportedFormat) -> Channels,
 ) -> Result<(Image<T>, DdsDecoder), Box<dyn std::error::Error>> {
     let mut file = File::open(dds_path)?;
-    decode_dds_with_channels_select(&mut file, select_channels)
+
+    let mut options = Options::default();
+    options.permissive = true;
+    options.file_len = Some(file.metadata()?.len());
+
+    decode_dds_with_channels_select(&options, &mut file, select_channels)
 }
 
 pub fn decode_dds_with_channels<T: WithPrecision + Default + Copy + Castable>(
+    options: &Options,
     reader: impl std::io::Read,
     channels: Channels,
 ) -> Result<(Image<T>, DdsDecoder), Box<dyn std::error::Error>> {
-    decode_dds_with_channels_select(reader, |_| channels)
+    decode_dds_with_channels_select(options, reader, |_| channels)
 }
 pub fn decode_dds_with_channels_select<T: WithPrecision + Default + Copy + Castable>(
+    options: &Options,
     mut reader: impl std::io::Read,
     select_channels: impl FnOnce(SupportedFormat) -> Channels,
 ) -> Result<(Image<T>, DdsDecoder), Box<dyn std::error::Error>> {
-    let decoder = DdsDecoder::new(&mut reader)?;
+    let decoder = DdsDecoder::new_with(&mut reader, &options)?;
     let size = decoder.header().size();
     let format = decoder.format();
     if !format.supports_precision(T::PRECISION) {

@@ -455,7 +455,7 @@ impl DataRegion for TextureArray {
 }
 
 /// The type and layout of the surfaces/volumes in the data section of a DDS file.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DataLayout {
     Texture(Texture),
     Volume(Volume),
