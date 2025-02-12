@@ -191,6 +191,7 @@ impl From<SupportedFormat> for PixelInfo {
             F::B5G6R5_UNORM
             | F::B5G5R5A1_UNORM
             | F::B4G4R4A4_UNORM
+            | F::A4B4G4R4_UNORM
             | F::R8G8_UNORM
             | F::R8G8_SNORM
             | F::R16_UNORM
@@ -269,7 +270,8 @@ impl TryFrom<DxgiFormat> for PixelInfo {
             | F::R16_SINT
             | F::B5G6R5_UNORM
             | F::B5G5R5A1_UNORM
-            | F::B4G4R4A4_UNORM => Ok(Self::fixed(2)),
+            | F::B4G4R4A4_UNORM
+            | F::A4B4G4R4_UNORM => Ok(Self::fixed(2)),
             // 4 bytes per pixel
             F::R10G10B10A2_TYPELESS
             | F::R10G10B10A2_UNORM

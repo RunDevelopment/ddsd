@@ -19,6 +19,7 @@ pub(crate) const fn dxgi_format_to_supported(dxgi_format: DxgiFormat) -> Option<
         DxgiFormat::B5G6R5_UNORM => Some(SupportedFormat::B5G6R5_UNORM),
         DxgiFormat::B5G5R5A1_UNORM => Some(SupportedFormat::B5G5R5A1_UNORM),
         DxgiFormat::B4G4R4A4_UNORM => Some(SupportedFormat::B4G4R4A4_UNORM),
+        DxgiFormat::A4B4G4R4_UNORM => Some(SupportedFormat::A4B4G4R4_UNORM),
         DxgiFormat::R8_TYPELESS | DxgiFormat::R8_UNORM => Some(SupportedFormat::R8_UNORM),
         DxgiFormat::R8_SNORM => Some(SupportedFormat::R8_SNORM),
         DxgiFormat::R8G8_UNORM => Some(SupportedFormat::R8G8_UNORM),

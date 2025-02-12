@@ -515,7 +515,7 @@ impl TryFrom<u32> for DxgiFormat {
         // <= -O2, -Os, and -Oz. It's slower and takes up vastly more binary
         // size.
         match value {
-            0..=115 | 130..=132 => Ok(DxgiFormat(value as u8)),
+            0..=115 | 130..=132 | 191 => Ok(DxgiFormat(value as u8)),
             _ => Err(value),
         }
     }
@@ -664,5 +664,6 @@ define_dxgi_formats!(
     B4G4R4A4_UNORM = 115,
     P208 = 130,
     V208 = 131,
-    V408 = 132
+    V408 = 132,
+    A4B4G4R4_UNORM = 191
 );

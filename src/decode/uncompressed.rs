@@ -227,6 +227,21 @@ pub(crate) const B4G4R4A4_UNORM: DecoderSet = DecoderSet::new_uncompressed(&[
     rgba!(f32, [u8; 2], |bgra| unpack_bgra4444(bgra).map(n4::f32)),
 ]);
 
+#[inline(always)]
+fn unpack_abgr4444([low, high]: [u8; 2]) -> [u8; 4] {
+    let a4 = low & 0xF;
+    let b4 = (low >> 4) & 0xF;
+    let g4 = high & 0xF;
+    let r4 = (high >> 4) & 0xF;
+
+    [r4, g4, b4, a4]
+}
+pub(crate) const A4B4G4R4_UNORM: DecoderSet = DecoderSet::new_uncompressed(&[
+    rgba!(u8, [u8; 2], |bgra| unpack_abgr4444(bgra).map(n4::n8)),
+    rgba!(u16, [u8; 2], |bgra| unpack_abgr4444(bgra).map(n4::n16)),
+    rgba!(f32, [u8; 2], |bgra| unpack_abgr4444(bgra).map(n4::f32)),
+]);
+
 pub(crate) const R8_UNORM: DecoderSet = DecoderSet::new_uncompressed(&[
     gray!(u8, [u8; 1], process_fn = N8_TO_U8),
     gray!(u16, [u8; 1], process_fn = N8_TO_U16),
