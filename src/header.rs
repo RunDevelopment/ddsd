@@ -193,9 +193,26 @@ impl PixelFormat {
             }
         }
 
-        let flags = PixelFormatFlags::from_bits_retain(buffer[1]);
+        let mut flags = PixelFormatFlags::from_bits_retain(buffer[1]);
+        let four_cc = buffer[2];
+        let rgb_bit_count = buffer[3];
+
+        if options.permissive
+            && rgb_bit_count == 0
+            && four_cc != 0
+            && !flags.contains(PixelFormatFlags::FOURCC)
+        {
+            // Some old DDS files from Unreal Tournament 2004 have no flags set,
+            // an rgb bit count of 0, and use four CC. These files are invalid
+            // and format detection will fail for them, so we need to fix the
+            // header here. Since those files do use four CC, we just set the
+            // missing flag.
+            // https://github.com/microsoft/DirectXTex/pull/371
+            flags |= PixelFormatFlags::FOURCC;
+        }
+
         let four_cc = if flags.contains(PixelFormatFlags::FOURCC) {
-            Some(FourCC::from(buffer[2]))
+            Some(FourCC::from(four_cc))
         } else {
             None
         };
@@ -203,7 +220,7 @@ impl PixelFormat {
         Ok(Self {
             flags,
             four_cc,
-            rgb_bit_count: buffer[3],
+            rgb_bit_count,
             r_bit_mask: buffer[4],
             g_bit_mask: buffer[5],
             b_bit_mask: buffer[6],
