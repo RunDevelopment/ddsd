@@ -54,10 +54,16 @@ pub(crate) const fn dxgi_format_to_supported(dxgi_format: DxgiFormat) -> Option<
             Some(SupportedFormat::R32G32B32A32_FLOAT)
         }
         DxgiFormat::R10G10B10_XR_BIAS_A2_UNORM => Some(SupportedFormat::R10G10B10_XR_BIAS_A2_UNORM),
+        DxgiFormat::AYUV => Some(SupportedFormat::AYUV),
+        DxgiFormat::Y410 => Some(SupportedFormat::Y410),
+        DxgiFormat::Y416 => Some(SupportedFormat::Y416),
 
         // sub-sampled formats
         DxgiFormat::R8G8_B8G8_UNORM => Some(SupportedFormat::R8G8_B8G8_UNORM),
         DxgiFormat::G8R8_G8B8_UNORM => Some(SupportedFormat::G8R8_G8B8_UNORM),
+        DxgiFormat::YUY2 => Some(SupportedFormat::YUY2),
+        DxgiFormat::Y210 => Some(SupportedFormat::Y210),
+        DxgiFormat::Y216 => Some(SupportedFormat::Y216),
 
         // block compression formats
         DxgiFormat::BC1_TYPELESS | DxgiFormat::BC1_UNORM | DxgiFormat::BC1_UNORM_SRGB => {
@@ -134,8 +140,7 @@ pub(crate) const fn four_cc_to_supported(four_cc: FourCC) -> Option<SupportedFor
 
         FourCC::RXGB => Some(SupportedFormat::BC3_UNORM_RXGB),
 
-        // TODO: Support later
-        FourCC::UYVY => None,
+        FourCC::UYVY => Some(SupportedFormat::UYVY),
 
         _ => None,
     }

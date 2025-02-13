@@ -1,6 +1,6 @@
 use super::convert::{
-    fp, fp10, fp11, fp16, n10, n16, n2, n4, n8, rgb9995f, s16, s8, xr10, Norm, SwapRB, ToRgba,
-    WithPrecision, B5G5R5A1, B5G6R5,
+    fp, fp10, fp11, fp16, n10, n16, n2, n4, n8, rgb9995f, s16, s8, xr10, yuv10, yuv16, yuv8, Norm,
+    SwapRB, ToRgba, WithPrecision, B5G5R5A1, B5G6R5,
 };
 use super::read_write::{
     process_pixels_helper, process_pixels_helper_unroll, PixelArgs, ProcessPixelsFn,
@@ -446,4 +446,53 @@ pub(crate) const R10G10B10_XR_BIAS_A2_UNORM: DecoderSet = DecoderSet::new_uncomp
         let [r, g, b] = rgb.map(xr10::n8);
         [r, g, b, n2::n8(a2)]
     }),
+]);
+
+fn unpack_ayuv<T>(
+    ayuv: [u8; 4],
+    decode_yuv: impl Fn([u8; 3]) -> [T; 3],
+    decode_alpha: impl Fn(u8) -> T,
+) -> [T; 4] {
+    let [v, u, y, a] = ayuv;
+    let [y, u, v] = decode_yuv([y, u, v]);
+    [y, u, v, decode_alpha(a)]
+}
+pub(crate) const AYUV: DecoderSet = DecoderSet::new_uncompressed(&[
+    rgba!(u8, [u8; 4], |ayuv| unpack_ayuv(ayuv, yuv8::n8, |x| x)),
+    rgba!(u16, [u8; 4], |ayuv| unpack_ayuv(ayuv, yuv8::n16, n8::n16)),
+    rgba!(f32, [u8; 4], |ayuv| unpack_ayuv(ayuv, yuv8::f32, n8::f32)),
+]);
+
+fn unpack_y410<T>(
+    y410: u32,
+    decode_yuv: impl Fn([u16; 3]) -> [T; 3],
+    decode_alpha: impl Fn(u8) -> T,
+) -> [T; 4] {
+    let ([u, y, v], a) = unpack_rgba1010102_xr(y410);
+    let [y, u, v] = decode_yuv([y, u, v]);
+    [y, u, v, decode_alpha(a)]
+}
+pub(crate) const Y410: DecoderSet = DecoderSet::new_uncompressed(&[
+    rgba!(u16, u32, |y410| unpack_y410(y410, yuv10::n16, n2::n16)),
+    rgba!(f32, u32, |y410| unpack_y410(y410, yuv10::f32, n2::f32)),
+    rgba!(u8, u32, |y410| unpack_y410(y410, yuv10::n8, n2::n8)),
+]);
+
+fn unpack_y416<T>(
+    y416: [u16; 4],
+    decode_yuv: impl Fn([u16; 3]) -> [T; 3],
+    decode_alpha: impl Fn(u16) -> T,
+) -> [T; 4] {
+    let [u, y, v, a] = y416;
+    let [y, u, v] = decode_yuv([y, u, v]);
+    [y, u, v, decode_alpha(a)]
+}
+pub(crate) const Y416: DecoderSet = DecoderSet::new_uncompressed(&[
+    rgba!(u16, [u16; 4], |y416| unpack_y416(y416, yuv16::n16, |x| x)),
+    rgba!(f32, [u16; 4], |y416| unpack_y416(
+        y416,
+        yuv16::f32,
+        n16::f32
+    )),
+    rgba!(u8, [u16; 4], |y416| unpack_y416(y416, yuv16::n8, n16::n8)),
 ]);

@@ -838,6 +838,105 @@ pub(crate) mod rgb9995f {
     }
 }
 
+pub(crate) mod yuv8 {
+    // https://learn.microsoft.com/en-us/windows/win32/medfound/recommended-8-bit-yuv-formats-for-video-rendering#converting-8-bit-yuv-to-rgb888
+
+    pub fn n8(yuv: [u8; 3]) -> [u8; 3] {
+        let [y, u, v] = yuv;
+
+        let c = y as f32 - 16.0;
+        let d = u as f32 - 128.0;
+        let e = v as f32 - 128.0;
+
+        let r = 1.164383 * c + 1.596027 * e;
+        let g = 1.164383 * c - 0.391762 * d - 0.812968 * e;
+        let b = 1.164383 * c + 2.017232 * d;
+
+        let r = (r + 0.5) as u8;
+        let g = (g + 0.5) as u8;
+        let b = (b + 0.5) as u8;
+
+        [r, g, b]
+    }
+    pub fn n16(yuv: [u8; 3]) -> [u16; 3] {
+        f32(yuv).map(super::fp::n16)
+    }
+    pub fn f32(yuv: [u8; 3]) -> [f32; 3] {
+        let [y, u, v] = yuv;
+
+        let c = y as f32 - 16.0;
+        let d = u as f32 - 128.0;
+        let e = v as f32 - 128.0;
+
+        let r = 1.164383 * c + 1.596027 * e;
+        let g = 1.164383 * c - 0.391762 * d - 0.812968 * e;
+        let b = 1.164383 * c + 2.017232 * d;
+
+        const F: f32 = 1.0 / 255.0;
+        let r = (r * F).clamp(0.0, 1.0);
+        let g = (g * F).clamp(0.0, 1.0);
+        let b = (b * F).clamp(0.0, 1.0);
+
+        [r, g, b]
+    }
+}
+pub(crate) mod yuv10 {
+    // https://learn.microsoft.com/en-us/windows/win32/medfound/10-bit-and-16-bit-yuv-video-formats
+
+    pub fn n8(yuv: [u16; 3]) -> [u8; 3] {
+        f32(yuv).map(super::fp::n8)
+    }
+    pub fn n16(yuv: [u16; 3]) -> [u16; 3] {
+        f32(yuv).map(super::fp::n16)
+    }
+    pub fn f32(yuv: [u16; 3]) -> [f32; 3] {
+        let [y, u, v] = yuv;
+
+        let c = y as f32 - 64.0;
+        let d = u as f32 - 512.0;
+        let e = v as f32 - 512.0;
+
+        let r = 1.164383 * c + 1.596027 * e;
+        let g = 1.164383 * c - 0.391762 * d - 0.812968 * e;
+        let b = 1.164383 * c + 2.017232 * d;
+
+        const F: f32 = 1.0 / 1023.0;
+        let r = (r * F).clamp(0.0, 1.0);
+        let g = (g * F).clamp(0.0, 1.0);
+        let b = (b * F).clamp(0.0, 1.0);
+
+        [r, g, b]
+    }
+}
+pub(crate) mod yuv16 {
+    // https://learn.microsoft.com/en-us/windows/win32/medfound/10-bit-and-16-bit-yuv-video-formats
+
+    pub fn n8(yuv: [u16; 3]) -> [u8; 3] {
+        f32(yuv).map(super::fp::n8)
+    }
+    pub fn n16(yuv: [u16; 3]) -> [u16; 3] {
+        f32(yuv).map(super::fp::n16)
+    }
+    pub fn f32(yuv: [u16; 3]) -> [f32; 3] {
+        let [y, u, v] = yuv;
+
+        let c = y as f32 - 4096.0;
+        let d = u as f32 - 32768.0;
+        let e = v as f32 - 32768.0;
+
+        let r = 1.164383 * c + 1.596027 * e;
+        let g = 1.164383 * c - 0.391762 * d - 0.812968 * e;
+        let b = 1.164383 * c + 2.017232 * d;
+
+        const F: f32 = 1.0 / 65535.0;
+        let r = (r * F).clamp(0.0, 1.0);
+        let g = (g * F).clamp(0.0, 1.0);
+        let b = (b * F).clamp(0.0, 1.0);
+
+        [r, g, b]
+    }
+}
+
 pub(crate) trait ToRgba {
     type Channel;
     fn to_rgba(self) -> [Self::Channel; 4];

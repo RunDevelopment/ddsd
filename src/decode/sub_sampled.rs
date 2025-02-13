@@ -1,7 +1,8 @@
+use crate::cast::FromLeBytes;
 use crate::util::closure_types;
 use crate::{Channels::*, ColorFormat};
 
-use super::convert::{n8, ToRgba, WithPrecision};
+use super::convert::{n8, yuv10, yuv16, yuv8, ToRgba, WithPrecision};
 use super::read_write::{
     for_each_block_rect_untyped, for_each_block_untyped, process_2x1_blocks_helper, PixelRange,
 };
@@ -10,8 +11,8 @@ use super::{Args, DecoderSet, DirectDecoder, RArgs};
 // helpers
 
 macro_rules! underlying {
-    ($channels:expr, $out:ty, $f:expr) => {{
-        const BYTES_PER_BLOCK: usize = 4;
+    ($channels:expr, $out:ty, $bpb:literal, $f:expr) => {{
+        const BYTES_PER_BLOCK: usize = $bpb;
         const CHANNELS: usize = $channels.count() as usize;
         type OutPixel = [$out; CHANNELS];
 
@@ -51,12 +52,18 @@ macro_rules! underlying {
 
 macro_rules! rgb {
     ($out:ty, $f:expr) => {
-        underlying!(Rgb, $out, $f)
+        underlying!(Rgb, $out, 4, $f)
+    };
+    ($out:ty, $bpb:literal, $f:expr) => {
+        underlying!(Rgb, $out, $bpb, $f)
     };
 }
 macro_rules! rgba {
     ($out:ty, $f:expr) => {
-        underlying!(Rgba, $out, $f)
+        underlying!(Rgba, $out, 4, $f)
+    };
+    ($out:ty, $bpb:literal, $f:expr) => {
+        underlying!(Rgba, $out, $bpb, $f)
     };
 }
 
@@ -90,4 +97,47 @@ pub(crate) const G8R8_G8B8_UNORM: DecoderSet = DecoderSet::new(&[
         .map(ToRgba::to_rgba)),
     rgba!(f32, |pair| decode_gr_bg(pair.map(n8::f32))
         .map(ToRgba::to_rgba)),
+]);
+
+#[inline]
+fn decode_yuv2<T>([y0, u0, y1, v0]: [u8; 4], decode: impl Fn([u8; 3]) -> T) -> [T; 2] {
+    [decode([y0, u0, v0]), decode([y1, u0, v0])]
+}
+pub(crate) const YUY2: DecoderSet = DecoderSet::new(&[
+    rgb!(u8, |pair| decode_yuv2(pair, yuv8::n8)),
+    rgb!(u16, |pair| decode_yuv2(pair, yuv8::n16)),
+    rgb!(f32, |pair| decode_yuv2(pair, yuv8::f32)),
+]);
+
+#[inline]
+fn decode_uyvy<T>([u0, y0, v0, y1]: [u8; 4], decode: impl Fn([u8; 3]) -> T) -> [T; 2] {
+    [decode([y0, u0, v0]), decode([y1, u0, v0])]
+}
+pub(crate) const UYVY: DecoderSet = DecoderSet::new(&[
+    rgb!(u8, |pair| decode_uyvy(pair, yuv8::n8)),
+    rgb!(u16, |pair| decode_uyvy(pair, yuv8::n16)),
+    rgb!(f32, |pair| decode_uyvy(pair, yuv8::f32)),
+]);
+
+#[inline]
+fn decode_y210<T>(block: [u8; 8], decode: impl Fn([u16; 3]) -> T) -> [T; 2] {
+    let yuyv: [u16; 4] = FromLeBytes::from_le_bytes(block);
+    let [y0, u0, y1, v0]: [u16; 4] = yuyv.map(|c| c >> 6);
+    [decode([y0, u0, v0]), decode([y1, u0, v0])]
+}
+pub(crate) const Y210: DecoderSet = DecoderSet::new(&[
+    rgb!(u16, 8, |pair| decode_y210(pair, yuv10::n16)),
+    rgb!(f32, 8, |pair| decode_y210(pair, yuv10::f32)),
+    rgb!(u8, 8, |pair| decode_y210(pair, yuv10::n8)),
+]);
+
+#[inline]
+fn decode_y216<T>(block: [u8; 8], decode: impl Fn([u16; 3]) -> T) -> [T; 2] {
+    let [y0, u0, y1, v0]: [u16; 4] = FromLeBytes::from_le_bytes(block);
+    [decode([y0, u0, v0]), decode([y1, u0, v0])]
+}
+pub(crate) const Y216: DecoderSet = DecoderSet::new(&[
+    rgb!(u16, 8, |pair| decode_y216(pair, yuv16::n16)),
+    rgb!(f32, 8, |pair| decode_y216(pair, yuv16::f32)),
+    rgb!(u8, 8, |pair| decode_y216(pair, yuv16::n8)),
 ]);

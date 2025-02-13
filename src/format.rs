@@ -132,10 +132,17 @@ pub enum SupportedFormat {
     R32G32B32_FLOAT,
     R32G32B32A32_FLOAT,
     R10G10B10_XR_BIAS_A2_UNORM,
+    AYUV,
+    Y410,
+    Y416,
 
     // sub-sampled formats
     R8G8_B8G8_UNORM,
     G8R8_G8B8_UNORM,
+    UYVY,
+    YUY2,
+    Y210,
+    Y216,
 
     // block compression formats
     BC1_UNORM,
@@ -503,10 +510,17 @@ const fn get_decoders(format: SupportedFormat) -> DecoderSet {
         SupportedFormat::R32G32B32_FLOAT => decode::R32G32B32_FLOAT,
         SupportedFormat::R32G32B32A32_FLOAT => decode::R32G32B32A32_FLOAT,
         SupportedFormat::R10G10B10_XR_BIAS_A2_UNORM => decode::R10G10B10_XR_BIAS_A2_UNORM,
+        SupportedFormat::AYUV => decode::AYUV,
+        SupportedFormat::Y410 => decode::Y410,
+        SupportedFormat::Y416 => decode::Y416,
 
         // sub-sampled formats
         SupportedFormat::R8G8_B8G8_UNORM => decode::R8G8_B8G8_UNORM,
         SupportedFormat::G8R8_G8B8_UNORM => decode::G8R8_G8B8_UNORM,
+        SupportedFormat::UYVY => decode::UYVY,
+        SupportedFormat::YUY2 => decode::YUY2,
+        SupportedFormat::Y210 => decode::Y210,
+        SupportedFormat::Y216 => decode::Y216,
 
         // block compression formats
         SupportedFormat::BC1_UNORM => decode::BC1_UNORM,

@@ -211,12 +211,15 @@ impl From<SupportedFormat> for PixelInfo {
             | F::R9G9B9E5_SHAREDEXP
             | F::R16G16_FLOAT
             | F::R32_FLOAT
-            | F::R10G10B10_XR_BIAS_A2_UNORM => Self::fixed(4),
+            | F::R10G10B10_XR_BIAS_A2_UNORM
+            | F::AYUV
+            | F::Y410 => Self::fixed(4),
             // 8 bytes per pixel
             F::R16G16B16A16_UNORM
             | F::R16G16B16A16_SNORM
             | F::R16G16B16A16_FLOAT
-            | F::R32G32_FLOAT => Self::fixed(8),
+            | F::R32G32_FLOAT
+            | F::Y416 => Self::fixed(8),
             // 12 bytes per pixel
             F::R32G32B32_FLOAT => Self::fixed(12),
             // 16 bytes per pixel
@@ -224,7 +227,9 @@ impl From<SupportedFormat> for PixelInfo {
 
             // sub-sampled formats
             // 4 bytes per one 2x1 block
-            F::R8G8_B8G8_UNORM | F::G8R8_G8B8_UNORM => Self::block(4, (2, 1)),
+            F::R8G8_B8G8_UNORM | F::G8R8_G8B8_UNORM | F::UYVY | F::YUY2 => Self::block(4, (2, 1)),
+            // 8 bytes per one 2x1 block
+            F::Y210 | F::Y216 => Self::block(8, (2, 1)),
 
             // block compression formats
             // 8 bytes per one 4x4 block
@@ -440,6 +445,22 @@ mod test {
 
                 let result = PixelInfo::try_from(format);
                 assert!(result.is_ok(), "Failed for {:?}", format);
+            }
+        }
+    }
+
+    #[test]
+    fn dxgi_supported() {
+        // This test verifies that equivalent DxgiFormat and SupportFormat
+        // have the same PixelInfo.
+        for i in 0..256_u32 {
+            if let Ok(dxgi) = DxgiFormat::try_from(i) {
+                if let Some(format) = SupportedFormat::from_dxgi(dxgi) {
+                    let dxgi_info = PixelInfo::try_from(dxgi).unwrap();
+                    let format_info = PixelInfo::from(format);
+
+                    assert_eq!(dxgi_info, format_info, "Failed for {:?}", dxgi);
+                }
             }
         }
     }
