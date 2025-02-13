@@ -134,14 +134,11 @@ impl DdsDecoder {
 
         // data layout
         let pixel_info = format.into();
-        let mut layout = DataLayout::from_header_with(&header, pixel_info)?;
-
-        // try to fix invalid headers
-        if options.permissive {
-            if let Some(expected_data_len) = get_expected_data_len(&header, options) {
-                fix(&mut header, &mut layout, pixel_info, expected_data_len);
-            }
-        }
+        let layout = if options.permissive {
+            create_layout_and_fix_header(&mut header, pixel_info, options)?
+        } else {
+            DataLayout::from_header_with(&header, pixel_info)?
+        };
 
         Ok(Self {
             header,
@@ -185,15 +182,21 @@ fn get_expected_data_len(header: &Header, options: &Options) -> Option<u64> {
     options.file_len?.checked_sub(non_data as u64)
 }
 
-fn fix(
+fn create_layout_and_fix_header(
     header: &mut Header,
-    layout: &mut DataLayout,
     pixel_info: PixelInfo,
-    expected_data_len: u64,
-) {
-    if layout.data_len() == expected_data_len {
-        // the data layout is already correct
-        return;
+    options: &Options,
+) -> Result<DataLayout, DecodeError> {
+    let original_layout = DataLayout::from_header_with(header, pixel_info);
+    let Some(expected_data_len) = get_expected_data_len(header, options) else {
+        // if we don't know the expected data length, we can't fix the header
+        return original_layout;
+    };
+    // if the header is already correct, we don't need to fix it
+    if let Ok(ref layout) = original_layout {
+        if layout.data_len() == expected_data_len {
+            return original_layout;
+        }
     }
 
     if let Some(dx10) = &header.dxt10 {
@@ -202,19 +205,15 @@ fn fix(
         // https://github.com/MicrosoftDocs/win32/pull/1970
         if dx10.array_size == 6
             && dx10.resource_dimension == ResourceDimension::Texture2D
-            && layout.data_len() / 6 == expected_data_len
-            && layout.texture_array().map_or(false, |array| {
-                array.kind() == TextureArrayKind::CubeMaps && array.len() == 36
-            })
+            && dx10.misc_flag.contains(MiscFlags::TEXTURE_CUBE)
         {
             let mut new_header = header.clone();
             new_header.dxt10.as_mut().unwrap().array_size = 1;
 
-            if let Ok(new_layout) = DataLayout::from_header_with(&new_header, pixel_info) {
-                if new_layout.data_len() == expected_data_len {
+            if let Ok(layout) = DataLayout::from_header_with(&new_header, pixel_info) {
+                if layout.data_len() == expected_data_len {
                     *header = new_header;
-                    *layout = new_layout;
-                    return;
+                    return Ok(layout);
                 }
             }
         }
@@ -225,15 +224,41 @@ fn fix(
             let mut new_header = header.clone();
             new_header.dxt10.as_mut().unwrap().array_size = 1;
 
-            if let Ok(new_layout) = DataLayout::from_header_with(&new_header, pixel_info) {
-                if new_layout.data_len() == expected_data_len {
+            if let Ok(layout) = DataLayout::from_header_with(&new_header, pixel_info) {
+                if layout.data_len() == expected_data_len {
                     *header = new_header;
-                    *layout = new_layout;
-                    return;
+                    return Ok(layout);
                 }
             }
         }
     }
 
+    // Sometimes, the mipmap count is incorrect. We can try to fix this by
+    // simply guessing the correct mipmap count.
+    let mipmap = header.mipmap_count.unwrap_or(1).max(1);
+    let max_dimension = header
+        .width
+        .max(header.height)
+        .max(header.depth.unwrap_or(1));
+    let max_levels = 32 - max_dimension.leading_zeros();
+    let guesses = [
+        1,          // it's very common for DDS images to have no mipmaps
+        max_levels, // or a full mipmap chain
+        mipmap - 1, // otherwise, it could be an off-by-one error
+        mipmap.saturating_add(1),
+    ];
+    for guess in guesses {
+        let mut new_header = header.clone();
+        new_header.mipmap_count = Some(guess);
+
+        if let Ok(layout) = DataLayout::from_header_with(&new_header, pixel_info) {
+            if layout.data_len() == expected_data_len {
+                *header = new_header;
+                return Ok(layout);
+            }
+        }
+    }
+
     // sadly, we couldn't fix it
+    original_layout
 }

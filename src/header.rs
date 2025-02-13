@@ -102,7 +102,7 @@ impl Header {
         let dxt10 = if pixel_format.four_cc == Some(FourCC::DX10) {
             let mut dx10_buffer: [u32; 5] = Default::default();
             read_u32_le_array(reader, &mut dx10_buffer)?;
-            let dxt10 = HeaderDxt10::read_buffer(dx10_buffer)?;
+            let dxt10 = HeaderDxt10::read_buffer(dx10_buffer, options)?;
             Some(dxt10)
         } else {
             None
@@ -271,7 +271,7 @@ impl HeaderDxt10 {
     pub(crate) const SIZE: usize = 20;
     const INTS: usize = Self::SIZE / 4;
 
-    fn read_buffer(buffer: [u32; Self::INTS]) -> Result<Self, HeaderError> {
+    fn read_buffer(buffer: [u32; Self::INTS], options: &Options) -> Result<Self, HeaderError> {
         let dxgi_format =
             DxgiFormat::try_from(buffer[0]).map_err(HeaderError::InvalidDxgiFormat)?;
         let resource_dimension = ResourceDimension::try_from(buffer[1])
@@ -280,9 +280,13 @@ impl HeaderDxt10 {
         let misc_flag = MiscFlags::from_bits_retain(buffer[2]);
         let misc_flags2 = MiscFlags2::from_bits_retain(buffer[4]);
 
-        let array_size = buffer[3];
+        let mut array_size = buffer[3];
         if resource_dimension == ResourceDimension::Texture3D && array_size != 1 {
-            return Err(HeaderError::InvalidArraySizeForTexture3D(array_size));
+            if options.permissive {
+                array_size = 1;
+            } else {
+                return Err(HeaderError::InvalidArraySizeForTexture3D(array_size));
+            }
         }
 
         Ok(Self {
