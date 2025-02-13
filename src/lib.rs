@@ -218,6 +218,21 @@ fn fix(
                 }
             }
         }
+
+        // Some DX10 writers set array_size=0 for "arrays" with one element.
+        // https://github.com/microsoft/DirectXTex/pull/490
+        if dx10.array_size == 0 {
+            let mut new_header = header.clone();
+            new_header.dxt10.as_mut().unwrap().array_size = 1;
+
+            if let Ok(new_layout) = DataLayout::from_header_with(&new_header, pixel_info) {
+                if new_layout.data_len() == expected_data_len {
+                    *header = new_header;
+                    *layout = new_layout;
+                    return;
+                }
+            }
+        }
     }
 
     // sadly, we couldn't fix it

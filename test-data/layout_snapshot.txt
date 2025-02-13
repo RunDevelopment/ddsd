@@ -3389,6 +3389,31 @@ images/permissive/BC1 Pretoria Gardens DX10 - array_size=6 issue4.dds
 
 
 
+images/permissive/array_size 0.dds
+    Error if strict: Data length mismatch
+
+    Header:
+        flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
+        w/h: 32 x 32
+        mipmap_count: Some(1)
+        pixel_format: FourCC(0x30315844; DX10)
+        caps: DdsCaps(TEXTURE)
+        caps2: DdsCaps2(0x0)
+        dxt10:
+            dxgi_format: BC1_UNORM_SRGB (72)
+            resource_dimension: Texture2D
+            misc_flag: MiscFlags(0x0)
+            array_size: 1
+
+    Pixel Format:
+        format: BC1_UNORM (sRGB)
+        pixel_info: Block(8 bytes per 4x4 block)
+
+    Layout: Texture (512 bytes)
+        Surface[0] 32x32 (512 bytes)
+
+
+
 images/permissive/dds header_size 24.dds
     Error if strict: Header error: Invalid DDS header size of 24, expected 124
 
