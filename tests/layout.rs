@@ -1,6 +1,6 @@
 use ddsd::*;
 
-use std::{fs::File, path::PathBuf};
+use std::{fs::File, num::NonZero, path::PathBuf};
 
 mod util;
 
@@ -274,7 +274,7 @@ fn iter_and_get_volume() {
         height: 128,
         width: 256,
         depth: Some(4),
-        mipmap_count: Some(5),
+        mipmap_count: NonZero::new(5).unwrap(),
         pixel_format: PixelFormat::new_four_cc(FourCC::DX10),
         caps: DdsCaps::REQUIRED | DdsCaps::COMPLEX,
         caps2: DdsCaps2::empty(),
@@ -316,7 +316,7 @@ fn iter_and_get_texture_array() {
         height: 128,
         width: 256,
         depth: None,
-        mipmap_count: Some(5),
+        mipmap_count: NonZero::new(5).unwrap(),
         pixel_format: PixelFormat::new_four_cc(FourCC::DX10),
         caps: DdsCaps::REQUIRED,
         caps2: DdsCaps2::empty(),
@@ -360,7 +360,7 @@ fn empty_array() {
         height: 128,
         width: 256,
         depth: None,
-        mipmap_count: Some(5),
+        mipmap_count: NonZero::new(5).unwrap(),
         pixel_format: PixelFormat::new_four_cc(FourCC::DX10),
         caps: DdsCaps::REQUIRED,
         caps2: DdsCaps2::empty(),

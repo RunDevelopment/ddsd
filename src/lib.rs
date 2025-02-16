@@ -10,7 +10,7 @@ mod layout;
 mod pixel;
 mod util;
 
-use std::io::Read;
+use std::{io::Read, num::NonZeroU32};
 
 pub use error::*;
 pub use format::*;
@@ -235,7 +235,7 @@ fn create_layout_and_fix_header(
 
     // Sometimes, the mipmap count is incorrect. We can try to fix this by
     // simply guessing the correct mipmap count.
-    let mipmap = header.mipmap_count.unwrap_or(1).max(1);
+    let mipmap = header.mipmap_count.get();
     let max_dimension = header
         .width
         .max(header.height)
@@ -247,9 +247,9 @@ fn create_layout_and_fix_header(
         mipmap - 1, // otherwise, it could be an off-by-one error
         mipmap.saturating_add(1),
     ];
-    for guess in guesses {
+    for guess in guesses.into_iter().filter_map(NonZeroU32::new) {
         let mut new_header = header.clone();
-        new_header.mipmap_count = Some(guess);
+        new_header.mipmap_count = guess;
 
         if let Ok(layout) = DataLayout::from_header_with(&new_header, pixel_info) {
             if layout.data_len() == expected_data_len {

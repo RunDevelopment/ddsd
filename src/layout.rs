@@ -586,7 +586,7 @@ struct SurfaceLayoutInfo {
 }
 impl SurfaceLayoutInfo {
     fn from_header(header: &Header, pixels: PixelInfo) -> Result<Self, DecodeError> {
-        let mipmaps = header.mipmap_count.unwrap_or(1).max(1);
+        let mipmaps = header.mipmap_count.get();
         if mipmaps > 32 {
             return Err(DecodeError::TooManyMipMaps(mipmaps));
         }
@@ -621,7 +621,7 @@ struct VolumeLayoutInfo {
 }
 impl VolumeLayoutInfo {
     fn from_header(header: &Header, pixels: PixelInfo) -> Result<Self, DecodeError> {
-        let mipmaps = header.mipmap_count.unwrap_or(1).max(1);
+        let mipmaps = header.mipmap_count.get();
         if mipmaps > 32 {
             return Err(DecodeError::TooManyMipMaps(mipmaps));
         }

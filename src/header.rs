@@ -1,6 +1,6 @@
 use crate::{util::read_u32_le_array, HeaderError, Options, Size};
 use bitflags::bitflags;
-use std::io::Read;
+use std::{io::Read, num::NonZeroU32};
 
 /// The DDS header and the DX10 extension header if any.
 ///
@@ -18,7 +18,7 @@ pub struct Header {
     /// Depth of a volume texture (in pixels).
     pub depth: Option<u32>,
     /// Number of mipmap levels.
-    pub mipmap_count: Option<u32>,
+    pub mipmap_count: NonZeroU32,
     pub pixel_format: PixelFormat,
     /// Specifies the complexity of the surfaces stored.
     pub caps: DdsCaps,
@@ -92,12 +92,14 @@ impl Header {
         let caps2 = DdsCaps2::from_bits_retain(buffer[27]);
 
         let mipmap_count = if flags.contains(DdsFlags::MIPMAP_COUNT)
-            || caps.contains(DdsCaps::COMPLEX | DdsCaps::MIPMAP)
+            || caps.contains(DdsCaps::COMPLEX)
+            || caps.contains(DdsCaps::MIPMAP)
         {
-            Some(buffer[6])
+            buffer[6]
         } else {
-            None
+            1
         };
+        let mipmap_count = NonZeroU32::new(mipmap_count.max(1)).unwrap();
 
         let dxt10 = if pixel_format.four_cc == Some(FourCC::DX10) {
             let mut dx10_buffer: [u32; 5] = Default::default();

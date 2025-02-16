@@ -2,7 +2,7 @@ images/bc fuzz/bc6 SF16 mode one 00011.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -25,7 +25,7 @@ images/bc fuzz/bc6 SF16 mode one 00111.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -48,7 +48,7 @@ images/bc fuzz/bc6 SF16 mode one 01011.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -71,7 +71,7 @@ images/bc fuzz/bc6 SF16 mode one 01111.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -94,7 +94,7 @@ images/bc fuzz/bc6 SF16 mode two 00.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -117,7 +117,7 @@ images/bc fuzz/bc6 SF16 mode two 00010.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -140,7 +140,7 @@ images/bc fuzz/bc6 SF16 mode two 00110.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -163,7 +163,7 @@ images/bc fuzz/bc6 SF16 mode two 01.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -186,7 +186,7 @@ images/bc fuzz/bc6 SF16 mode two 01010.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -209,7 +209,7 @@ images/bc fuzz/bc6 SF16 mode two 01110.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -232,7 +232,7 @@ images/bc fuzz/bc6 SF16 mode two 10010.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -255,7 +255,7 @@ images/bc fuzz/bc6 SF16 mode two 10110.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -278,7 +278,7 @@ images/bc fuzz/bc6 SF16 mode two 11010.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -301,7 +301,7 @@ images/bc fuzz/bc6 SF16 mode two 11110.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -324,7 +324,7 @@ images/bc fuzz/bc6 UF16 mode one 00011.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -347,7 +347,7 @@ images/bc fuzz/bc6 UF16 mode one 00111.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -370,7 +370,7 @@ images/bc fuzz/bc6 UF16 mode one 01011.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -393,7 +393,7 @@ images/bc fuzz/bc6 UF16 mode one 01111.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -416,7 +416,7 @@ images/bc fuzz/bc6 UF16 mode two 00.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -439,7 +439,7 @@ images/bc fuzz/bc6 UF16 mode two 00010.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -462,7 +462,7 @@ images/bc fuzz/bc6 UF16 mode two 00110.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -485,7 +485,7 @@ images/bc fuzz/bc6 UF16 mode two 01.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -508,7 +508,7 @@ images/bc fuzz/bc6 UF16 mode two 01010.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -531,7 +531,7 @@ images/bc fuzz/bc6 UF16 mode two 01110.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -554,7 +554,7 @@ images/bc fuzz/bc6 UF16 mode two 10010.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -577,7 +577,7 @@ images/bc fuzz/bc6 UF16 mode two 10110.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -600,7 +600,7 @@ images/bc fuzz/bc6 UF16 mode two 11010.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -623,7 +623,7 @@ images/bc fuzz/bc6 UF16 mode two 11110.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 128
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -646,7 +646,7 @@ images/bc fuzz/bc7 mode 0.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 1024 x 64
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -669,7 +669,7 @@ images/bc fuzz/bc7 mode 1.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 512 x 256
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -692,7 +692,7 @@ images/bc fuzz/bc7 mode 2.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 512 x 256
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -715,7 +715,7 @@ images/bc fuzz/bc7 mode 3.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 512 x 256
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -738,7 +738,7 @@ images/bc fuzz/bc7 mode 4.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 1024 x 32
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -761,7 +761,7 @@ images/bc fuzz/bc7 mode 5.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 1024 x 16
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -784,7 +784,7 @@ images/bc fuzz/bc7 mode 6.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 256
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -807,7 +807,7 @@ images/bc fuzz/bc7 mode 7.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 512 x 256
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -830,7 +830,7 @@ images/bc/DX10 BC1_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -860,7 +860,7 @@ images/bc/DX10 BC1_UNORM_SRGB.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -890,7 +890,7 @@ images/bc/DX10 BC2_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -920,7 +920,7 @@ images/bc/DX10 BC2_UNORM_SRGB.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -950,7 +950,7 @@ images/bc/DX10 BC3_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -980,7 +980,7 @@ images/bc/DX10 BC3_UNORM_SRGB.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1010,7 +1010,7 @@ images/bc/DX10 BC4_SNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1040,7 +1040,7 @@ images/bc/DX10 BC4_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1070,7 +1070,7 @@ images/bc/DX10 BC5_SNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1100,7 +1100,7 @@ images/bc/DX10 BC5_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1130,7 +1130,7 @@ images/bc/DX10 BC6H_SF16.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1160,7 +1160,7 @@ images/bc/DX10 BC6H_UF16.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1190,7 +1190,7 @@ images/bc/DX10 BC7_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1220,7 +1220,7 @@ images/bc/DX10 BC7_UNORM_SRGB.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1250,7 +1250,7 @@ images/bc/DX9 BC1_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1275,7 +1275,7 @@ images/bc/DX9 BC2_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x33545844; DXT3)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1300,7 +1300,7 @@ images/bc/DX9 BC3_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x35545844; DXT5)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1325,7 +1325,7 @@ images/bc/DX9 BC3n (DXT5nm).dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x35545844; DXT5)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1350,7 +1350,7 @@ images/bc/DX9 BC4_SNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x53344342; BC4S)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1375,7 +1375,7 @@ images/bc/DX9 BC4_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x31495441; ATI1)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1400,7 +1400,7 @@ images/bc/DX9 BC5_SNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x53354342; BC5S)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1425,7 +1425,7 @@ images/bc/DX9 BC5_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x32495441; ATI2)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1450,7 +1450,7 @@ images/bc/DX9 DXT2.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x32545844; DXT2)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1475,7 +1475,7 @@ images/bc/DX9 DXT4.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x34545844; DXT4)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1500,7 +1500,7 @@ images/bc/dxt1-alpha.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 128 x 64
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1525,7 +1525,7 @@ images/bc/dxt1-simple.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | LINEAR_SIZE)
         w/h: 64 x 64
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1543,7 +1543,7 @@ images/bc/dxt1.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | LINEAR_SIZE)
         w/h: 120 x 120
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1561,7 +1561,7 @@ images/bc/dxt3-simple.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | LINEAR_SIZE)
         w/h: 64 x 64
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x33545844; DXT3)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1579,7 +1579,7 @@ images/bc/dxt3.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | LINEAR_SIZE)
         w/h: 120 x 120
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x33545844; DXT3)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1597,7 +1597,7 @@ images/bc/dxt5-simple.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | LINEAR_SIZE)
         w/h: 64 x 64
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x35545844; DXT5)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1615,7 +1615,7 @@ images/bc/dxt5.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | LINEAR_SIZE)
         w/h: 120 x 120
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x35545844; DXT5)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1633,7 +1633,7 @@ images/cube/BC1 Pretoria Gardens DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 128 x 128
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(CUBE_MAP | CUBE_MAP_POSITIVE_X | CUBE_MAP_NEGATIVE_X | CUBE_MAP_POSITIVE_Y | CUBE_MAP_NEGATIVE_Y | CUBE_MAP_POSITIVE_Z | CUBE_MAP_NEGATIVE_Z)
@@ -1709,7 +1709,7 @@ images/cube/DXT1 Pretoria Gardens DX9.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 128 x 128
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(CUBE_MAP | CUBE_MAP_POSITIVE_X | CUBE_MAP_NEGATIVE_X | CUBE_MAP_POSITIVE_Y | CUBE_MAP_NEGATIVE_Y | CUBE_MAP_POSITIVE_Z | CUBE_MAP_NEGATIVE_Z)
@@ -1780,7 +1780,7 @@ images/cube/Pretoria Gardens DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 128 x 128
-        mipmap_count: Some(1)
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | TEXTURE)
         caps2: DdsCaps2(CUBE_MAP | CUBE_MAP_POSITIVE_X | CUBE_MAP_NEGATIVE_X | CUBE_MAP_POSITIVE_Y | CUBE_MAP_NEGATIVE_Y | CUBE_MAP_POSITIVE_Z | CUBE_MAP_NEGATIVE_Z)
@@ -1814,7 +1814,7 @@ images/cube/Pretoria Gardens DX9.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 128 x 128
-        mipmap_count: Some(1)
+        mipmap_count: 1
         pixel_format:
             flags: PixelFormatFlags(RGB)
             rgb_bit_count: 16
@@ -1846,7 +1846,7 @@ images/cube/SYSTEX_ENVLIGHT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT)
         w/h: 32 x 32
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x71)
         caps: DdsCaps(COMPLEX | TEXTURE)
         caps2: DdsCaps2(CUBE_MAP | CUBE_MAP_POSITIVE_X | CUBE_MAP_NEGATIVE_X | CUBE_MAP_POSITIVE_Y | CUBE_MAP_NEGATIVE_Y | CUBE_MAP_POSITIVE_Z | CUBE_MAP_NEGATIVE_Z)
@@ -1875,7 +1875,7 @@ images/nvtt/16.16f RG DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1905,7 +1905,7 @@ images/nvtt/16.16f RG.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x70)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1930,7 +1930,7 @@ images/nvtt/16f R DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1960,7 +1960,7 @@ images/nvtt/16f R.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x6f)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -1985,7 +1985,7 @@ images/nvtt/16x4f RGBA DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2015,7 +2015,7 @@ images/nvtt/16x4f RGBA.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x71)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2040,7 +2040,7 @@ images/nvtt/32.32f RG DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2070,7 +2070,7 @@ images/nvtt/32.32f RG.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x73)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2095,7 +2095,7 @@ images/nvtt/32f R DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2125,7 +2125,7 @@ images/nvtt/32f R.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x72)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2150,7 +2150,7 @@ images/nvtt/32x4f RGBA DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2180,7 +2180,7 @@ images/nvtt/32x4f RGBA.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x74)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2205,7 +2205,7 @@ images/nvtt/8 A DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2235,7 +2235,7 @@ images/nvtt/8 A.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(ALPHA)
             rgb_bit_count: 8
@@ -2263,7 +2263,7 @@ images/nvtt/8 L DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2293,7 +2293,7 @@ images/nvtt/8 L.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(RGB | LUMINANCE)
             rgb_bit_count: 8
@@ -2321,7 +2321,7 @@ images/nvtt/8.8.8 BGR.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(RGB)
             rgb_bit_count: 24
@@ -2349,7 +2349,7 @@ images/nvtt/8.8.8 RGB.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(RGB)
             rgb_bit_count: 24
@@ -2377,7 +2377,7 @@ images/nvtt/8.8.8.8 BGRA DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2407,7 +2407,7 @@ images/nvtt/8.8.8.8 BGRA.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | RGB)
             rgb_bit_count: 32
@@ -2435,7 +2435,7 @@ images/nvtt/8.8.8.8 RGBA DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2465,7 +2465,7 @@ images/nvtt/8.8.8.X BGRX.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(RGB)
             rgb_bit_count: 32
@@ -2493,7 +2493,7 @@ images/nvtt/8.8.8.x BGRX DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2523,7 +2523,7 @@ images/nvtt/BC1 RGB DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2553,7 +2553,7 @@ images/nvtt/BC1 RGB.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2578,7 +2578,7 @@ images/nvtt/BC1a RGBA DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2608,7 +2608,7 @@ images/nvtt/BC1a RGBA.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2633,7 +2633,7 @@ images/nvtt/BC2 RGB DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2663,7 +2663,7 @@ images/nvtt/BC2 RGBA.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x33545844; DXT3)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2688,7 +2688,7 @@ images/nvtt/BC3 RGBA DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2718,7 +2718,7 @@ images/nvtt/BC3 RGBA.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x35545844; DXT5)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2743,7 +2743,7 @@ images/nvtt/BC3n AGBR.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x42475852; RXGB)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2768,7 +2768,7 @@ images/nvtt/BC3n Normals.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2798,7 +2798,7 @@ images/nvtt/BC4u R.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2828,7 +2828,7 @@ images/nvtt/BC5u RG DX10.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2858,7 +2858,7 @@ images/nvtt/BC5u RG.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x55354342; BC5U)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2883,7 +2883,7 @@ images/other/24-bit-uncompressed-odd.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT)
         w/h: 1 x 3
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format:
             flags: PixelFormatFlags(RGB)
             rgb_bit_count: 24
@@ -2904,7 +2904,7 @@ images/other/32-bit-uncompressed-odd.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT)
         w/h: 5 x 9
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | RGB)
             rgb_bit_count: 32
@@ -2925,7 +2925,7 @@ images/other/32-bit-uncompressed.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT)
         w/h: 64 x 64
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | RGB)
             rgb_bit_count: 32
@@ -2946,7 +2946,7 @@ images/other/32bit.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT)
         w/h: 120 x 120
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | RGB)
             rgb_bit_count: 32
@@ -2967,7 +2967,7 @@ images/other/BC1_UNORM_SRGB-47.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 256 x 256
-        mipmap_count: Some(9)
+        mipmap_count: 9
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -2998,7 +2998,7 @@ images/other/RXGB (no alpha).dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 64 x 64
-        mipmap_count: Some(7)
+        mipmap_count: 7
         pixel_format: FourCC(0x42475852; RXGB)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3022,7 +3022,7 @@ images/other/ati2-custom-flags.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x32495441; ATI2)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3047,7 +3047,7 @@ images/other/bc6h-simple.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 64 x 64
-        mipmap_count: Some(1)
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3070,7 +3070,7 @@ images/other/bc7-simple.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 64 x 64
-        mipmap_count: Some(1)
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3093,7 +3093,7 @@ images/other/both-dx10-and-pixel-format.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3123,7 +3123,7 @@ images/other/dds_A4R4G4B4.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 256
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | RGB)
             rgb_bit_count: 16
@@ -3144,7 +3144,7 @@ images/other/dds_A8B8G8R8.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 256
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | RGB)
             rgb_bit_count: 32
@@ -3165,7 +3165,7 @@ images/other/dds_R5G6B5.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 256
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format:
             flags: PixelFormatFlags(RGB)
             rgb_bit_count: 16
@@ -3186,7 +3186,7 @@ images/other/dds_R8G8B8.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 256 x 256
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format:
             flags: PixelFormatFlags(RGB)
             rgb_bit_count: 24
@@ -3207,7 +3207,7 @@ images/other/dds_a1r5g5b5.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT)
         w/h: 200 x 286
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | RGB)
             rgb_bit_count: 16
@@ -3228,7 +3228,7 @@ images/other/dxt5-simple-1x1.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | LINEAR_SIZE)
         w/h: 1 x 1
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x35545844; DXT5)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3246,7 +3246,7 @@ images/other/dxt5-simple-odd.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | LINEAR_SIZE)
         w/h: 5 x 9
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x35545844; DXT5)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3264,7 +3264,7 @@ images/other/non-standard header flag.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT | 0x20000000)
         w/h: 4 x 4
-        mipmap_count: Some(3)
+        mipmap_count: 3
         pixel_format:
             flags: PixelFormatFlags(RGB)
             rgb_bit_count: 24
@@ -3287,7 +3287,7 @@ images/other/restricted-header.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | RGB)
             rgb_bit_count: 16
@@ -3317,7 +3317,7 @@ images/permissive/BC1 Pretoria Gardens DX10 - array_size=6 issue4.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 128 x 128
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(CUBE_MAP | CUBE_MAP_POSITIVE_X | CUBE_MAP_NEGATIVE_X | CUBE_MAP_POSITIVE_Y | CUBE_MAP_NEGATIVE_Y | CUBE_MAP_POSITIVE_Z | CUBE_MAP_NEGATIVE_Z)
@@ -3395,7 +3395,7 @@ images/permissive/array_size 0.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 32 x 32
-        mipmap_count: Some(1)
+        mipmap_count: 1
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3420,7 +3420,7 @@ images/permissive/dds header_size 24.dds
     Header:
         flags: DdsFlags(LINEAR_SIZE)
         w/h: 32 x 32
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3440,7 +3440,7 @@ images/permissive/dds pixel_format size 0.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 32 x 32
-        mipmap_count: Some(1)
+        mipmap_count: 1
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3460,7 +3460,7 @@ images/permissive/dds pixel_format size 24.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 32 x 32
-        mipmap_count: Some(1)
+        mipmap_count: 1
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3480,7 +3480,7 @@ images/permissive/no pixel_format flags.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 32 x 32
-        mipmap_count: Some(1)
+        mipmap_count: 1
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(0x0)
         caps2: DdsCaps2(0x0)
@@ -3498,7 +3498,7 @@ images/permissive/wrong mipmap count 1.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 32 x 32
-        mipmap_count: Some(0)
+        mipmap_count: 1
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3518,7 +3518,7 @@ images/permissive/wrong mipmap count 2.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 32 x 32
-        mipmap_count: Some(6)
+        mipmap_count: 6
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3543,7 +3543,7 @@ images/permissive/wrong mipmap count 3.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 32 x 32
-        mipmap_count: Some(1)
+        mipmap_count: 1
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3563,7 +3563,7 @@ images/permissive/wrong mipmap count 4.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 32 x 32
-        mipmap_count: Some(6)
+        mipmap_count: 6
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3588,7 +3588,7 @@ images/permissive/wrong mipmap count 5.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 32 x 32
-        mipmap_count: Some(1)
+        mipmap_count: 1
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3608,7 +3608,7 @@ images/permissive/wrong mipmap count 6.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
         w/h: 32 x 32
-        mipmap_count: Some(6)
+        mipmap_count: 6
         pixel_format: FourCC(0x31545844; DXT1)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3631,7 +3631,7 @@ images/sub-sampled/DX10 G8R8_G8B8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3661,7 +3661,7 @@ images/sub-sampled/DX10 R8G8_B8G8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3691,7 +3691,7 @@ images/sub-sampled/DX10 Y210.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3721,7 +3721,7 @@ images/sub-sampled/DX10 Y216.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3751,7 +3751,7 @@ images/sub-sampled/DX9 G8R8_G8B8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x42475247; GRGB)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3776,7 +3776,7 @@ images/sub-sampled/DX9 R8G8_B8G8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x47424752; RGBG)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3801,7 +3801,7 @@ images/sub-sampled/DX9 UYVY.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x59565955; UYVY)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3826,7 +3826,7 @@ images/sub-sampled/DX9 YUY2.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x32595559; YUY2)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3851,7 +3851,7 @@ images/uncompressed/DX10 A4B4G4R4_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3881,7 +3881,7 @@ images/uncompressed/DX10 A8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3911,7 +3911,7 @@ images/uncompressed/DX10 AYUV.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3941,7 +3941,7 @@ images/uncompressed/DX10 B4G4R4A4_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -3971,7 +3971,7 @@ images/uncompressed/DX10 B5G5R5A1_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4001,7 +4001,7 @@ images/uncompressed/DX10 B5G6R5_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4031,7 +4031,7 @@ images/uncompressed/DX10 B8G8R8A8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4061,7 +4061,7 @@ images/uncompressed/DX10 B8G8R8A8_UNORM_SRGB.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4091,7 +4091,7 @@ images/uncompressed/DX10 B8G8R8X8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4121,7 +4121,7 @@ images/uncompressed/DX10 B8G8R8X8_UNORM_SRGB.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4151,7 +4151,7 @@ images/uncompressed/DX10 R10G10B10A2_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4181,7 +4181,7 @@ images/uncompressed/DX10 R10G10B10_XR_BIAS_A2_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4211,7 +4211,7 @@ images/uncompressed/DX10 R11G11B10_FLOAT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4241,7 +4241,7 @@ images/uncompressed/DX10 R16G16B16A16_FLOAT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4271,7 +4271,7 @@ images/uncompressed/DX10 R16G16B16A16_SNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4301,7 +4301,7 @@ images/uncompressed/DX10 R16G16B16A16_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4331,7 +4331,7 @@ images/uncompressed/DX10 R16G16_FLOAT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4361,7 +4361,7 @@ images/uncompressed/DX10 R16G16_SNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4391,7 +4391,7 @@ images/uncompressed/DX10 R16G16_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4421,7 +4421,7 @@ images/uncompressed/DX10 R16_FLOAT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4451,7 +4451,7 @@ images/uncompressed/DX10 R16_SNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4481,7 +4481,7 @@ images/uncompressed/DX10 R16_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4511,7 +4511,7 @@ images/uncompressed/DX10 R32G32B32A32_FLOAT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4541,7 +4541,7 @@ images/uncompressed/DX10 R32G32B32_FLOAT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4571,7 +4571,7 @@ images/uncompressed/DX10 R32G32_FLOAT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4601,7 +4601,7 @@ images/uncompressed/DX10 R32_FLOAT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4631,7 +4631,7 @@ images/uncompressed/DX10 R8G8B8A8_SNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4661,7 +4661,7 @@ images/uncompressed/DX10 R8G8B8A8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4691,7 +4691,7 @@ images/uncompressed/DX10 R8G8B8A8_UNORM_SRGB.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4721,7 +4721,7 @@ images/uncompressed/DX10 R8G8_SNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4751,7 +4751,7 @@ images/uncompressed/DX10 R8G8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4781,7 +4781,7 @@ images/uncompressed/DX10 R8_SNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4811,7 +4811,7 @@ images/uncompressed/DX10 R8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4841,7 +4841,7 @@ images/uncompressed/DX10 R9G9B9E5_SHAREDEXP.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4871,7 +4871,7 @@ images/uncompressed/DX10 Y410.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4901,7 +4901,7 @@ images/uncompressed/DX10 Y416.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -4931,7 +4931,7 @@ images/uncompressed/DX9 A8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(ALPHA)
             rgb_bit_count: 8
@@ -4959,7 +4959,7 @@ images/uncompressed/DX9 B4G4R4A4_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | RGB)
             rgb_bit_count: 16
@@ -4987,7 +4987,7 @@ images/uncompressed/DX9 B5G5R5A1_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | RGB)
             rgb_bit_count: 16
@@ -5015,7 +5015,7 @@ images/uncompressed/DX9 B5G6R5_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(RGB)
             rgb_bit_count: 16
@@ -5043,7 +5043,7 @@ images/uncompressed/DX9 B8G8R8A8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | RGB)
             rgb_bit_count: 32
@@ -5071,7 +5071,7 @@ images/uncompressed/DX9 B8G8R8X8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(RGB)
             rgb_bit_count: 32
@@ -5099,7 +5099,7 @@ images/uncompressed/DX9 R10G10B10A2_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | RGB)
             rgb_bit_count: 32
@@ -5127,7 +5127,7 @@ images/uncompressed/DX9 R16G16B16A16_FLOAT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x71)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -5152,7 +5152,7 @@ images/uncompressed/DX9 R16G16B16A16_SNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x6e)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -5177,7 +5177,7 @@ images/uncompressed/DX9 R16G16B16A16_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x24)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -5202,7 +5202,7 @@ images/uncompressed/DX9 R16G16_FLOAT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x70)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -5227,7 +5227,7 @@ images/uncompressed/DX9 R16G16_SNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(BUMP_DUDV)
             rgb_bit_count: 32
@@ -5255,7 +5255,7 @@ images/uncompressed/DX9 R16G16_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(RGB)
             rgb_bit_count: 32
@@ -5283,7 +5283,7 @@ images/uncompressed/DX9 R16_FLOAT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x6f)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -5308,7 +5308,7 @@ images/uncompressed/DX9 R16_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(LUMINANCE)
             rgb_bit_count: 16
@@ -5336,7 +5336,7 @@ images/uncompressed/DX9 R32G32B32A32_FLOAT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x74)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -5361,7 +5361,7 @@ images/uncompressed/DX9 R32G32_FLOAT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x73)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -5386,7 +5386,7 @@ images/uncompressed/DX9 R32_FLOAT.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format: FourCC(0x72)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(0x0)
@@ -5411,7 +5411,7 @@ images/uncompressed/DX9 R8G8B8A8_SNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(BUMP_DUDV)
             rgb_bit_count: 32
@@ -5439,7 +5439,7 @@ images/uncompressed/DX9 R8G8B8A8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | RGB)
             rgb_bit_count: 32
@@ -5467,7 +5467,7 @@ images/uncompressed/DX9 R8G8_SNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(BUMP_DUDV)
             rgb_bit_count: 16
@@ -5495,7 +5495,7 @@ images/uncompressed/DX9 R8G8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | LUMINANCE)
             rgb_bit_count: 16
@@ -5523,7 +5523,7 @@ images/uncompressed/DX9 R8_UNORM.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
         w/h: 129 x 66
-        mipmap_count: Some(8)
+        mipmap_count: 8
         pixel_format:
             flags: PixelFormatFlags(LUMINANCE)
             rgb_bit_count: 8
@@ -5551,7 +5551,7 @@ images/volume/TestVolume_Noise3D BC1.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE | DEPTH)
         w/h/d: 64 x 64 x 64
-        mipmap_count: Some(7)
+        mipmap_count: 7
         pixel_format: FourCC(0x30315844; DX10)
         caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
         caps2: DdsCaps2(VOLUME)
@@ -5707,7 +5707,7 @@ images/volume/TestVolume_Noise3D.dds
     Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | DEPTH)
         w/h/d: 64 x 64 x 64
-        mipmap_count: None
+        mipmap_count: 1
         pixel_format:
             flags: PixelFormatFlags(ALPHAPIXELS | RGB)
             rgb_bit_count: 32
