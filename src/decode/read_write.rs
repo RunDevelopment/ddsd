@@ -290,6 +290,27 @@ pub(crate) fn process_2x1_blocks_helper<
         decoded[width - 1] = cast::IntoNeBytes::into_ne_bytes(p0);
     }
 }
+
+/// A helper function for implementing [`ProcessBlocksFn`]s.
+#[inline]
+pub(crate) fn process_8x1_blocks_helper<
+    OutPixel: cast::IntoNeBytes + Copy,
+    F: Fn(u8) -> [OutPixel; 8],
+>(
+    encoded_blocks: &[u8],
+    decoded: &mut [u8],
+    stride: usize,
+    range: PixelRange,
+    process_block: F,
+) {
+    general_process_blocks::<8, 1, 8, 1, OutPixel, _>(
+        encoded_blocks,
+        decoded,
+        stride,
+        range,
+        |block| process_block(block[0]),
+    );
+}
 /// A helper function for implementing [`ProcessBlocksFn`]s.
 #[inline]
 pub(crate) fn process_4x4_blocks_helper<

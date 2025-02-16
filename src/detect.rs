@@ -64,6 +64,7 @@ pub(crate) const fn dxgi_format_to_supported(dxgi_format: DxgiFormat) -> Option<
         DxgiFormat::YUY2 => Some(SupportedFormat::YUY2),
         DxgiFormat::Y210 => Some(SupportedFormat::Y210),
         DxgiFormat::Y216 => Some(SupportedFormat::Y216),
+        DxgiFormat::R1_UNORM => Some(SupportedFormat::R1_UNORM),
 
         // block compression formats
         DxgiFormat::BC1_TYPELESS | DxgiFormat::BC1_UNORM | DxgiFormat::BC1_UNORM_SRGB => {

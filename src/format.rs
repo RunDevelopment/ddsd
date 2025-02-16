@@ -137,6 +137,7 @@ pub enum SupportedFormat {
     Y416,
 
     // sub-sampled formats
+    R1_UNORM,
     R8G8_B8G8_UNORM,
     G8R8_G8B8_UNORM,
     UYVY,
@@ -515,6 +516,7 @@ const fn get_decoders(format: SupportedFormat) -> DecoderSet {
         SupportedFormat::Y416 => decode::Y416,
 
         // sub-sampled formats
+        SupportedFormat::R1_UNORM => decode::R1_UNORM,
         SupportedFormat::R8G8_B8G8_UNORM => decode::R8G8_B8G8_UNORM,
         SupportedFormat::G8R8_G8B8_UNORM => decode::G8R8_G8B8_UNORM,
         SupportedFormat::UYVY => decode::UYVY,

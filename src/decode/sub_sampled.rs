@@ -2,9 +2,10 @@ use crate::cast::FromLeBytes;
 use crate::util::closure_types;
 use crate::{Channels::*, ColorFormat};
 
-use super::convert::{n8, yuv10, yuv16, yuv8, ToRgba, WithPrecision};
+use super::convert::{n1, n8, yuv10, yuv16, yuv8, ToRgba, WithPrecision};
 use super::read_write::{
-    for_each_block_rect_untyped, for_each_block_untyped, process_2x1_blocks_helper, PixelRange,
+    for_each_block_rect_untyped, for_each_block_untyped, process_2x1_blocks_helper,
+    process_8x1_blocks_helper, PixelRange,
 };
 use super::{Args, DecoderSet, DirectDecoder, RArgs};
 
@@ -65,6 +66,40 @@ macro_rules! rgba {
     ($out:ty, $bpb:literal, $f:expr) => {
         underlying!(Rgba, $out, $bpb, $f)
     };
+}
+
+macro_rules! r1 {
+    ($channels:expr, $out:ty, $f:expr) => {{
+        const CHANNELS: usize = $channels.count() as usize;
+        type OutPixel = [$out; CHANNELS];
+
+        fn process_blocks(
+            encoded_blocks: &[u8],
+            decoded: &mut [u8],
+            stride: usize,
+            range: PixelRange,
+        ) {
+            let f = closure_types::<u8, [OutPixel; 8], _>($f);
+            process_8x1_blocks_helper(encoded_blocks, decoded, stride, range, f)
+        }
+
+        DirectDecoder::new(
+            ColorFormat::new($channels, <$out as WithPrecision>::PRECISION),
+            |Args(r, out, context)| {
+                for_each_block_untyped::<8, 1, 1, OutPixel>(r, out, context.size, process_blocks)
+            },
+            |RArgs(r, out, row_pitch, rect, context)| {
+                for_each_block_rect_untyped::<8, 1, 1>(
+                    r,
+                    out,
+                    row_pitch,
+                    context.size,
+                    rect,
+                    process_blocks,
+                )
+            },
+        )
+    }};
 }
 
 // decoders
@@ -140,4 +175,33 @@ pub(crate) const Y216: DecoderSet = DecoderSet::new(&[
     rgb!(u16, 8, |pair| decode_y216(pair, yuv16::n16)),
     rgb!(f32, 8, |pair| decode_y216(pair, yuv16::f32)),
     rgb!(u8, 8, |pair| decode_y216(pair, yuv16::n8)),
+]);
+
+#[inline]
+fn r1_bits(bits: u8) -> [u8; 8] {
+    let mut out = [0; 8];
+    for i in 0..8 {
+        out[i] = (bits >> (7 - i)) & 1;
+    }
+    out
+}
+pub(crate) const R1_UNORM: DecoderSet = DecoderSet::new(&[
+    r1!(Grayscale, u8, |block| r1_bits(block)
+        .map(n1::n8)
+        .map(|p| [p])),
+    r1!(Grayscale, u16, |block| r1_bits(block)
+        .map(n1::n16)
+        .map(|p| [p])),
+    r1!(Grayscale, f32, |block| r1_bits(block)
+        .map(n1::f32)
+        .map(|p| [p])),
+    r1!(Rgb, u8, |block| r1_bits(block)
+        .map(n1::n8)
+        .map(|p| [p, p, p])),
+    r1!(Rgb, u16, |block| r1_bits(block)
+        .map(n1::n16)
+        .map(|p| [p, p, p])),
+    r1!(Rgb, f32, |block| r1_bits(block)
+        .map(n1::f32)
+        .map(|p| [p, p, p])),
 ]);

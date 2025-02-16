@@ -230,6 +230,8 @@ impl From<SupportedFormat> for PixelInfo {
             F::R8G8_B8G8_UNORM | F::G8R8_G8B8_UNORM | F::UYVY | F::YUY2 => Self::block(4, (2, 1)),
             // 8 bytes per one 2x1 block
             F::Y210 | F::Y216 => Self::block(8, (2, 1)),
+            // 1 byte per one 8x1 block
+            F::R1_UNORM => Self::block(1, (8, 1)),
 
             // block compression formats
             // 8 bytes per one 4x4 block
@@ -342,15 +344,6 @@ impl TryFrom<DxgiFormat> for PixelInfo {
             | F::R32G32B32A32_UINT
             | F::R32G32B32A32_SINT => Ok(Self::fixed(16)),
 
-            // Special:
-            // R1_UNORM is technically a fixed bits-per-pixel format, but since
-            // it's only 1 bit per pixel, it effectively behaves like a 8x1
-            // block format with 1 byte per block.
-            // Note: I couldn't find any official documentation on this format,
-            // and guessed the memory layout based on vibes.
-            // TODO: Verify this.
-            F::R1_UNORM => Ok(Self::block(1, (8, 1))),
-
             // Sub-sampled 2x1
             F::R8G8_B8G8_UNORM | F::G8R8_G8B8_UNORM => Ok(Self::block(4, (2, 1))),
             // YUV 4:2:2 formats
@@ -358,6 +351,7 @@ impl TryFrom<DxgiFormat> for PixelInfo {
             // https://learn.microsoft.com/en-us/windows/win32/medfound/10-bit-and-16-bit-yuv-video-formats#y216-and-y210
             F::YUY2 => Ok(Self::block(4, (2, 1))),
             F::Y210 | F::Y216 => Ok(Self::block(8, (2, 1))),
+            F::R1_UNORM => Ok(Self::block(1, (8, 1))),
 
             // Block compression formats
             // 8 bytes per 4x4 block
