@@ -1,3 +1,5 @@
+use std::num::NonZeroU32;
+
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ddsd::*;
 use rand::{seq::SliceRandom, Rng, RngCore};
@@ -8,16 +10,8 @@ fn simple_texture_header(size: Size, format: DxgiFormat) -> Header {
         height: size.height,
         width: size.width,
         depth: None,
-        mipmap_count: None,
-        pixel_format: PixelFormat {
-            flags: PixelFormatFlags::FOURCC,
-            four_cc: Some(FourCC::DX10),
-            rgb_bit_count: 0,
-            r_bit_mask: 0,
-            g_bit_mask: 0,
-            b_bit_mask: 0,
-            a_bit_mask: 0,
-        },
+        mipmap_count: NonZeroU32::new(1).unwrap(),
+        pixel_format: PixelFormat::new_four_cc(FourCC::DX10),
         caps: DdsCaps::REQUIRED,
         caps2: DdsCaps2::empty(),
         dxt10: Some(HeaderDxt10 {

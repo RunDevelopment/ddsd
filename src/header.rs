@@ -234,7 +234,7 @@ impl PixelFormat {
     ///
     /// This is a convenience function for creating a pixel format with the
     /// [`PixelFormatFlags::FOURCC`] flag set.
-    pub fn new_four_cc(four_cc: FourCC) -> Self {
+    pub const fn new_four_cc(four_cc: FourCC) -> Self {
         Self {
             flags: PixelFormatFlags::FOURCC,
             four_cc: Some(four_cc),
