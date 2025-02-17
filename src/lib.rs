@@ -77,12 +77,23 @@ pub struct Options {
     /// is set to `true`. If [`Options::permissive`] is set to `false`, this
     /// option will be ignored.
     ///
-    /// If this option is set incorrectly (i.e. the length is not equal to the
-    /// actual length of the file), the decoder may fail to read certain
-    /// invalid DDS files, either rejecting them or reading their contents
-    /// incorrectly. Valid DDS files are not affected by this option.
+    /// If this option is set incorrectly (i.e. this length is not equal to the
+    /// actual length of the file), the decoder may misinterpret certain valid
+    /// and invalid DDS files.
     ///
     /// Defaults to `None`.
+    ///
+    /// ### Usage
+    ///
+    /// The most common way to set this option is to use the file metadata:
+    ///
+    /// ```no_run
+    /// let mut file = std::fs::File::open("example.dds").unwrap();
+    ///
+    /// let mut options = ddsd::Options::default();
+    /// options.permissive = true;
+    /// options.file_len = file.metadata().ok().map(|m| m.len());
+    /// ```
     pub file_len: Option<u64>,
 }
 impl Default for Options {
@@ -187,43 +198,54 @@ fn create_layout_and_fix_header(
     pixel_info: PixelInfo,
     options: &Options,
 ) -> Result<DataLayout, DecodeError> {
-    let original_layout = DataLayout::from_header_with(header, pixel_info);
+    // Note: I can't wait for if-let-chains to be stabilized...
+
+    let mut current_layout = DataLayout::from_header_with(header, pixel_info);
     let expected_data_len = match get_expected_data_len(header, options) {
         Some(value) => value,
         None => {
             // if we don't know the expected data length, we can't fix the header
-            return original_layout;
+            return current_layout;
         }
     };
     // if the header is already correct, we don't need to fix it
-    if let Ok(ref layout) = original_layout {
+    if let Ok(ref layout) = current_layout {
         if layout.data_len() == expected_data_len {
-            return original_layout;
+            return current_layout;
         }
     }
 
+    // Some DX10 writers set array_size=0 for "arrays" with one element.
+    // https://github.com/microsoft/DirectXTex/pull/490
+    //
+    // Note: Unlike the other fixes, this directly change the header even if it
+    // doesn't match the expected data length. This is because
+    // `expected_data_len > 0` always implies `array_size > 0`, so we know that
+    // `array_size = 0` is wrong, no matter what.
+    if expected_data_len > 0 {
+        if let Some(dx10) = &mut header.dxt10 {
+            if dx10.array_size == 0 {
+                dx10.array_size = 1;
+
+                // update the current layout since we directly changed the header
+                current_layout = DataLayout::from_header_with(header, pixel_info);
+                if let Ok(ref layout) = current_layout {
+                    if layout.data_len() == expected_data_len {
+                        return current_layout;
+                    }
+                }
+            }
+        }
+    }
+
+    // Some DDS files containing a single cube map have array_size set to 6.
+    // This is incorrect and likely stems from an incorrect MS DDS docs example.
+    // https://github.com/MicrosoftDocs/win32/pull/1970
     if let Some(dx10) = &header.dxt10 {
-        // Some DDS files containing a single cube map have array_size set to 6.
-        // This is incorrect and likely stems from an incorrect MS DDS docs example.
-        // https://github.com/MicrosoftDocs/win32/pull/1970
         if dx10.array_size == 6
             && dx10.resource_dimension == ResourceDimension::Texture2D
             && dx10.misc_flag.contains(MiscFlags::TEXTURE_CUBE)
         {
-            let mut new_header = header.clone();
-            new_header.dxt10.as_mut().unwrap().array_size = 1;
-
-            if let Ok(layout) = DataLayout::from_header_with(&new_header, pixel_info) {
-                if layout.data_len() == expected_data_len {
-                    *header = new_header;
-                    return Ok(layout);
-                }
-            }
-        }
-
-        // Some DX10 writers set array_size=0 for "arrays" with one element.
-        // https://github.com/microsoft/DirectXTex/pull/490
-        if dx10.array_size == 0 {
             let mut new_header = header.clone();
             new_header.dxt10.as_mut().unwrap().array_size = 1;
 
@@ -263,5 +285,5 @@ fn create_layout_and_fix_header(
     }
 
     // sadly, we couldn't fix it
-    original_layout
+    current_layout
 }

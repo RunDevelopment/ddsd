@@ -76,10 +76,11 @@ fn full_layout_snapshot() {
 
     fn collect_info(dds_path: &PathBuf) -> Result<String, Box<dyn std::error::Error>> {
         let mut file = File::open(dds_path)?;
+        let file_len = file.metadata()?.len();
 
         let mut options = Options::default();
         options.permissive = true;
-        options.file_len = Some(file.metadata()?.len());
+        options.file_len = Some(file_len);
         let decoder = DdsDecoder::new_with(&mut file, &options)?;
 
         let header = decoder.header();
@@ -90,6 +91,11 @@ fn full_layout_snapshot() {
 
         if let Err(e) = strict_header(dds_path) {
             output.push_str(&format!("Error if strict: {}\n\n", e));
+        }
+
+        let data_len = file_len - get_header_byte_len(header);
+        if data_len != layout.data_len() {
+            return Err("Data length mismatch".into());
         }
 
         // HEADER
