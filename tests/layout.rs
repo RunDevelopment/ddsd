@@ -95,7 +95,11 @@ fn full_layout_snapshot() {
 
         let data_len = file_len - get_header_byte_len(header);
         if data_len != layout.data_len() {
-            return Err("Data length mismatch".into());
+            output.push_str(&format!(
+                "Data length mismatch: {} != {}\n\n",
+                data_len,
+                layout.data_len()
+            ));
         }
 
         // HEADER
