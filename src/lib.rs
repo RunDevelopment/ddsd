@@ -188,9 +188,12 @@ fn create_layout_and_fix_header(
     options: &Options,
 ) -> Result<DataLayout, DecodeError> {
     let original_layout = DataLayout::from_header_with(header, pixel_info);
-    let Some(expected_data_len) = get_expected_data_len(header, options) else {
-        // if we don't know the expected data length, we can't fix the header
-        return original_layout;
+    let expected_data_len = match get_expected_data_len(header, options) {
+        Some(value) => value,
+        None => {
+            // if we don't know the expected data length, we can't fix the header
+            return original_layout;
+        }
     };
     // if the header is already correct, we don't need to fix it
     if let Ok(ref layout) = original_layout {
