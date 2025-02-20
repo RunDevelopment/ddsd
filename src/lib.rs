@@ -134,7 +134,7 @@ impl DdsDecoder {
     }
     pub fn from_header_with(mut header: Header, options: &Options) -> Result<Self, DecodeError> {
         // enforce `array_size` limit
-        if let Some(dxt10) = &header.dxt10 {
+        if let Some(dxt10) = header.dx10() {
             if dxt10.array_size > options.max_array_size {
                 return Err(DecodeError::ArraySizeTooBig(dxt10.array_size));
             }
@@ -173,7 +173,7 @@ impl DdsDecoder {
     /// This can only be `true` for DX10+ DDS files. Legacy (DX9) formats cannot
     /// specify the color space and are assumed to be linear.
     pub fn is_srgb(&self) -> bool {
-        if let Some(dx10) = &self.header.dxt10 {
+        if let Some(dx10) = self.header.dx10() {
             dx10.dxgi_format.is_srgb()
         } else {
             false
@@ -182,14 +182,7 @@ impl DdsDecoder {
 }
 
 fn get_expected_data_len(header: &Header, options: &Options) -> Option<u64> {
-    let non_data = Header::MAGIC.len()
-        + Header::SIZE
-        + if header.dxt10.is_some() {
-            HeaderDxt10::SIZE
-        } else {
-            0
-        };
-
+    let non_data = Header::MAGIC.len() + header.byte_len();
     options.file_len?.checked_sub(non_data as u64)
 }
 
@@ -223,7 +216,7 @@ fn create_layout_and_fix_header(
     // `expected_data_len > 0` always implies `array_size > 0`, so we know that
     // `array_size = 0` is wrong, no matter what.
     if expected_data_len > 0 {
-        if let Some(dx10) = &mut header.dxt10 {
+        if let Some(dx10) = header.dx10_mut() {
             if dx10.array_size == 0 {
                 dx10.array_size = 1;
 
@@ -241,13 +234,13 @@ fn create_layout_and_fix_header(
     // Some DDS files containing a single cube map have array_size set to 6.
     // This is incorrect and likely stems from an incorrect MS DDS docs example.
     // https://github.com/MicrosoftDocs/win32/pull/1970
-    if let Some(dx10) = &header.dxt10 {
+    if let Some(dx10) = header.dx10() {
         if dx10.array_size == 6
             && dx10.resource_dimension == ResourceDimension::Texture2D
             && dx10.misc_flag.contains(MiscFlags::TEXTURE_CUBE)
         {
             let mut new_header = header.clone();
-            new_header.dxt10.as_mut().unwrap().array_size = 1;
+            new_header.dx10_mut().unwrap().array_size = 1;
 
             if let Ok(layout) = DataLayout::from_header_with(&new_header, pixel_info) {
                 if layout.data_len() == expected_data_len {

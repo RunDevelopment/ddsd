@@ -1,7 +1,7 @@
 //! Internal module for detecting supported formats from DXGI, FourCC, and
 //! DDS pixel formats.
 
-use crate::{DxgiFormat, FourCC, PixelFormat, PixelFormatFlags, SupportedFormat};
+use crate::{DxgiFormat, FourCC, MaskPixelFormat, PixelFormatFlags, SupportedFormat};
 
 pub(crate) const fn dxgi_format_to_supported(dxgi_format: DxgiFormat) -> Option<SupportedFormat> {
     match dxgi_format {
@@ -147,7 +147,7 @@ pub(crate) const fn four_cc_to_supported(four_cc: FourCC) -> Option<SupportedFor
     }
 }
 
-pub(crate) fn pixel_format_to_supported(pf: &PixelFormat) -> Option<SupportedFormat> {
+pub(crate) fn pixel_format_to_supported(pf: &MaskPixelFormat) -> Option<SupportedFormat> {
     // known patterns
     for (pattern, format) in KNOWN_PIXEL_FORMATS {
         if pattern.matches(pf) {
@@ -167,7 +167,7 @@ struct PFPattern {
     a_bit_mask: u32,
 }
 impl PFPattern {
-    fn matches(&self, pf: &PixelFormat) -> bool {
+    fn matches(&self, pf: &MaskPixelFormat) -> bool {
         pf.flags == self.flags
             && pf.rgb_bit_count == self.rgb_bit_count
             && pf.r_bit_mask == self.r_bit_mask

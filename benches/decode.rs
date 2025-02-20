@@ -6,15 +6,12 @@ use rand::{seq::SliceRandom, Rng, RngCore};
 
 fn simple_texture_header(size: Size, format: DxgiFormat) -> Header {
     Header {
-        flags: DdsFlags::REQUIRED,
         height: size.height,
         width: size.width,
         depth: None,
         mipmap_count: NonZeroU32::new(1).unwrap(),
-        pixel_format: PixelFormat::new_four_cc(FourCC::DX10),
-        caps: DdsCaps::REQUIRED,
         caps2: DdsCaps2::empty(),
-        dxt10: Some(HeaderDxt10 {
+        format: PixelFormat::Dx10(Dx10Header {
             dxgi_format: format,
             resource_dimension: ResourceDimension::Texture2D,
             misc_flag: MiscFlags::empty(),

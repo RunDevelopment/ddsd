@@ -466,7 +466,7 @@ impl DataLayout {
         Self::from_header_with(header, PixelInfo::from_header(header)?)
     }
     pub fn from_header_with(header: &Header, pixel_info: PixelInfo) -> Result<Self, DecodeError> {
-        if let Some(ref header_dxt10) = header.dxt10 {
+        if let Some(header_dxt10) = header.dx10() {
             // DirectX 10+
 
             match header_dxt10.resource_dimension {

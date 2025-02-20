@@ -1,6 +1,183 @@
-use crate::{util::read_u32_le_array, HeaderError, Options, Size};
+use crate::{
+    cast,
+    util::{self, read_u32_le_array},
+    HeaderError, Options, Size,
+};
 use bitflags::bitflags;
-use std::{io::Read, num::NonZeroU32};
+use std::{
+    io::{Read, Write},
+    num::NonZeroU32,
+};
+
+/// An unparsed DDS header without magic bytes.
+///
+/// See [`Header`] for a parsed version.
+///
+/// See https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct RawHeader {
+    /// Size of structure. This member must be set to 124.
+    pub size: u32,
+    /// Flags to indicate which members contain valid data.
+    pub flags: DdsFlags,
+    pub height: u32,
+    pub width: u32,
+    /// The pitch or number of bytes per scan line in an uncompressed texture;
+    /// the total number of bytes in the top level texture for a compressed texture.
+    pub pitch_or_linear_size: u32,
+    /// Depth of a volume texture (in pixels), otherwise unused.
+    pub depth: u32,
+    /// Number of mipmap levels, otherwise unused.
+    pub mipmap_count: u32,
+    pub reserved1: [u32; 11],
+    pub pixel_format: RawPixelFormat,
+    pub caps: DdsCaps,
+    pub caps2: DdsCaps2,
+    pub caps3: u32,
+    pub caps4: u32,
+    pub reserved2: u32,
+    pub dx10: Option<RawDx10Header>,
+}
+/// An unparsed DDS pixel format.
+///
+/// See [`PixelFormat`] for a parsed version.
+///
+/// See https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-pixelformat
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct RawPixelFormat {
+    /// Structure size; set to 32 (bytes).
+    pub size: u32,
+    /// Values which indicate what type of data is in the surface.
+    pub flags: PixelFormatFlags,
+    pub four_cc: FourCC,
+    pub rgb_bit_count: u32,
+    pub r_bit_mask: u32,
+    pub g_bit_mask: u32,
+    pub b_bit_mask: u32,
+    pub a_bit_mask: u32,
+}
+/// An unparsed DDS DX10 header.
+///
+/// See [`Dx10Header`] for a parsed version.
+///
+/// See https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header-dxt10
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct RawDx10Header {
+    pub dxgi_format: u32,
+    pub resource_dimension: u32,
+    pub misc_flag: MiscFlags,
+    pub array_size: u32,
+    pub misc_flag2: u32,
+}
+
+impl RawHeader {
+    /// Reads the raw header without magic bytes from a reader.
+    pub fn read<R: Read>(reader: &mut R) -> std::io::Result<Self> {
+        let mut buffer: [u32; Header::INTS] = Default::default();
+        read_u32_le_array(reader, &mut buffer)?;
+
+        let mut header: Self = Self {
+            size: buffer[0],
+            flags: DdsFlags::from_bits_retain(buffer[1]),
+            height: buffer[2],
+            width: buffer[3],
+            pitch_or_linear_size: buffer[4],
+            depth: buffer[5],
+            mipmap_count: buffer[6],
+            reserved1: [
+                buffer[7], buffer[8], buffer[9], buffer[10], buffer[11], buffer[12], buffer[13],
+                buffer[14], buffer[15], buffer[16], buffer[17],
+            ],
+            pixel_format: RawPixelFormat {
+                size: buffer[18],
+                flags: PixelFormatFlags::from_bits_retain(buffer[19]),
+                four_cc: FourCC(buffer[20]),
+                rgb_bit_count: buffer[21],
+                r_bit_mask: buffer[22],
+                g_bit_mask: buffer[23],
+                b_bit_mask: buffer[24],
+                a_bit_mask: buffer[25],
+            },
+            caps: DdsCaps::from_bits_retain(buffer[26]),
+            caps2: DdsCaps2::from_bits_retain(buffer[27]),
+            caps3: buffer[28],
+            caps4: buffer[29],
+            reserved2: buffer[30],
+            dx10: None,
+        };
+
+        if header.pixel_format.four_cc == FourCC::DX10 {
+            let buffer = &mut buffer[..5];
+            read_u32_le_array(reader, buffer)?;
+            header.dx10 = Some(RawDx10Header {
+                dxgi_format: buffer[0],
+                resource_dimension: buffer[1],
+                misc_flag: MiscFlags::from_bits_retain(buffer[2]),
+                array_size: buffer[3],
+                misc_flag2: buffer[4],
+            });
+        }
+
+        Ok(header)
+    }
+
+    /// Write the raw header without magic bytes to a writer.
+    pub fn write<W: Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        let mut buffer: [u32; 36] = [
+            self.size,
+            self.flags.bits(),
+            self.height,
+            self.width,
+            self.pitch_or_linear_size,
+            self.depth,
+            self.mipmap_count,
+            self.reserved1[0],
+            self.reserved1[1],
+            self.reserved1[2],
+            self.reserved1[3],
+            self.reserved1[4],
+            self.reserved1[5],
+            self.reserved1[6],
+            self.reserved1[7],
+            self.reserved1[8],
+            self.reserved1[9],
+            self.reserved1[10],
+            self.pixel_format.size,
+            self.pixel_format.flags.bits(),
+            self.pixel_format.four_cc.0,
+            self.pixel_format.rgb_bit_count,
+            self.pixel_format.r_bit_mask,
+            self.pixel_format.g_bit_mask,
+            self.pixel_format.b_bit_mask,
+            self.pixel_format.a_bit_mask,
+            self.caps.bits(),
+            self.caps2.bits(),
+            self.caps3,
+            self.caps4,
+            self.reserved2,
+            // fill in the DXT10 header later
+            0,
+            0,
+            0,
+            0,
+            0,
+        ];
+        let selection = if let Some(dx10) = &self.dx10 {
+            buffer[31] = dx10.dxgi_format;
+            buffer[32] = dx10.resource_dimension;
+            buffer[33] = dx10.misc_flag.bits();
+            buffer[34] = dx10.array_size;
+            buffer[35] = dx10.misc_flag2;
+            &mut buffer[..]
+        } else {
+            &mut buffer[..31]
+        };
+        let bytes = cast::as_bytes_mut(selection);
+        util::le_to_native_endian_32(bytes);
+        writer.write_all(bytes)?;
+        Ok(())
+    }
+}
 
 /// The DDS header and the DX10 extension header if any.
 ///
@@ -9,8 +186,6 @@ use std::{io::Read, num::NonZeroU32};
 /// https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Header {
-    /// Flags to indicate which members contain valid data.
-    pub flags: DdsFlags,
     /// Surface height (in pixels).
     pub height: u32,
     /// Surface width (in pixels).
@@ -19,18 +194,47 @@ pub struct Header {
     pub depth: Option<u32>,
     /// Number of mipmap levels.
     pub mipmap_count: NonZeroU32,
-    pub pixel_format: PixelFormat,
-    /// Specifies the complexity of the surfaces stored.
-    pub caps: DdsCaps,
     /// Additional detail about the surfaces stored.
     pub caps2: DdsCaps2,
-    /// Optional DX10 extension header.
-    pub dxt10: Option<HeaderDxt10>,
+    pub format: PixelFormat,
 }
 
 impl Header {
+    pub fn dx10(&self) -> Option<&Dx10Header> {
+        match &self.format {
+            PixelFormat::Dx10(dx10) => Some(dx10),
+            _ => None,
+        }
+    }
+    pub fn dx10_mut(&mut self) -> Option<&mut Dx10Header> {
+        match &mut self.format {
+            PixelFormat::Dx10(dx10) => Some(dx10),
+            _ => None,
+        }
+    }
+
+    /// Returns the size of the header (including the DX10 header extension if
+    /// any) in bytes. This does **not** include the magic bytes at the start
+    /// of the file.
+    ///
+    /// This is useful for calculating the offset to the pixel data.
+    ///
+    /// The returned value will be 144 for DX10 DDS files and 124 for legacy
+    /// files.
+    pub fn byte_len(&self) -> usize {
+        let mut size = Header::SIZE;
+        if matches!(self.format, PixelFormat::Dx10(_)) {
+            size += Dx10Header::SIZE;
+        }
+        size
+    }
+
+    pub fn size(&self) -> Size {
+        Size::new(self.width, self.height)
+    }
+
     pub(crate) const SIZE: usize = 124;
-    const INTS: usize = Self::SIZE / 4;
+    pub(crate) const INTS: usize = Self::SIZE / 4;
 
     /// The magic bytes (`'DDS '`) at the start of every DDS file.
     pub const MAGIC: [u8; 4] = *b"DDS ";
@@ -50,120 +254,80 @@ impl Header {
         Ok(())
     }
 
-    /// Reads the header without magic bytes from a reader.
-    ///
-    /// If the header is read successfully, the reader will be at the start of the pixel data.
-    pub fn read<R: Read>(reader: &mut R, options: &Options) -> Result<Self, HeaderError> {
-        let mut buffer: [u32; Self::INTS] = Default::default();
-        Self::read_base_header_buffer(reader, options, &mut buffer)?;
-
+    pub fn from_raw(raw: &RawHeader, options: &Options) -> Result<Self, HeaderError> {
         // verify header size
-        let header_size = buffer[0];
-        if header_size != Self::SIZE as u32 {
-            if options.permissive && header_size == 24 {
+        if raw.size != Self::SIZE as u32 {
+            if options.permissive && raw.size == 24 {
                 // Some DDS files from the game Stalker 2 have their header size
                 // set to 24 instead of 124. This is likely a typo in the source
                 // code from the DDS encoder they used.
                 // https://github.com/microsoft/DirectXTex/issues/399
             } else {
-                return Err(HeaderError::InvalidHeaderSize(header_size));
+                return Err(HeaderError::InvalidHeaderSize(raw.size));
             }
         }
 
-        let flags = DdsFlags::from_bits_retain(buffer[1]);
-
-        let height = buffer[2];
-        let width = buffer[3];
+        let flags = raw.flags;
+        let height = raw.height;
+        let width = raw.width;
         let depth = if flags.contains(DdsFlags::DEPTH) {
-            Some(buffer[5])
+            Some(raw.depth)
         } else {
             None
         };
 
-        let pixel_format = PixelFormat::read_buffer(
-            [
-                buffer[18], buffer[19], buffer[20], buffer[21], buffer[22], buffer[23], buffer[24],
-                buffer[25],
-            ],
-            options,
-        )?;
-
-        let caps = DdsCaps::from_bits_retain(buffer[26]);
-        let caps2 = DdsCaps2::from_bits_retain(buffer[27]);
-
         let mipmap_count = if flags.contains(DdsFlags::MIPMAP_COUNT)
-            || caps.contains(DdsCaps::COMPLEX)
-            || caps.contains(DdsCaps::MIPMAP)
+            || raw.caps.contains(DdsCaps::COMPLEX)
+            || raw.caps.contains(DdsCaps::MIPMAP)
         {
-            buffer[6]
+            raw.mipmap_count
         } else {
             1
         };
         let mipmap_count = NonZeroU32::new(mipmap_count.max(1)).unwrap();
 
-        let dxt10 = if pixel_format.four_cc == Some(FourCC::DX10) {
-            let mut dx10_buffer: [u32; 5] = Default::default();
-            read_u32_le_array(reader, &mut dx10_buffer)?;
-            let dxt10 = HeaderDxt10::read_buffer(dx10_buffer, options)?;
-            Some(dxt10)
-        } else {
-            None
-        };
+        let format = PixelFormat::from_raw(raw, options)?;
 
         Ok(Self {
-            flags,
             height,
             width,
             depth,
             mipmap_count,
-            pixel_format,
-            caps,
-            caps2,
-            dxt10,
+            format,
+            caps2: raw.caps2,
         })
     }
 
-    fn read_base_header_buffer<R: Read>(
-        reader: &mut R,
-        options: &Options,
-        buffer: &mut [u32; Self::INTS],
-    ) -> Result<(), HeaderError> {
-        if options.skip_magic_bytes {
-            // in this case, we don't need to check the magic bytes and read
-            // directly into the output buffer
-            read_u32_le_array(reader, &mut buffer[1..])?;
-        } else {
-            // Self::INTS + 1 for the header + magic bytes
-            let mut temp_buffer: [u32; Self::INTS + 1] = Default::default();
-            read_u32_le_array(reader, &mut temp_buffer)?;
-
-            let magic = temp_buffer[0].to_le_bytes();
-            if magic != Self::MAGIC {
-                return Err(HeaderError::InvalidMagicBytes(magic));
-            }
-
-            buffer.copy_from_slice(&temp_buffer[1..]);
+    /// Reads the header without magic bytes from a reader.
+    ///
+    /// If the header is read successfully, the reader will be at the start of the pixel data.
+    pub fn read<R: Read>(reader: &mut R, options: &Options) -> Result<Self, HeaderError> {
+        if !options.skip_magic_bytes {
+            Self::read_magic(reader)?;
         }
 
-        Ok(())
-    }
-
-    pub fn size(&self) -> Size {
-        Size::new(self.width, self.height)
+        let raw = RawHeader::read(reader)?;
+        Self::from_raw(&raw, options)
     }
 }
 
-/// The DDS_PIXELFORMAT structure describes the pixel format of the surface or volume texture.
+/// A combined pixel format and DX10 header.
+///
+/// DDS files define their pixel format either with a (legacy) `DDS_PIXELFORMAT`
+/// structure or with a `DXGI_FORMAT` from the Direct3D 10 and later APIs. This
+/// enum represents all cases in a single type.
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-pixelformat
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct PixelFormat {
+pub enum PixelFormat {
+    FourCC(FourCC),
+    Mask(MaskPixelFormat),
+    Dx10(Dx10Header),
+}
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct MaskPixelFormat {
     /// Values which indicate what type of data is in the surface.
     pub flags: PixelFormatFlags,
-    /// Four-character codes for specifying compressed or custom formats. Possible values include: DXT1, DXT2, DXT3, DXT4, or DXT5.
-    ///
-    /// This is `None` if `flags` does not contain [`PixelFormatFlags::FOURCC`].
-    pub four_cc: Option<FourCC>,
     /// Number of bits in an RGB (possibly including alpha) format. Valid when dwFlags includes DDPF_RGB, DDPF_LUMINANCE, or DDPF_YUV.
     pub rgb_bit_count: u32,
     /// Red (or luminance or Y) mask for reading color data. For instance, given the A8R8G8B8 format, the red mask would be 0x00ff0000.
@@ -177,11 +341,10 @@ pub struct PixelFormat {
 }
 impl PixelFormat {
     const SIZE: usize = 32;
-    const INTS: usize = Self::SIZE / 4;
 
-    fn read_buffer(buffer: [u32; Self::INTS], options: &Options) -> Result<Self, HeaderError> {
-        let size = buffer[0];
-        if size != PixelFormat::SIZE as u32 {
+    fn from_raw(raw: &RawHeader, options: &Options) -> Result<Self, HeaderError> {
+        let size = raw.pixel_format.size;
+        if size != Self::SIZE as u32 {
             if options.permissive && size == 0 {
                 // Some DDS files have their pixel format size set to 0.
                 // https://github.com/microsoft/DirectXTex/issues/392
@@ -195,13 +358,18 @@ impl PixelFormat {
             }
         }
 
-        let mut flags = PixelFormatFlags::from_bits_retain(buffer[1]);
-        let four_cc = buffer[2];
-        let rgb_bit_count = buffer[3];
+        if let Some(dx10) = &raw.dx10 {
+            let dx10 = Dx10Header::from_raw(dx10, options)?;
+            return Ok(Self::Dx10(dx10));
+        }
+
+        let mut flags = raw.pixel_format.flags;
+        let four_cc = raw.pixel_format.four_cc;
+        let rgb_bit_count = raw.pixel_format.rgb_bit_count;
 
         if options.permissive
             && rgb_bit_count == 0
-            && four_cc != 0
+            && four_cc != FourCC::NONE
             && !flags.contains(PixelFormatFlags::FOURCC)
         {
             // Some old DDS files from Unreal Tournament 2004 have no flags set,
@@ -213,37 +381,18 @@ impl PixelFormat {
             flags |= PixelFormatFlags::FOURCC;
         }
 
-        let four_cc = if flags.contains(PixelFormatFlags::FOURCC) {
-            Some(FourCC::from(four_cc))
-        } else {
-            None
+        if flags.contains(PixelFormatFlags::FOURCC) {
+            return Ok(Self::FourCC(four_cc));
         };
 
-        Ok(Self {
+        Ok(Self::Mask(MaskPixelFormat {
             flags,
-            four_cc,
             rgb_bit_count,
-            r_bit_mask: buffer[4],
-            g_bit_mask: buffer[5],
-            b_bit_mask: buffer[6],
-            a_bit_mask: buffer[7],
-        })
-    }
-
-    /// Creates a new pixel format with the given four-character code.
-    ///
-    /// This is a convenience function for creating a pixel format with the
-    /// [`PixelFormatFlags::FOURCC`] flag set.
-    pub const fn new_four_cc(four_cc: FourCC) -> Self {
-        Self {
-            flags: PixelFormatFlags::FOURCC,
-            four_cc: Some(four_cc),
-            rgb_bit_count: 0,
-            r_bit_mask: 0,
-            g_bit_mask: 0,
-            b_bit_mask: 0,
-            a_bit_mask: 0,
-        }
+            r_bit_mask: raw.pixel_format.r_bit_mask,
+            g_bit_mask: raw.pixel_format.g_bit_mask,
+            b_bit_mask: raw.pixel_format.b_bit_mask,
+            a_bit_mask: raw.pixel_format.a_bit_mask,
+        }))
     }
 }
 
@@ -251,7 +400,7 @@ impl PixelFormat {
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header-dxt10
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct HeaderDxt10 {
+pub struct Dx10Header {
     /// The surface pixel format.
     pub dxgi_format: DxgiFormat,
     /// Identifies the type of resource.
@@ -269,20 +418,19 @@ pub struct HeaderDxt10 {
     /// Contains additional metadata (formerly was reserved). The lower 3 bits indicate the alpha mode of the associated resource. The upper 29 bits are reserved and are typically 0.
     pub misc_flags2: MiscFlags2,
 }
-impl HeaderDxt10 {
+impl Dx10Header {
     pub(crate) const SIZE: usize = 20;
-    const INTS: usize = Self::SIZE / 4;
 
-    fn read_buffer(buffer: [u32; Self::INTS], options: &Options) -> Result<Self, HeaderError> {
+    fn from_raw(raw: &RawDx10Header, options: &Options) -> Result<Self, HeaderError> {
         let dxgi_format =
-            DxgiFormat::try_from(buffer[0]).map_err(HeaderError::InvalidDxgiFormat)?;
-        let resource_dimension = ResourceDimension::try_from(buffer[1])
+            DxgiFormat::try_from(raw.dxgi_format).map_err(HeaderError::InvalidDxgiFormat)?;
+        let resource_dimension = ResourceDimension::try_from(raw.resource_dimension)
             .map_err(HeaderError::InvalidResourceDimension)?;
 
-        let misc_flag = MiscFlags::from_bits_retain(buffer[2]);
-        let misc_flags2 = MiscFlags2::from_bits_retain(buffer[4]);
+        let misc_flag = raw.misc_flag;
+        let misc_flags2 = MiscFlags2::from_bits_retain(raw.misc_flag2);
 
-        let mut array_size = buffer[3];
+        let mut array_size = raw.array_size;
         if resource_dimension == ResourceDimension::Texture3D && array_size != 1 {
             if options.permissive {
                 array_size = 1;
@@ -496,8 +644,8 @@ impl std::fmt::Debug for FourCC {
         if bytes.iter().all(|&b| b.is_ascii_alphanumeric()) {
             write!(
                 f,
-                "FourCC(0x{:x}; {}{}{}{})",
-                self.0, bytes[0] as char, bytes[1] as char, bytes[2] as char, bytes[3] as char
+                "FourCC({}{}{}{})",
+                bytes[0] as char, bytes[1] as char, bytes[2] as char, bytes[3] as char
             )
         } else {
             write!(f, "FourCC(0x{:x})", self.0)

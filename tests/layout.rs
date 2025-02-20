@@ -5,7 +5,7 @@ use std::{fs::File, num::NonZero, path::PathBuf};
 mod util;
 
 fn get_header_byte_len(header: &Header) -> u64 {
-    4 + 124 + if header.dxt10.is_some() { 20 } else { 0 }
+    4 + header.byte_len() as u64
 }
 
 #[test]
@@ -28,7 +28,7 @@ fn parse_data_layout_of_all_dds_files() {
 
         // skip cubemaps with array_size == 6 for now
         // https://github.com/RunDevelopment/ddsd/issues/4
-        if let Some(dx10) = &header.dxt10 {
+        if let Some(dx10) = header.dx10() {
             if dx10.array_size == 6 {
                 continue;
             }
@@ -104,7 +104,6 @@ fn full_layout_snapshot() {
 
         // HEADER
         output.push_str("Header:\n");
-        output.push_str(&format!("    flags: {:?}\n", header.flags));
         if let Some(d) = header.depth {
             output.push_str(&format!(
                 "    w/h/d: {:?} x {:?} x {:?}\n",
@@ -117,35 +116,39 @@ fn full_layout_snapshot() {
             ));
         }
         output.push_str(&format!("    mipmap_count: {:?}\n", header.mipmap_count));
-        if let Some(four_cc) = header.pixel_format.four_cc {
-            output.push_str(&format!("    pixel_format: {:?}\n", four_cc));
-        } else {
-            output.push_str("    pixel_format:\n");
-            output.push_str(&format!("        flags: {:?}\n", header.pixel_format.flags));
-            output.push_str(&format!(
-                "        rgb_bit_count: {:?}\n",
-                header.pixel_format.rgb_bit_count
-            ));
-            output.push_str(&format!(
-                "        bit_mask: r:0x{:x} g:0x{:x} b:0x{:x} a:0x{:x}\n",
-                header.pixel_format.r_bit_mask,
-                header.pixel_format.g_bit_mask,
-                header.pixel_format.b_bit_mask,
-                header.pixel_format.a_bit_mask
-            ));
+        if !header.caps2.is_empty() {
+            output.push_str(&format!("    caps2: {:?}\n", header.caps2));
         }
-        output.push_str(&format!("    caps: {:?}\n", header.caps));
-        output.push_str(&format!("    caps2: {:?}\n", header.caps2));
-        if let Some(dxt10) = &header.dxt10 {
-            output.push_str("    dxt10:\n");
-            output.push_str(&format!("        dxgi_format: {:?}\n", dxt10.dxgi_format));
-            output.push_str(&format!(
-                "        resource_dimension: {:?}\n",
-                dxt10.resource_dimension
-            ));
-            output.push_str(&format!("        misc_flag: {:?}\n", dxt10.misc_flag));
-            output.push_str(&format!("        array_size: {:?}\n", dxt10.array_size));
-        }
+        match &header.format {
+            PixelFormat::FourCC(four_cc) => {
+                output.push_str(&format!("    format: {:?}\n", four_cc));
+            }
+            PixelFormat::Mask(pixel_format) => {
+                output.push_str("    format: masked\n");
+                output.push_str(&format!("        flags: {:?}\n", pixel_format.flags));
+                output.push_str(&format!(
+                    "        rgb_bit_count: {:?}\n",
+                    pixel_format.rgb_bit_count
+                ));
+                output.push_str(&format!(
+                    "        bit_mask: r:0x{:x} g:0x{:x} b:0x{:x} a:0x{:x}\n",
+                    pixel_format.r_bit_mask,
+                    pixel_format.g_bit_mask,
+                    pixel_format.b_bit_mask,
+                    pixel_format.a_bit_mask
+                ));
+            }
+            PixelFormat::Dx10(dx10) => {
+                output.push_str("    format: DX10\n");
+                output.push_str(&format!("        dxgi_format: {:?}\n", dx10.dxgi_format));
+                output.push_str(&format!(
+                    "        resource_dimension: {:?}\n",
+                    dx10.resource_dimension
+                ));
+                output.push_str(&format!("        misc_flag: {:?}\n", dx10.misc_flag));
+                output.push_str(&format!("        array_size: {:?}\n", dx10.array_size));
+            }
+        };
 
         // FORMAT INFO
         output.push_str("\nPixel Format:\n");
@@ -280,15 +283,12 @@ fn full_layout_snapshot() {
 #[test]
 fn iter_and_get_volume() {
     let header_volume = Header {
-        flags: DdsFlags::REQUIRED | DdsFlags::MIPMAP_COUNT | DdsFlags::DEPTH,
         height: 128,
         width: 256,
         depth: Some(4),
         mipmap_count: NonZero::new(5).unwrap(),
-        pixel_format: PixelFormat::new_four_cc(FourCC::DX10),
-        caps: DdsCaps::REQUIRED | DdsCaps::COMPLEX,
         caps2: DdsCaps2::empty(),
-        dxt10: Some(HeaderDxt10 {
+        format: PixelFormat::Dx10(Dx10Header {
             dxgi_format: DxgiFormat::R8G8B8A8_UNORM,
             resource_dimension: ResourceDimension::Texture3D,
             misc_flag: MiscFlags::empty(),
@@ -322,15 +322,12 @@ fn iter_and_get_volume() {
 #[test]
 fn iter_and_get_texture_array() {
     let header_texture_array = Header {
-        flags: DdsFlags::REQUIRED | DdsFlags::MIPMAP_COUNT,
         height: 128,
         width: 256,
         depth: None,
         mipmap_count: NonZero::new(5).unwrap(),
-        pixel_format: PixelFormat::new_four_cc(FourCC::DX10),
-        caps: DdsCaps::REQUIRED,
         caps2: DdsCaps2::empty(),
-        dxt10: Some(HeaderDxt10 {
+        format: PixelFormat::Dx10(Dx10Header {
             dxgi_format: DxgiFormat::R8G8B8A8_UNORM,
             resource_dimension: ResourceDimension::Texture2D,
             misc_flag: MiscFlags::empty(),
@@ -366,15 +363,12 @@ fn empty_array() {
     #![allow(clippy::len_zero)]
 
     let header_texture_array = Header {
-        flags: DdsFlags::REQUIRED | DdsFlags::MIPMAP_COUNT,
         height: 128,
         width: 256,
         depth: None,
         mipmap_count: NonZero::new(5).unwrap(),
-        pixel_format: PixelFormat::new_four_cc(FourCC::DX10),
-        caps: DdsCaps::REQUIRED,
         caps2: DdsCaps2::empty(),
-        dxt10: Some(HeaderDxt10 {
+        format: PixelFormat::Dx10(Dx10Header {
             dxgi_format: DxgiFormat::R8G8B8A8_UNORM,
             resource_dimension: ResourceDimension::Texture2D,
             misc_flag: MiscFlags::empty(),

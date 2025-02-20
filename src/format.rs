@@ -3,7 +3,7 @@ use std::io::{Read, Seek};
 use crate::{
     cast,
     decode::{self, DecoderSet, ReadSeek},
-    detect, DecodeError, DxgiFormat, FourCC, Header,
+    detect, DecodeError, DxgiFormat, FourCC, Header, PixelFormat,
 };
 
 /// The number and semantics of the color channels in a surface.
@@ -174,17 +174,13 @@ pub enum SupportedFormat {
 impl SupportedFormat {
     /// Returns the format of the surfaces from a DDS header.
     pub fn from_header(header: &Header) -> Result<SupportedFormat, DecodeError> {
-        if let Some(dx10_header) = &header.dxt10 {
-            // decide based on DXGI format
-            detect::dxgi_format_to_supported(dx10_header.dxgi_format)
-                .ok_or(DecodeError::UnsupportedDxgiFormat(dx10_header.dxgi_format))
-        } else if let Some(four_cc) = header.pixel_format.four_cc {
-            // decide based on FourCC
-            detect::four_cc_to_supported(four_cc).ok_or(DecodeError::UnsupportedFourCC(four_cc))
-        } else {
-            // decide based on PixelFormat
-            detect::pixel_format_to_supported(&header.pixel_format)
-                .ok_or(DecodeError::UnsupportedPixelFormat)
+        match &header.format {
+            PixelFormat::FourCC(four_cc) => detect::four_cc_to_supported(*four_cc)
+                .ok_or(DecodeError::UnsupportedFourCC(*four_cc)),
+            PixelFormat::Mask(pixel_format) => detect::pixel_format_to_supported(pixel_format)
+                .ok_or(DecodeError::UnsupportedPixelFormat),
+            PixelFormat::Dx10(dx10) => detect::dxgi_format_to_supported(dx10.dxgi_format)
+                .ok_or(DecodeError::UnsupportedDxgiFormat(dx10.dxgi_format)),
         }
     }
     /// Returns the format of a surface from a DXGI format.

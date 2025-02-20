@@ -1,4 +1,4 @@
-use crate::{util::div_ceil, DecodeError, DxgiFormat, Header, Size, SupportedFormat};
+use crate::{util::div_ceil, DecodeError, DxgiFormat, Header, PixelFormat, Size, SupportedFormat};
 
 /// This describes the number of bits per pixel and the layout of pixels within
 /// a surface.
@@ -17,8 +17,8 @@ use crate::{util::div_ceil, DecodeError, DxgiFormat, Header, Size, SupportedForm
 ///
 /// ## Unsupported pixel formats
 ///
-/// Note that [`PixelInfo`] can even describe pixel formats `ddsd` does not
-/// support. This is by design to allow users to get the data layout for DDS
+/// Note that [`PixelInfo`] can describe pixel formats are **not** supported for
+/// decoding. This is by design to allow users to get the data layout for DDS
 /// files this library doesn't fully support.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PixelInfo {
@@ -76,21 +76,22 @@ impl PixelInfo {
     }
 
     pub fn from_header(header: &Header) -> Result<Self, DecodeError> {
-        if let Some(dx10) = &header.dxt10 {
-            dx10.dxgi_format
-                .try_into()
-                .map_err(|_| DecodeError::UnsupportedDxgiFormat(dx10.dxgi_format))
-        } else if let Some(four_cc) = header.pixel_format.four_cc {
-            SupportedFormat::from_four_cc(four_cc)
+        match &header.format {
+            PixelFormat::FourCC(four_cc) => SupportedFormat::from_four_cc(*four_cc)
                 .map(Into::into)
-                .ok_or(DecodeError::UnsupportedFourCC(four_cc))
-        } else {
-            let bit_count = header.pixel_format.rgb_bit_count;
-            if bit_count > 0 && bit_count <= 32 && bit_count % 8 == 0 {
-                Ok(PixelInfo::fixed((bit_count / 8) as u8))
-            } else {
-                Err(DecodeError::UnsupportedPixelFormat)
+                .ok_or(DecodeError::UnsupportedFourCC(*four_cc)),
+            PixelFormat::Mask(pixel_format) => {
+                let bit_count = pixel_format.rgb_bit_count;
+                if bit_count > 0 && bit_count <= 32 && bit_count % 8 == 0 {
+                    Ok(PixelInfo::fixed((bit_count / 8) as u8))
+                } else {
+                    Err(DecodeError::UnsupportedPixelFormat)
+                }
             }
+            PixelFormat::Dx10(dx10) => dx10
+                .dxgi_format
+                .try_into()
+                .map_err(|_| DecodeError::UnsupportedDxgiFormat(dx10.dxgi_format)),
         }
     }
 
