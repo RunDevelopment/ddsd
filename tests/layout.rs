@@ -1,6 +1,6 @@
 use ddsd::*;
 
-use std::{fs::File, num::NonZero, path::PathBuf};
+use std::{fs::File, io::Seek, num::NonZero, path::PathBuf};
 
 mod util;
 
@@ -102,53 +102,14 @@ fn full_layout_snapshot() {
             ));
         }
 
+        // RAW HEADER
+        file.seek(std::io::SeekFrom::Start(4))?;
+        let raw_header = RawHeader::read(&mut file)?;
+        util::pretty_print_raw_header(&mut output, &raw_header);
+        output.push('\n');
+
         // HEADER
-        output.push_str("Header:\n");
-        if let Some(d) = header.depth {
-            output.push_str(&format!(
-                "    w/h/d: {:?} x {:?} x {:?}\n",
-                header.width, header.height, d
-            ));
-        } else {
-            output.push_str(&format!(
-                "    w/h: {:?} x {:?}\n",
-                header.width, header.height
-            ));
-        }
-        output.push_str(&format!("    mipmap_count: {:?}\n", header.mipmap_count));
-        if !header.caps2.is_empty() {
-            output.push_str(&format!("    caps2: {:?}\n", header.caps2));
-        }
-        match &header.format {
-            PixelFormat::FourCC(four_cc) => {
-                output.push_str(&format!("    format: {:?}\n", four_cc));
-            }
-            PixelFormat::Mask(pixel_format) => {
-                output.push_str("    format: masked\n");
-                output.push_str(&format!("        flags: {:?}\n", pixel_format.flags));
-                output.push_str(&format!(
-                    "        rgb_bit_count: {:?}\n",
-                    pixel_format.rgb_bit_count
-                ));
-                output.push_str(&format!(
-                    "        bit_mask: r:0x{:x} g:0x{:x} b:0x{:x} a:0x{:x}\n",
-                    pixel_format.r_bit_mask,
-                    pixel_format.g_bit_mask,
-                    pixel_format.b_bit_mask,
-                    pixel_format.a_bit_mask
-                ));
-            }
-            PixelFormat::Dx10(dx10) => {
-                output.push_str("    format: DX10\n");
-                output.push_str(&format!("        dxgi_format: {:?}\n", dx10.dxgi_format));
-                output.push_str(&format!(
-                    "        resource_dimension: {:?}\n",
-                    dx10.resource_dimension
-                ));
-                output.push_str(&format!("        misc_flag: {:?}\n", dx10.misc_flag));
-                output.push_str(&format!("        array_size: {:?}\n", dx10.array_size));
-            }
-        };
+        util::pretty_print_header(&mut output, header);
 
         // FORMAT INFO
         output.push_str("\nPixel Format:\n");
@@ -245,39 +206,8 @@ fn full_layout_snapshot() {
         output.push('\n');
         output.push('\n');
     }
-    output = output.replace("\r\n", "\n");
 
-    // compare to snapshot
-    let snapshot_file = util::test_data_dir().join("layout_snapshot.txt");
-    let file_exists = snapshot_file.exists();
-    let mut native_line_ends = "\n";
-
-    if file_exists {
-        let mut snapshot = std::fs::read_to_string(&snapshot_file).unwrap();
-        if snapshot.contains("\r\n") {
-            native_line_ends = "\r\n";
-            snapshot = snapshot.replace("\r\n", "\n");
-        }
-
-        if output.trim() == snapshot.trim() {
-            // all ok
-            return;
-        }
-    }
-
-    // write snapshot
-    if !util::is_ci() {
-        println!("Writing snapshot: {:?}", snapshot_file);
-
-        std::fs::create_dir_all(snapshot_file.parent().unwrap()).unwrap();
-        std::fs::write(&snapshot_file, output.replace("\n", native_line_ends)).unwrap();
-    }
-
-    if !file_exists {
-        panic!("Snapshot file not found: {:?}", snapshot_file);
-    } else {
-        panic!("Layout snapshot differs from expected.");
-    }
+    util::compare_snapshot_text(&util::test_data_dir().join("layout_snapshot.txt"), &output);
 }
 
 #[test]

@@ -1,7 +1,7 @@
 use crate::{
     cast,
     util::{self, read_u32_le_array},
-    HeaderError, Options, Size,
+    HeaderError, Options, PixelInfo, Size,
 };
 use bitflags::bitflags;
 use std::{
@@ -67,7 +67,7 @@ pub struct RawDx10Header {
     pub resource_dimension: u32,
     pub misc_flag: MiscFlags,
     pub array_size: u32,
-    pub misc_flag2: u32,
+    pub misc_flags2: u32,
 }
 
 impl RawHeader {
@@ -106,7 +106,9 @@ impl RawHeader {
             dx10: None,
         };
 
-        if header.pixel_format.four_cc == FourCC::DX10 {
+        if header.pixel_format.flags.contains(PixelFormatFlags::FOURCC)
+            && header.pixel_format.four_cc == FourCC::DX10
+        {
             let buffer = &mut buffer[..5];
             read_u32_le_array(reader, buffer)?;
             header.dx10 = Some(RawDx10Header {
@@ -114,7 +116,7 @@ impl RawHeader {
                 resource_dimension: buffer[1],
                 misc_flag: MiscFlags::from_bits_retain(buffer[2]),
                 array_size: buffer[3],
-                misc_flag2: buffer[4],
+                misc_flags2: buffer[4],
             });
         }
 
@@ -167,7 +169,7 @@ impl RawHeader {
             buffer[32] = dx10.resource_dimension;
             buffer[33] = dx10.misc_flag.bits();
             buffer[34] = dx10.array_size;
-            buffer[35] = dx10.misc_flag2;
+            buffer[35] = dx10.misc_flags2;
             &mut buffer[..]
         } else {
             &mut buffer[..31]
@@ -215,13 +217,13 @@ pub struct Header {
 }
 
 impl Header {
-    pub fn dx10(&self) -> Option<&Dx10Header> {
+    pub const fn dx10(&self) -> Option<&Dx10Header> {
         match &self.format {
             PixelFormat::Dx10(dx10) => Some(dx10),
             _ => None,
         }
     }
-    pub fn dx10_mut(&mut self) -> Option<&mut Dx10Header> {
+    pub const fn dx10_mut(&mut self) -> Option<&mut Dx10Header> {
         match &mut self.format {
             PixelFormat::Dx10(dx10) => Some(dx10),
             _ => None,
@@ -236,7 +238,7 @@ impl Header {
     ///
     /// The returned value will be 144 for DX10 DDS files and 124 for legacy
     /// files.
-    pub fn byte_len(&self) -> usize {
+    pub const fn byte_len(&self) -> usize {
         let mut size = Header::SIZE;
         if matches!(self.format, PixelFormat::Dx10(_)) {
             size += Dx10Header::SIZE;
@@ -244,8 +246,69 @@ impl Header {
         size
     }
 
-    pub fn size(&self) -> Size {
+    pub const fn size(&self) -> Size {
         Size::new(self.width, self.height)
+    }
+
+    /// Creates a new header for DX10 texture 2D with the given dimensions and
+    /// format.
+    ///
+    /// The mipmap count is set to 1 and the alpha mode is set to unknown.
+    pub const fn new_image(width: u32, height: u32, format: DxgiFormat) -> Self {
+        Self {
+            height,
+            width,
+            depth: None,
+            mipmap_count: NonZeroU32::new(1).unwrap(),
+            format: PixelFormat::Dx10(Dx10Header {
+                dxgi_format: format,
+                resource_dimension: ResourceDimension::Texture2D,
+                misc_flag: MiscFlags::empty(),
+                array_size: 1,
+                misc_flags2: MiscFlags2::ALPHA_MODE_UNKNOWN,
+            }),
+            caps2: DdsCaps2::empty(),
+        }
+    }
+    /// Creates a new header for DX10 texture 3D with the given dimensions and
+    /// format.
+    ///
+    /// The mipmap count is set to 1 and the alpha mode is set to unknown.
+    pub const fn new_volume(width: u32, height: u32, depth: u32, format: DxgiFormat) -> Self {
+        Self {
+            height,
+            width,
+            depth: Some(depth),
+            mipmap_count: NonZeroU32::new(1).unwrap(),
+            format: PixelFormat::Dx10(Dx10Header {
+                dxgi_format: format,
+                resource_dimension: ResourceDimension::Texture3D,
+                misc_flag: MiscFlags::empty(),
+                array_size: 1,
+                misc_flags2: MiscFlags2::ALPHA_MODE_UNKNOWN,
+            }),
+            caps2: DdsCaps2::VOLUME,
+        }
+    }
+    /// Creates a new header for DX10 cube map with the given dimensions and
+    /// format.
+    ///
+    /// The mipmap count is set to 1 and the alpha mode is set to unknown.
+    pub const fn new_cube_map(width: u32, height: u32, format: DxgiFormat) -> Self {
+        Self {
+            height,
+            width,
+            depth: None,
+            mipmap_count: NonZeroU32::new(1).unwrap(),
+            format: PixelFormat::Dx10(Dx10Header {
+                dxgi_format: format,
+                resource_dimension: ResourceDimension::Texture2D,
+                misc_flag: MiscFlags::TEXTURE_CUBE,
+                array_size: 1,
+                misc_flags2: MiscFlags2::ALPHA_MODE_UNKNOWN,
+            }),
+            caps2: DdsCaps2::CUBE_MAP.union(DdsCaps2::CUBE_MAP_ALL_FACES),
+        }
     }
 
     pub(crate) const SIZE: usize = 124;
@@ -336,6 +399,27 @@ impl Header {
             flags |= DdsFlags::DEPTH;
         }
 
+        // We can only calculate the pitch or linear size if we know the byte
+        // size and layout of the pixel data.
+        let mut pitch_or_linear_size = 0;
+        if let Ok(pixel_info) = PixelInfo::from_header(self) {
+            if let PixelInfo::Fixed { bytes_per_pixel } = pixel_info {
+                let pitch = self.width.checked_mul(bytes_per_pixel as u32);
+                if let Some(pitch) = pitch {
+                    pitch_or_linear_size = pitch;
+                    flags |= DdsFlags::PITCH;
+                }
+            } else {
+                let linear_size: Option<u32> = pixel_info
+                    .surface_bytes(Size::new(self.width, self.height))
+                    .and_then(|size| size.try_into().ok());
+                if let Some(linear_size) = linear_size {
+                    pitch_or_linear_size = linear_size;
+                    flags |= DdsFlags::LINEAR_SIZE;
+                }
+            }
+        }
+
         let (pixel_format, dx10) = match &self.format {
             PixelFormat::FourCC(four_cc) => (RawPixelFormat::new_four_cc(*four_cc), None),
             PixelFormat::Mask(mask_pixel_format) => (
@@ -358,7 +442,7 @@ impl Header {
                     resource_dimension: dx10_header.resource_dimension.into(),
                     misc_flag: dx10_header.misc_flag,
                     array_size: dx10_header.array_size,
-                    misc_flag2: dx10_header.misc_flags2.bits(),
+                    misc_flags2: dx10_header.misc_flags2.bits(),
                 }),
             ),
         };
@@ -368,8 +452,8 @@ impl Header {
             flags,
             height: self.height,
             width: self.width,
-            pitch_or_linear_size: 0,
-            depth: self.depth.unwrap_or(0),
+            pitch_or_linear_size,
+            depth: self.depth.unwrap_or(1),
             mipmap_count: self.mipmap_count.get(),
             reserved1: [0; 11],
             pixel_format,
@@ -500,7 +584,7 @@ impl Dx10Header {
             .map_err(HeaderError::InvalidResourceDimension)?;
 
         let misc_flag = raw.misc_flag;
-        let misc_flags2 = MiscFlags2::from_bits_retain(raw.misc_flag2);
+        let misc_flags2 = MiscFlags2::from_bits_retain(raw.misc_flags2);
 
         let mut array_size = raw.array_size;
         if resource_dimension == ResourceDimension::Texture3D && array_size != 1 {

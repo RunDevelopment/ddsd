@@ -1,5 +1,8 @@
 use ddsd::*;
-use std::{fs::File, path::PathBuf};
+use std::{
+    fs::File,
+    path::{Path, PathBuf},
+};
 use zerocopy::{FromBytes, Immutable, IntoBytes, Ref};
 use Precision::*;
 
@@ -397,39 +400,255 @@ pub fn write_simple_dds_header(
     size: Size,
     format: DxgiFormat,
 ) -> std::io::Result<()> {
-    fn write_u32(w: &mut impl std::io::Write, x: u32) -> std::io::Result<()> {
-        w.write_all(&x.to_le_bytes())
-    }
+    let header = Header::new_image(size.width, size.height, format);
 
     w.write_all(&Header::MAGIC)?;
-    write_u32(w, 124)?;
-    write_u32(w, DdsFlags::REQUIRED.bits())?;
-    write_u32(w, size.height)?; // height
-    write_u32(w, size.width)?; // width
-    write_u32(w, 0)?; // pitch_or_linear_size
-    write_u32(w, 0)?; // depth
-    write_u32(w, 0)?; // mip_map_count
-    for _ in 0..11 {
-        write_u32(w, 0)?;
-    }
-    write_u32(w, 32)?; // size
-    write_u32(w, PixelFormatFlags::FOURCC.bits())?; // flags
-    write_u32(w, FourCC::DX10.into())?; // four_cc
-    write_u32(w, 0)?; // rgb_bit_count
-    write_u32(w, 0)?; // r_bit_mask
-    write_u32(w, 0)?; // g_bit_mask
-    write_u32(w, 0)?; // b_bit_mask
-    write_u32(w, 0)?; // a_bit_mask
-    write_u32(w, DdsCaps::TEXTURE.bits())?; // caps
-    write_u32(w, 0)?; // caps2
-    write_u32(w, 0)?; // caps3
-    write_u32(w, 0)?; // caps4
-    write_u32(w, 0)?; // reserved2
-    write_u32(w, format.into())?; // dxgiFormat
-    write_u32(w, ResourceDimension::Texture2D.into())?; // resource_dimension
-    write_u32(w, 0)?; // misc_flag
-    write_u32(w, 1)?; // array_size
-    write_u32(w, 0)?; // misc_flags2
+    header.to_raw().write(w)?;
 
     Ok(())
+}
+
+pub fn compare_snapshot_text(snapshot_file: &Path, text: &str) {
+    let text = text.replace("\r\n", "\n");
+
+    // compare to snapshot
+    let file_exists = snapshot_file.exists();
+    let mut native_line_ends = "\n";
+
+    if file_exists {
+        let mut snapshot = std::fs::read_to_string(snapshot_file).unwrap();
+        if snapshot.contains("\r\n") {
+            native_line_ends = "\r\n";
+            snapshot = snapshot.replace("\r\n", "\n");
+        }
+
+        if text.trim() == snapshot.trim() {
+            // all ok
+            return;
+        }
+    }
+
+    // write snapshot
+    if !is_ci() {
+        println!("Writing snapshot: {:?}", snapshot_file);
+
+        std::fs::create_dir_all(snapshot_file.parent().unwrap()).unwrap();
+        std::fs::write(snapshot_file, text.replace("\n", native_line_ends)).unwrap();
+    }
+
+    if !file_exists {
+        panic!("Snapshot file not found: {:?}", snapshot_file);
+    } else {
+        panic!("Snapshot differs from expected.");
+    }
+}
+
+pub fn pretty_print_header(out: &mut String, header: &Header) {
+    out.push_str("Header:\n");
+    if let Some(d) = header.depth {
+        out.push_str(&format!(
+            "    w/h/d: {:?} x {:?} x {:?}\n",
+            header.width, header.height, d
+        ));
+    } else {
+        out.push_str(&format!(
+            "    w/h: {:?} x {:?}\n",
+            header.width, header.height
+        ));
+    }
+    out.push_str(&format!("    mipmap_count: {:?}\n", header.mipmap_count));
+    if !header.caps2.is_empty() {
+        out.push_str(&format!("    caps2: {:?}\n", header.caps2));
+    }
+    match &header.format {
+        PixelFormat::FourCC(four_cc) => {
+            out.push_str(&format!("    format: {:?}\n", four_cc));
+        }
+        PixelFormat::Mask(pixel_format) => {
+            out.push_str("    format: masked\n");
+            out.push_str(&format!("        flags: {:?}\n", pixel_format.flags));
+            out.push_str(&format!(
+                "        rgb_bit_count: {:?}\n",
+                pixel_format.rgb_bit_count
+            ));
+            out.push_str(&format!(
+                "        bit_mask: r:0x{:x} g:0x{:x} b:0x{:x} a:0x{:x}\n",
+                pixel_format.r_bit_mask,
+                pixel_format.g_bit_mask,
+                pixel_format.b_bit_mask,
+                pixel_format.a_bit_mask
+            ));
+        }
+        PixelFormat::Dx10(dx10) => {
+            out.push_str(&format!("    format: DX10 {:?}\n", dx10.resource_dimension));
+            out.push_str(&format!("        dxgi_format: {:?}\n", dx10.dxgi_format));
+            if !dx10.misc_flag.is_empty() {
+                out.push_str(&format!("        misc_flag: {:?}\n", dx10.misc_flag));
+            }
+            if dx10.array_size != 1 {
+                out.push_str(&format!("        array_size: {:?}\n", dx10.array_size));
+            }
+        }
+    };
+}
+
+pub fn pretty_print_raw_header(out: &mut String, raw: &RawHeader) {
+    out.push_str("Raw Header:\n");
+
+    if raw.size != 124 {
+        out.push_str(&format!("    size: {:?}\n", raw.size));
+    }
+    out.push_str(&format!("    flags: {:?}\n", raw.flags));
+
+    if raw.flags.contains(DdsFlags::DEPTH) {
+        out.push_str(&format!(
+            "    w/h/d: {:?} x {:?} x {:?}\n",
+            raw.width, raw.height, raw.depth
+        ));
+    } else {
+        out.push_str(&format!(
+            "    w/h: {:?} x {:?} (x {:?})\n",
+            raw.width, raw.height, raw.depth
+        ));
+    }
+
+    let size = raw.pitch_or_linear_size;
+    if raw.flags.contains(DdsFlags::PITCH) && !raw.flags.contains(DdsFlags::LINEAR_SIZE) {
+        out.push_str(&format!("    pitch: {:?}\n", size));
+    } else if !raw.flags.contains(DdsFlags::PITCH) && raw.flags.contains(DdsFlags::LINEAR_SIZE) {
+        out.push_str(&format!("    linear_size: {:?}\n", size));
+    } else {
+        out.push_str(&format!("    pitch_or_linear_size: {:?}\n", size));
+    }
+
+    out.push_str(&format!("    mipmap_count: {:?}", raw.mipmap_count));
+    if !raw.flags.contains(DdsFlags::MIPMAP_COUNT) {
+        out.push_str("  (not specified)");
+    }
+    out.push('\n');
+
+    if raw.reserved1.iter().any(|&x| x != 0) {
+        out.push_str("    reserved1:\n");
+        let zero_prefix = raw.reserved1.iter().take_while(|&&x| x == 0).count();
+        if zero_prefix > 0 {
+            out.push_str(&format!("        0..={}: 0\n", zero_prefix - 1));
+        }
+        for i in zero_prefix..raw.reserved1.len() {
+            out.push_str(&format!("           {:>2}: ", i));
+
+            let n = raw.reserved1[i];
+            let bytes = n.to_le_bytes();
+
+            if bytes.iter().all(|x| x.is_ascii_alphanumeric()) {
+                for byte in bytes {
+                    out.push(byte as char);
+                }
+                out.push_str(" (ASCII)");
+            } else {
+                out.push_str(&format!("{:#010X} {}", n, n));
+            }
+
+            out.push('\n');
+        }
+    }
+
+    if raw.pixel_format.flags == PixelFormatFlags::FOURCC
+        && raw.pixel_format.rgb_bit_count == 0
+        && raw.pixel_format.r_bit_mask == 0
+        && raw.pixel_format.g_bit_mask == 0
+        && raw.pixel_format.b_bit_mask == 0
+        && raw.pixel_format.a_bit_mask == 0
+    {
+        out.push_str(&format!(
+            "    pixel_format: {:?}\n",
+            raw.pixel_format.four_cc
+        ));
+    } else {
+        out.push_str("    pixel_format:\n");
+        out.push_str(&format!("        flags: {:?}\n", raw.pixel_format.flags));
+        if raw.pixel_format.four_cc != FourCC::NONE {
+            out.push_str(&format!(
+                "        four_cc: {:?}\n",
+                raw.pixel_format.four_cc
+            ));
+        }
+        out.push_str(&format!(
+            "        rgb_bit_count: {:?}\n",
+            raw.pixel_format.rgb_bit_count
+        ));
+        out.push_str(&format!(
+            "        bit_mask: r:0x{:x} g:0x{:x} b:0x{:x} a:0x{:x}\n",
+            raw.pixel_format.r_bit_mask,
+            raw.pixel_format.g_bit_mask,
+            raw.pixel_format.b_bit_mask,
+            raw.pixel_format.a_bit_mask
+        ));
+    }
+
+    out.push_str(&format!("    caps: {:?}", raw.caps));
+    if !raw.flags.contains(DdsFlags::CAPS) {
+        out.push_str("  (not specified)");
+    }
+    out.push('\n');
+
+    out.push_str(&format!("    caps2: {:?}\n", raw.caps2));
+    if raw.caps3 != 0 || raw.caps4 != 0 || raw.reserved2 != 0 {
+        out.push_str(&format!("    caps3: {:?}\n", raw.caps3));
+        out.push_str(&format!("    caps4: {:?}\n", raw.caps4));
+        out.push_str(&format!("    reserved2: {:?}\n", raw.reserved2));
+    }
+
+    if let Some(dx10) = &raw.dx10 {
+        out.push_str("    DX10:\n");
+
+        out.push_str("        dxgi_format: ");
+        if let Ok(dxgi) = DxgiFormat::try_from(dx10.dxgi_format) {
+            out.push_str(&format!("{:?}", dxgi));
+        } else {
+            out.push_str(&format!("{:?}", dx10.dxgi_format));
+        }
+        out.push('\n');
+
+        out.push_str("        resource_dimension: ");
+        if let Ok(dim) = ResourceDimension::try_from(dx10.resource_dimension) {
+            out.push_str(&format!("{:?}", dim));
+        } else {
+            out.push_str(&format!("{:?}", dx10.resource_dimension));
+        }
+        out.push('\n');
+
+        out.push_str(&format!("        misc_flag: {:?}\n", dx10.misc_flag));
+        out.push_str(&format!("        array_size: {:?}\n", dx10.array_size));
+        out.push_str(&format!("        misc_flags2: {:?}\n", dx10.misc_flags2));
+    }
+    // match &header.format {
+    //     PixelFormat::FourCC(four_cc) => {
+    //         out.push_str(&format!("    format: {:?}\n", four_cc));
+    //     }
+    //     PixelFormat::Mask(pixel_format) => {
+    //         out.push_str("    format: masked\n");
+    //         out.push_str(&format!("        flags: {:?}\n", pixel_format.flags));
+    //         out.push_str(&format!(
+    //             "        rgb_bit_count: {:?}\n",
+    //             pixel_format.rgb_bit_count
+    //         ));
+    //         out.push_str(&format!(
+    //             "        bit_mask: r:0x{:x} g:0x{:x} b:0x{:x} a:0x{:x}\n",
+    //             pixel_format.r_bit_mask,
+    //             pixel_format.g_bit_mask,
+    //             pixel_format.b_bit_mask,
+    //             pixel_format.a_bit_mask
+    //         ));
+    //     }
+    //     PixelFormat::Dx10(dx10) => {
+    //         out.push_str("    format: DX10\n");
+    //         out.push_str(&format!("        dxgi_format: {:?}\n", dx10.dxgi_format));
+    //         out.push_str(&format!(
+    //             "        resource_dimension: {:?}\n",
+    //             dx10.resource_dimension
+    //         ));
+    //         out.push_str(&format!("        misc_flag: {:?}\n", dx10.misc_flag));
+    //         out.push_str(&format!("        array_size: {:?}\n", dx10.array_size));
+    //     }
+    // };
 }
