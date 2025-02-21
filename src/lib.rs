@@ -109,7 +109,7 @@ impl Default for Options {
 
 pub struct DdsDecoder {
     header: Header,
-    format: SupportedFormat,
+    format: DecodeFormat,
     layout: DataLayout,
 }
 
@@ -141,7 +141,7 @@ impl DdsDecoder {
         }
 
         // detect format
-        let format = SupportedFormat::from_header(&header)?;
+        let format = DecodeFormat::from_header(&header)?;
 
         // data layout
         let pixel_info = format.into();
@@ -161,7 +161,7 @@ impl DdsDecoder {
     pub fn header(&self) -> &Header {
         &self.header
     }
-    pub fn format(&self) -> SupportedFormat {
+    pub fn format(&self) -> DecodeFormat {
         self.format
     }
     pub fn layout(&self) -> &DataLayout {

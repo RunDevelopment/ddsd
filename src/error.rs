@@ -1,4 +1,4 @@
-use crate::{ColorFormat, DxgiFormat, FourCC, Header, SupportedFormat};
+use crate::{ColorFormat, DecodeFormat, DxgiFormat, FourCC, Header};
 
 #[derive(Debug)]
 #[non_exhaustive]
@@ -21,7 +21,7 @@ pub enum DecodeError {
     /// >2^64 bytes of memory.
     DataLayoutTooBig,
     UnsupportedColorFormat {
-        format: SupportedFormat,
+        format: DecodeFormat,
         color: ColorFormat,
     },
     UnexpectedBufferSize {

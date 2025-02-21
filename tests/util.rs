@@ -98,7 +98,7 @@ pub fn read_dds_with_channels<T: WithPrecision + Default + Copy + Castable>(
 }
 pub fn read_dds_with_channels_select<T: WithPrecision + Default + Copy + Castable>(
     dds_path: &PathBuf,
-    select_channels: impl FnOnce(SupportedFormat) -> Channels,
+    select_channels: impl FnOnce(DecodeFormat) -> Channels,
 ) -> Result<(Image<T>, DdsDecoder), Box<dyn std::error::Error>> {
     let mut file = File::open(dds_path)?;
 
@@ -119,7 +119,7 @@ pub fn decode_dds_with_channels<T: WithPrecision + Default + Copy + Castable>(
 pub fn decode_dds_with_channels_select<T: WithPrecision + Default + Copy + Castable>(
     options: &Options,
     mut reader: impl std::io::Read,
-    select_channels: impl FnOnce(SupportedFormat) -> Channels,
+    select_channels: impl FnOnce(DecodeFormat) -> Channels,
 ) -> Result<(Image<T>, DdsDecoder), Box<dyn std::error::Error>> {
     let decoder = DdsDecoder::new_with(&mut reader, &options)?;
     let size = decoder.header().size();

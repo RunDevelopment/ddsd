@@ -1,89 +1,85 @@
 //! Internal module for detecting supported formats from DXGI, FourCC, and
 //! DDS pixel formats.
 
-use crate::{DxgiFormat, FourCC, MaskPixelFormat, PixelFormatFlags, SupportedFormat};
+use crate::{DecodeFormat, DxgiFormat, FourCC, MaskPixelFormat, PixelFormatFlags};
 
-pub(crate) const fn dxgi_format_to_supported(dxgi_format: DxgiFormat) -> Option<SupportedFormat> {
+pub(crate) const fn dxgi_format_to_supported(dxgi_format: DxgiFormat) -> Option<DecodeFormat> {
     match dxgi_format {
         // uncompressed formats
         DxgiFormat::R8G8B8A8_TYPELESS
         | DxgiFormat::R8G8B8A8_UNORM
-        | DxgiFormat::R8G8B8A8_UNORM_SRGB => Some(SupportedFormat::R8G8B8A8_UNORM),
-        DxgiFormat::R8G8B8A8_SNORM => Some(SupportedFormat::R8G8B8A8_SNORM),
+        | DxgiFormat::R8G8B8A8_UNORM_SRGB => Some(DecodeFormat::R8G8B8A8_UNORM),
+        DxgiFormat::R8G8B8A8_SNORM => Some(DecodeFormat::R8G8B8A8_SNORM),
         DxgiFormat::B8G8R8A8_TYPELESS
         | DxgiFormat::B8G8R8A8_UNORM
-        | DxgiFormat::B8G8R8A8_UNORM_SRGB => Some(SupportedFormat::B8G8R8A8_UNORM),
+        | DxgiFormat::B8G8R8A8_UNORM_SRGB => Some(DecodeFormat::B8G8R8A8_UNORM),
         DxgiFormat::B8G8R8X8_TYPELESS
         | DxgiFormat::B8G8R8X8_UNORM
-        | DxgiFormat::B8G8R8X8_UNORM_SRGB => Some(SupportedFormat::B8G8R8X8_UNORM),
-        DxgiFormat::B5G6R5_UNORM => Some(SupportedFormat::B5G6R5_UNORM),
-        DxgiFormat::B5G5R5A1_UNORM => Some(SupportedFormat::B5G5R5A1_UNORM),
-        DxgiFormat::B4G4R4A4_UNORM => Some(SupportedFormat::B4G4R4A4_UNORM),
-        DxgiFormat::A4B4G4R4_UNORM => Some(SupportedFormat::A4B4G4R4_UNORM),
-        DxgiFormat::R8_TYPELESS | DxgiFormat::R8_UNORM => Some(SupportedFormat::R8_UNORM),
-        DxgiFormat::R8_SNORM => Some(SupportedFormat::R8_SNORM),
-        DxgiFormat::R8G8_UNORM => Some(SupportedFormat::R8G8_UNORM),
-        DxgiFormat::R8G8_SNORM => Some(SupportedFormat::R8G8_SNORM),
-        DxgiFormat::A8_UNORM => Some(SupportedFormat::A8_UNORM),
-        DxgiFormat::R16_TYPELESS | DxgiFormat::R16_UNORM => Some(SupportedFormat::R16_UNORM),
-        DxgiFormat::R16_SNORM => Some(SupportedFormat::R16_SNORM),
-        DxgiFormat::R16_FLOAT => Some(SupportedFormat::R16_FLOAT),
-        DxgiFormat::R16G16_TYPELESS | DxgiFormat::R16G16_UNORM => {
-            Some(SupportedFormat::R16G16_UNORM)
-        }
-        DxgiFormat::R16G16_SNORM => Some(SupportedFormat::R16G16_SNORM),
-        DxgiFormat::R16G16_FLOAT => Some(SupportedFormat::R16G16_FLOAT),
+        | DxgiFormat::B8G8R8X8_UNORM_SRGB => Some(DecodeFormat::B8G8R8X8_UNORM),
+        DxgiFormat::B5G6R5_UNORM => Some(DecodeFormat::B5G6R5_UNORM),
+        DxgiFormat::B5G5R5A1_UNORM => Some(DecodeFormat::B5G5R5A1_UNORM),
+        DxgiFormat::B4G4R4A4_UNORM => Some(DecodeFormat::B4G4R4A4_UNORM),
+        DxgiFormat::A4B4G4R4_UNORM => Some(DecodeFormat::A4B4G4R4_UNORM),
+        DxgiFormat::R8_TYPELESS | DxgiFormat::R8_UNORM => Some(DecodeFormat::R8_UNORM),
+        DxgiFormat::R8_SNORM => Some(DecodeFormat::R8_SNORM),
+        DxgiFormat::R8G8_UNORM => Some(DecodeFormat::R8G8_UNORM),
+        DxgiFormat::R8G8_SNORM => Some(DecodeFormat::R8G8_SNORM),
+        DxgiFormat::A8_UNORM => Some(DecodeFormat::A8_UNORM),
+        DxgiFormat::R16_TYPELESS | DxgiFormat::R16_UNORM => Some(DecodeFormat::R16_UNORM),
+        DxgiFormat::R16_SNORM => Some(DecodeFormat::R16_SNORM),
+        DxgiFormat::R16_FLOAT => Some(DecodeFormat::R16_FLOAT),
+        DxgiFormat::R16G16_TYPELESS | DxgiFormat::R16G16_UNORM => Some(DecodeFormat::R16G16_UNORM),
+        DxgiFormat::R16G16_SNORM => Some(DecodeFormat::R16G16_SNORM),
+        DxgiFormat::R16G16_FLOAT => Some(DecodeFormat::R16G16_FLOAT),
         DxgiFormat::R16G16B16A16_TYPELESS | DxgiFormat::R16G16B16A16_UNORM => {
-            Some(SupportedFormat::R16G16B16A16_UNORM)
+            Some(DecodeFormat::R16G16B16A16_UNORM)
         }
-        DxgiFormat::R16G16B16A16_SNORM => Some(SupportedFormat::R16G16B16A16_SNORM),
-        DxgiFormat::R16G16B16A16_FLOAT => Some(SupportedFormat::R16G16B16A16_FLOAT),
+        DxgiFormat::R16G16B16A16_SNORM => Some(DecodeFormat::R16G16B16A16_SNORM),
+        DxgiFormat::R16G16B16A16_FLOAT => Some(DecodeFormat::R16G16B16A16_FLOAT),
         DxgiFormat::R10G10B10A2_TYPELESS | DxgiFormat::R10G10B10A2_UNORM => {
-            Some(SupportedFormat::R10G10B10A2_UNORM)
+            Some(DecodeFormat::R10G10B10A2_UNORM)
         }
-        DxgiFormat::R11G11B10_FLOAT => Some(SupportedFormat::R11G11B10_FLOAT),
-        DxgiFormat::R9G9B9E5_SHAREDEXP => Some(SupportedFormat::R9G9B9E5_SHAREDEXP),
-        DxgiFormat::R32_TYPELESS | DxgiFormat::R32_FLOAT => Some(SupportedFormat::R32_FLOAT),
-        DxgiFormat::R32G32_TYPELESS | DxgiFormat::R32G32_FLOAT => {
-            Some(SupportedFormat::R32G32_FLOAT)
-        }
+        DxgiFormat::R11G11B10_FLOAT => Some(DecodeFormat::R11G11B10_FLOAT),
+        DxgiFormat::R9G9B9E5_SHAREDEXP => Some(DecodeFormat::R9G9B9E5_SHAREDEXP),
+        DxgiFormat::R32_TYPELESS | DxgiFormat::R32_FLOAT => Some(DecodeFormat::R32_FLOAT),
+        DxgiFormat::R32G32_TYPELESS | DxgiFormat::R32G32_FLOAT => Some(DecodeFormat::R32G32_FLOAT),
         DxgiFormat::R32G32B32_TYPELESS | DxgiFormat::R32G32B32_FLOAT => {
-            Some(SupportedFormat::R32G32B32_FLOAT)
+            Some(DecodeFormat::R32G32B32_FLOAT)
         }
         DxgiFormat::R32G32B32A32_TYPELESS | DxgiFormat::R32G32B32A32_FLOAT => {
-            Some(SupportedFormat::R32G32B32A32_FLOAT)
+            Some(DecodeFormat::R32G32B32A32_FLOAT)
         }
-        DxgiFormat::R10G10B10_XR_BIAS_A2_UNORM => Some(SupportedFormat::R10G10B10_XR_BIAS_A2_UNORM),
-        DxgiFormat::AYUV => Some(SupportedFormat::AYUV),
-        DxgiFormat::Y410 => Some(SupportedFormat::Y410),
-        DxgiFormat::Y416 => Some(SupportedFormat::Y416),
+        DxgiFormat::R10G10B10_XR_BIAS_A2_UNORM => Some(DecodeFormat::R10G10B10_XR_BIAS_A2_UNORM),
+        DxgiFormat::AYUV => Some(DecodeFormat::AYUV),
+        DxgiFormat::Y410 => Some(DecodeFormat::Y410),
+        DxgiFormat::Y416 => Some(DecodeFormat::Y416),
 
         // sub-sampled formats
-        DxgiFormat::R8G8_B8G8_UNORM => Some(SupportedFormat::R8G8_B8G8_UNORM),
-        DxgiFormat::G8R8_G8B8_UNORM => Some(SupportedFormat::G8R8_G8B8_UNORM),
-        DxgiFormat::YUY2 => Some(SupportedFormat::YUY2),
-        DxgiFormat::Y210 => Some(SupportedFormat::Y210),
-        DxgiFormat::Y216 => Some(SupportedFormat::Y216),
-        DxgiFormat::R1_UNORM => Some(SupportedFormat::R1_UNORM),
+        DxgiFormat::R8G8_B8G8_UNORM => Some(DecodeFormat::R8G8_B8G8_UNORM),
+        DxgiFormat::G8R8_G8B8_UNORM => Some(DecodeFormat::G8R8_G8B8_UNORM),
+        DxgiFormat::YUY2 => Some(DecodeFormat::YUY2),
+        DxgiFormat::Y210 => Some(DecodeFormat::Y210),
+        DxgiFormat::Y216 => Some(DecodeFormat::Y216),
+        DxgiFormat::R1_UNORM => Some(DecodeFormat::R1_UNORM),
 
         // block compression formats
         DxgiFormat::BC1_TYPELESS | DxgiFormat::BC1_UNORM | DxgiFormat::BC1_UNORM_SRGB => {
-            Some(SupportedFormat::BC1_UNORM)
+            Some(DecodeFormat::BC1_UNORM)
         }
         DxgiFormat::BC2_TYPELESS | DxgiFormat::BC2_UNORM | DxgiFormat::BC2_UNORM_SRGB => {
-            Some(SupportedFormat::BC2_UNORM)
+            Some(DecodeFormat::BC2_UNORM)
         }
         DxgiFormat::BC3_TYPELESS | DxgiFormat::BC3_UNORM | DxgiFormat::BC3_UNORM_SRGB => {
-            Some(SupportedFormat::BC3_UNORM)
+            Some(DecodeFormat::BC3_UNORM)
         }
-        DxgiFormat::BC4_TYPELESS | DxgiFormat::BC4_UNORM => Some(SupportedFormat::BC4_UNORM),
-        DxgiFormat::BC4_SNORM => Some(SupportedFormat::BC4_SNORM),
-        DxgiFormat::BC5_TYPELESS | DxgiFormat::BC5_UNORM => Some(SupportedFormat::BC5_UNORM),
-        DxgiFormat::BC5_SNORM => Some(SupportedFormat::BC5_SNORM),
-        DxgiFormat::BC6H_TYPELESS | DxgiFormat::BC6H_UF16 => Some(SupportedFormat::BC6H_UF16),
-        DxgiFormat::BC6H_SF16 => Some(SupportedFormat::BC6H_SF16),
+        DxgiFormat::BC4_TYPELESS | DxgiFormat::BC4_UNORM => Some(DecodeFormat::BC4_UNORM),
+        DxgiFormat::BC4_SNORM => Some(DecodeFormat::BC4_SNORM),
+        DxgiFormat::BC5_TYPELESS | DxgiFormat::BC5_UNORM => Some(DecodeFormat::BC5_UNORM),
+        DxgiFormat::BC5_SNORM => Some(DecodeFormat::BC5_SNORM),
+        DxgiFormat::BC6H_TYPELESS | DxgiFormat::BC6H_UF16 => Some(DecodeFormat::BC6H_UF16),
+        DxgiFormat::BC6H_SF16 => Some(DecodeFormat::BC6H_SF16),
         DxgiFormat::BC7_TYPELESS | DxgiFormat::BC7_UNORM | DxgiFormat::BC7_UNORM_SRGB => {
-            Some(SupportedFormat::BC7_UNORM)
+            Some(DecodeFormat::BC7_UNORM)
         }
         _ => None,
     }
@@ -128,7 +124,7 @@ const fn four_cc_to_dxgi(four_cc: FourCC) -> Option<DxgiFormat> {
     }
 }
 
-pub(crate) const fn four_cc_to_supported(four_cc: FourCC) -> Option<SupportedFormat> {
+pub(crate) const fn four_cc_to_supported(four_cc: FourCC) -> Option<DecodeFormat> {
     // quick and easy, convert to DXGI first
     if let Some(dxgi_format) = four_cc_to_dxgi(four_cc) {
         return dxgi_format_to_supported(dxgi_format);
@@ -136,18 +132,18 @@ pub(crate) const fn four_cc_to_supported(four_cc: FourCC) -> Option<SupportedFor
 
     // now everything that doesn't have a DXGI format equivalent
     match four_cc {
-        FourCC::DXT2 => Some(SupportedFormat::BC2_UNORM_PREMULTIPLIED_ALPHA),
-        FourCC::DXT4 => Some(SupportedFormat::BC3_UNORM_PREMULTIPLIED_ALPHA),
+        FourCC::DXT2 => Some(DecodeFormat::BC2_UNORM_PREMULTIPLIED_ALPHA),
+        FourCC::DXT4 => Some(DecodeFormat::BC3_UNORM_PREMULTIPLIED_ALPHA),
 
-        FourCC::RXGB => Some(SupportedFormat::BC3_UNORM_RXGB),
+        FourCC::RXGB => Some(DecodeFormat::BC3_UNORM_RXGB),
 
-        FourCC::UYVY => Some(SupportedFormat::UYVY),
+        FourCC::UYVY => Some(DecodeFormat::UYVY),
 
         _ => None,
     }
 }
 
-pub(crate) fn pixel_format_to_supported(pf: &MaskPixelFormat) -> Option<SupportedFormat> {
+pub(crate) fn pixel_format_to_supported(pf: &MaskPixelFormat) -> Option<DecodeFormat> {
     // known patterns
     for (pattern, format) in KNOWN_PIXEL_FORMATS {
         if pattern.matches(pf) {
@@ -180,7 +176,7 @@ impl PFPattern {
         self
     }
 }
-const KNOWN_PIXEL_FORMATS: &[(PFPattern, SupportedFormat)] = {
+const KNOWN_PIXEL_FORMATS: &[(PFPattern, DecodeFormat)] = {
     const fn alpha_only(bit_count: u32, a_mask: u32) -> PFPattern {
         PFPattern {
             flags: PixelFormatFlags::ALPHA,
@@ -240,7 +236,7 @@ const KNOWN_PIXEL_FORMATS: &[(PFPattern, SupportedFormat)] = {
 
     let rgb_luminance = PixelFormatFlags::RGB.union(PixelFormatFlags::LUMINANCE);
 
-    use SupportedFormat::*;
+    use DecodeFormat::*;
 
     &[
         // alpha

@@ -1,4 +1,4 @@
-use crate::{util::div_ceil, DecodeError, DxgiFormat, Header, PixelFormat, Size, SupportedFormat};
+use crate::{util::div_ceil, DecodeError, DecodeFormat, DxgiFormat, Header, PixelFormat, Size};
 
 /// This describes the number of bits per pixel and the layout of pixels within
 /// a surface.
@@ -77,7 +77,7 @@ impl PixelInfo {
 
     pub fn from_header(header: &Header) -> Result<Self, DecodeError> {
         match &header.format {
-            PixelFormat::FourCC(four_cc) => SupportedFormat::from_four_cc(*four_cc)
+            PixelFormat::FourCC(four_cc) => DecodeFormat::from_four_cc(*four_cc)
                 .map(Into::into)
                 .ok_or(DecodeError::UnsupportedFourCC(*four_cc)),
             PixelFormat::Mask(pixel_format) => {
@@ -181,9 +181,9 @@ impl std::fmt::Debug for PixelInfo {
     }
 }
 
-impl From<SupportedFormat> for PixelInfo {
-    fn from(value: SupportedFormat) -> Self {
-        use SupportedFormat as F;
+impl From<DecodeFormat> for PixelInfo {
+    fn from(value: DecodeFormat) -> Self {
+        use DecodeFormat as F;
 
         match value {
             // 1 bytes per pixel
@@ -450,7 +450,7 @@ mod test {
         // have the same PixelInfo.
         for i in 0..256_u32 {
             if let Ok(dxgi) = DxgiFormat::try_from(i) {
-                if let Some(format) = SupportedFormat::from_dxgi(dxgi) {
+                if let Some(format) = DecodeFormat::from_dxgi(dxgi) {
                     let dxgi_info = PixelInfo::try_from(dxgi).unwrap();
                     let format_info = PixelInfo::from(format);
 

@@ -98,7 +98,7 @@ impl core::fmt::Display for ColorFormat {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 #[allow(non_camel_case_types)]
-pub enum SupportedFormat {
+pub enum DecodeFormat {
     // uncompressed formats
     R8G8B8_UNORM,
     B8G8R8_UNORM,
@@ -171,9 +171,9 @@ pub enum SupportedFormat {
     /// set to 0 to improve the quality of G and B.
     BC3_UNORM_RXGB,
 }
-impl SupportedFormat {
+impl DecodeFormat {
     /// Returns the format of the surfaces from a DDS header.
-    pub fn from_header(header: &Header) -> Result<SupportedFormat, DecodeError> {
+    pub fn from_header(header: &Header) -> Result<DecodeFormat, DecodeError> {
         match &header.format {
             PixelFormat::FourCC(four_cc) => detect::four_cc_to_supported(*four_cc)
                 .ok_or(DecodeError::UnsupportedFourCC(*four_cc)),
@@ -186,13 +186,13 @@ impl SupportedFormat {
     /// Returns the format of a surface from a DXGI format.
     ///
     /// `None` if the DXGI format is not supported for decoding.
-    pub const fn from_dxgi(dxgi: DxgiFormat) -> Option<SupportedFormat> {
+    pub const fn from_dxgi(dxgi: DxgiFormat) -> Option<DecodeFormat> {
         detect::dxgi_format_to_supported(dxgi)
     }
     /// Returns the format of a surface from a FourCC code.
     ///
     /// `None` if the FourCC code is not supported for decoding.
-    pub const fn from_four_cc(four_cc: FourCC) -> Option<SupportedFormat> {
+    pub const fn from_four_cc(four_cc: FourCC) -> Option<DecodeFormat> {
         detect::four_cc_to_supported(four_cc)
     }
 
@@ -472,69 +472,69 @@ impl Rect {
     }
 }
 
-const fn get_decoders(format: SupportedFormat) -> DecoderSet {
+const fn get_decoders(format: DecodeFormat) -> DecoderSet {
     match format {
         // uncompressed formats
-        SupportedFormat::R8G8B8_UNORM => decode::R8G8B8_UNORM,
-        SupportedFormat::B8G8R8_UNORM => decode::B8G8R8_UNORM,
-        SupportedFormat::R8G8B8A8_UNORM => decode::R8G8B8A8_UNORM,
-        SupportedFormat::R8G8B8A8_SNORM => decode::R8G8B8A8_SNORM,
-        SupportedFormat::B8G8R8A8_UNORM => decode::B8G8R8A8_UNORM,
-        SupportedFormat::B8G8R8X8_UNORM => decode::B8G8R8X8_UNORM,
-        SupportedFormat::B5G6R5_UNORM => decode::B5G6R5_UNORM,
-        SupportedFormat::B5G5R5A1_UNORM => decode::B5G5R5A1_UNORM,
-        SupportedFormat::B4G4R4A4_UNORM => decode::B4G4R4A4_UNORM,
-        SupportedFormat::A4B4G4R4_UNORM => decode::A4B4G4R4_UNORM,
-        SupportedFormat::R8_SNORM => decode::R8_SNORM,
-        SupportedFormat::R8_UNORM => decode::R8_UNORM,
-        SupportedFormat::R8G8_UNORM => decode::R8G8_UNORM,
-        SupportedFormat::R8G8_SNORM => decode::R8G8_SNORM,
-        SupportedFormat::A8_UNORM => decode::A8_UNORM,
-        SupportedFormat::R16_UNORM => decode::R16_UNORM,
-        SupportedFormat::R16_SNORM => decode::R16_SNORM,
-        SupportedFormat::R16G16_UNORM => decode::R16G16_UNORM,
-        SupportedFormat::R16G16_SNORM => decode::R16G16_SNORM,
-        SupportedFormat::R16G16B16A16_UNORM => decode::R16G16B16A16_UNORM,
-        SupportedFormat::R16G16B16A16_SNORM => decode::R16G16B16A16_SNORM,
-        SupportedFormat::R10G10B10A2_UNORM => decode::R10G10B10A2_UNORM,
-        SupportedFormat::R11G11B10_FLOAT => decode::R11G11B10_FLOAT,
-        SupportedFormat::R9G9B9E5_SHAREDEXP => decode::R9G9B9E5_SHAREDEXP,
-        SupportedFormat::R16_FLOAT => decode::R16_FLOAT,
-        SupportedFormat::R16G16_FLOAT => decode::R16G16_FLOAT,
-        SupportedFormat::R16G16B16A16_FLOAT => decode::R16G16B16A16_FLOAT,
-        SupportedFormat::R32_FLOAT => decode::R32_FLOAT,
-        SupportedFormat::R32G32_FLOAT => decode::R32G32_FLOAT,
-        SupportedFormat::R32G32B32_FLOAT => decode::R32G32B32_FLOAT,
-        SupportedFormat::R32G32B32A32_FLOAT => decode::R32G32B32A32_FLOAT,
-        SupportedFormat::R10G10B10_XR_BIAS_A2_UNORM => decode::R10G10B10_XR_BIAS_A2_UNORM,
-        SupportedFormat::AYUV => decode::AYUV,
-        SupportedFormat::Y410 => decode::Y410,
-        SupportedFormat::Y416 => decode::Y416,
+        DecodeFormat::R8G8B8_UNORM => decode::R8G8B8_UNORM,
+        DecodeFormat::B8G8R8_UNORM => decode::B8G8R8_UNORM,
+        DecodeFormat::R8G8B8A8_UNORM => decode::R8G8B8A8_UNORM,
+        DecodeFormat::R8G8B8A8_SNORM => decode::R8G8B8A8_SNORM,
+        DecodeFormat::B8G8R8A8_UNORM => decode::B8G8R8A8_UNORM,
+        DecodeFormat::B8G8R8X8_UNORM => decode::B8G8R8X8_UNORM,
+        DecodeFormat::B5G6R5_UNORM => decode::B5G6R5_UNORM,
+        DecodeFormat::B5G5R5A1_UNORM => decode::B5G5R5A1_UNORM,
+        DecodeFormat::B4G4R4A4_UNORM => decode::B4G4R4A4_UNORM,
+        DecodeFormat::A4B4G4R4_UNORM => decode::A4B4G4R4_UNORM,
+        DecodeFormat::R8_SNORM => decode::R8_SNORM,
+        DecodeFormat::R8_UNORM => decode::R8_UNORM,
+        DecodeFormat::R8G8_UNORM => decode::R8G8_UNORM,
+        DecodeFormat::R8G8_SNORM => decode::R8G8_SNORM,
+        DecodeFormat::A8_UNORM => decode::A8_UNORM,
+        DecodeFormat::R16_UNORM => decode::R16_UNORM,
+        DecodeFormat::R16_SNORM => decode::R16_SNORM,
+        DecodeFormat::R16G16_UNORM => decode::R16G16_UNORM,
+        DecodeFormat::R16G16_SNORM => decode::R16G16_SNORM,
+        DecodeFormat::R16G16B16A16_UNORM => decode::R16G16B16A16_UNORM,
+        DecodeFormat::R16G16B16A16_SNORM => decode::R16G16B16A16_SNORM,
+        DecodeFormat::R10G10B10A2_UNORM => decode::R10G10B10A2_UNORM,
+        DecodeFormat::R11G11B10_FLOAT => decode::R11G11B10_FLOAT,
+        DecodeFormat::R9G9B9E5_SHAREDEXP => decode::R9G9B9E5_SHAREDEXP,
+        DecodeFormat::R16_FLOAT => decode::R16_FLOAT,
+        DecodeFormat::R16G16_FLOAT => decode::R16G16_FLOAT,
+        DecodeFormat::R16G16B16A16_FLOAT => decode::R16G16B16A16_FLOAT,
+        DecodeFormat::R32_FLOAT => decode::R32_FLOAT,
+        DecodeFormat::R32G32_FLOAT => decode::R32G32_FLOAT,
+        DecodeFormat::R32G32B32_FLOAT => decode::R32G32B32_FLOAT,
+        DecodeFormat::R32G32B32A32_FLOAT => decode::R32G32B32A32_FLOAT,
+        DecodeFormat::R10G10B10_XR_BIAS_A2_UNORM => decode::R10G10B10_XR_BIAS_A2_UNORM,
+        DecodeFormat::AYUV => decode::AYUV,
+        DecodeFormat::Y410 => decode::Y410,
+        DecodeFormat::Y416 => decode::Y416,
 
         // sub-sampled formats
-        SupportedFormat::R1_UNORM => decode::R1_UNORM,
-        SupportedFormat::R8G8_B8G8_UNORM => decode::R8G8_B8G8_UNORM,
-        SupportedFormat::G8R8_G8B8_UNORM => decode::G8R8_G8B8_UNORM,
-        SupportedFormat::UYVY => decode::UYVY,
-        SupportedFormat::YUY2 => decode::YUY2,
-        SupportedFormat::Y210 => decode::Y210,
-        SupportedFormat::Y216 => decode::Y216,
+        DecodeFormat::R1_UNORM => decode::R1_UNORM,
+        DecodeFormat::R8G8_B8G8_UNORM => decode::R8G8_B8G8_UNORM,
+        DecodeFormat::G8R8_G8B8_UNORM => decode::G8R8_G8B8_UNORM,
+        DecodeFormat::UYVY => decode::UYVY,
+        DecodeFormat::YUY2 => decode::YUY2,
+        DecodeFormat::Y210 => decode::Y210,
+        DecodeFormat::Y216 => decode::Y216,
 
         // block compression formats
-        SupportedFormat::BC1_UNORM => decode::BC1_UNORM,
-        SupportedFormat::BC2_UNORM => decode::BC2_UNORM,
-        SupportedFormat::BC2_UNORM_PREMULTIPLIED_ALPHA => decode::BC2_UNORM_PREMULTIPLIED_ALPHA,
-        SupportedFormat::BC3_UNORM => decode::BC3_UNORM,
-        SupportedFormat::BC3_UNORM_PREMULTIPLIED_ALPHA => decode::BC3_UNORM_PREMULTIPLIED_ALPHA,
-        SupportedFormat::BC4_UNORM => decode::BC4_UNORM,
-        SupportedFormat::BC4_SNORM => decode::BC4_SNORM,
-        SupportedFormat::BC5_UNORM => decode::BC5_UNORM,
-        SupportedFormat::BC5_SNORM => decode::BC5_SNORM,
-        SupportedFormat::BC6H_UF16 => decode::BC6H_UF16,
-        SupportedFormat::BC6H_SF16 => decode::BC6H_SF16,
-        SupportedFormat::BC7_UNORM => decode::BC7_UNORM,
+        DecodeFormat::BC1_UNORM => decode::BC1_UNORM,
+        DecodeFormat::BC2_UNORM => decode::BC2_UNORM,
+        DecodeFormat::BC2_UNORM_PREMULTIPLIED_ALPHA => decode::BC2_UNORM_PREMULTIPLIED_ALPHA,
+        DecodeFormat::BC3_UNORM => decode::BC3_UNORM,
+        DecodeFormat::BC3_UNORM_PREMULTIPLIED_ALPHA => decode::BC3_UNORM_PREMULTIPLIED_ALPHA,
+        DecodeFormat::BC4_UNORM => decode::BC4_UNORM,
+        DecodeFormat::BC4_SNORM => decode::BC4_SNORM,
+        DecodeFormat::BC5_UNORM => decode::BC5_UNORM,
+        DecodeFormat::BC5_SNORM => decode::BC5_SNORM,
+        DecodeFormat::BC6H_UF16 => decode::BC6H_UF16,
+        DecodeFormat::BC6H_SF16 => decode::BC6H_SF16,
+        DecodeFormat::BC7_UNORM => decode::BC7_UNORM,
 
         // non-standard formats
-        SupportedFormat::BC3_UNORM_RXGB => decode::BC3_UNORM_RXGB,
+        DecodeFormat::BC3_UNORM_RXGB => decode::BC3_UNORM_RXGB,
     }
 }
