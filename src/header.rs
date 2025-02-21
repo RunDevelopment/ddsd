@@ -179,6 +179,21 @@ impl RawHeader {
     }
 }
 
+impl RawPixelFormat {
+    fn new_four_cc(four_cc: FourCC) -> RawPixelFormat {
+        Self {
+            size: 32,
+            flags: PixelFormatFlags::FOURCC,
+            four_cc,
+            rgb_bit_count: 0,
+            r_bit_mask: 0,
+            g_bit_mask: 0,
+            b_bit_mask: 0,
+            a_bit_mask: 0,
+        }
+    }
+}
+
 /// The DDS header and the DX10 extension header if any.
 ///
 /// This structure contains parsed data. Using by the decoder.
@@ -254,6 +269,18 @@ impl Header {
         Ok(())
     }
 
+    /// Reads the header without magic bytes from a reader.
+    ///
+    /// If the header is read successfully, the reader will be at the start of the pixel data.
+    pub fn read<R: Read>(reader: &mut R, options: &Options) -> Result<Self, HeaderError> {
+        if !options.skip_magic_bytes {
+            Self::read_magic(reader)?;
+        }
+
+        let raw = RawHeader::read(reader)?;
+        Self::from_raw(&raw, options)
+    }
+
     pub fn from_raw(raw: &RawHeader, options: &Options) -> Result<Self, HeaderError> {
         // verify header size
         if raw.size != Self::SIZE as u32 {
@@ -298,16 +325,61 @@ impl Header {
         })
     }
 
-    /// Reads the header without magic bytes from a reader.
-    ///
-    /// If the header is read successfully, the reader will be at the start of the pixel data.
-    pub fn read<R: Read>(reader: &mut R, options: &Options) -> Result<Self, HeaderError> {
-        if !options.skip_magic_bytes {
-            Self::read_magic(reader)?;
+    pub fn to_raw(&self) -> RawHeader {
+        let mut flags = DdsFlags::REQUIRED | DdsFlags::MIPMAP_COUNT;
+        let mut caps = DdsCaps::REQUIRED;
+
+        if self.mipmap_count.get() > 1 {
+            caps |= DdsCaps::MIPMAP | DdsCaps::COMPLEX;
+        }
+        if self.depth.is_some() {
+            flags |= DdsFlags::DEPTH;
         }
 
-        let raw = RawHeader::read(reader)?;
-        Self::from_raw(&raw, options)
+        let (pixel_format, dx10) = match &self.format {
+            PixelFormat::FourCC(four_cc) => (RawPixelFormat::new_four_cc(*four_cc), None),
+            PixelFormat::Mask(mask_pixel_format) => (
+                RawPixelFormat {
+                    size: 32,
+                    flags: mask_pixel_format.flags,
+                    four_cc: FourCC::NONE,
+                    rgb_bit_count: mask_pixel_format.rgb_bit_count,
+                    r_bit_mask: mask_pixel_format.r_bit_mask,
+                    g_bit_mask: mask_pixel_format.g_bit_mask,
+                    b_bit_mask: mask_pixel_format.b_bit_mask,
+                    a_bit_mask: mask_pixel_format.a_bit_mask,
+                },
+                None,
+            ),
+            PixelFormat::Dx10(dx10_header) => (
+                RawPixelFormat::new_four_cc(FourCC::DX10),
+                Some(RawDx10Header {
+                    dxgi_format: dx10_header.dxgi_format.into(),
+                    resource_dimension: dx10_header.resource_dimension.into(),
+                    misc_flag: dx10_header.misc_flag,
+                    array_size: dx10_header.array_size,
+                    misc_flag2: dx10_header.misc_flags2.bits(),
+                }),
+            ),
+        };
+
+        RawHeader {
+            size: 124,
+            flags,
+            height: self.height,
+            width: self.width,
+            pitch_or_linear_size: 0,
+            depth: self.depth.unwrap_or(0),
+            mipmap_count: self.mipmap_count.get(),
+            reserved1: [0; 11],
+            pixel_format,
+            caps,
+            caps2: self.caps2,
+            caps3: 0,
+            caps4: 0,
+            reserved2: 0,
+            dx10,
+        }
     }
 }
 
@@ -340,11 +412,11 @@ pub struct MaskPixelFormat {
     pub a_bit_mask: u32,
 }
 impl PixelFormat {
-    const SIZE: usize = 32;
+    const SIZE: u32 = 32;
 
     fn from_raw(raw: &RawHeader, options: &Options) -> Result<Self, HeaderError> {
         let size = raw.pixel_format.size;
-        if size != Self::SIZE as u32 {
+        if size != Self::SIZE {
             if options.permissive && size == 0 {
                 // Some DDS files have their pixel format size set to 0.
                 // https://github.com/microsoft/DirectXTex/issues/392
