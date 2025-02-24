@@ -817,17 +817,37 @@ impl std::fmt::Debug for FourCC {
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DxgiFormat(u8);
 impl DxgiFormat {
-    pub fn is_srgb(&self) -> bool {
-        matches!(
-            *self,
-            DxgiFormat::BC1_UNORM_SRGB
-                | DxgiFormat::BC2_UNORM_SRGB
-                | DxgiFormat::BC3_UNORM_SRGB
-                | DxgiFormat::BC7_UNORM_SRGB
-                | DxgiFormat::R8G8B8A8_UNORM_SRGB
-                | DxgiFormat::B8G8R8A8_UNORM_SRGB
-                | DxgiFormat::B8G8R8X8_UNORM_SRGB
-        )
+    pub const fn is_srgb(self) -> bool {
+        self.0 == self.to_srgb().0
+    }
+    pub const fn to_srgb(self) -> DxgiFormat {
+        match self {
+            DxgiFormat::BC1_UNORM => DxgiFormat::BC1_UNORM_SRGB,
+            DxgiFormat::BC2_UNORM => DxgiFormat::BC2_UNORM_SRGB,
+            DxgiFormat::BC3_UNORM => DxgiFormat::BC3_UNORM_SRGB,
+            DxgiFormat::BC7_UNORM => DxgiFormat::BC7_UNORM_SRGB,
+            DxgiFormat::R8G8B8A8_UNORM => DxgiFormat::R8G8B8A8_UNORM_SRGB,
+            DxgiFormat::B8G8R8A8_UNORM => DxgiFormat::B8G8R8A8_UNORM_SRGB,
+            DxgiFormat::B8G8R8X8_UNORM => DxgiFormat::B8G8R8X8_UNORM_SRGB,
+            _ => self,
+        }
+    }
+    pub const fn to_linear(self) -> DxgiFormat {
+        match self {
+            DxgiFormat::BC1_UNORM_SRGB => DxgiFormat::BC1_UNORM,
+            DxgiFormat::BC2_UNORM_SRGB => DxgiFormat::BC2_UNORM,
+            DxgiFormat::BC3_UNORM_SRGB => DxgiFormat::BC3_UNORM,
+            DxgiFormat::BC7_UNORM_SRGB => DxgiFormat::BC7_UNORM,
+            DxgiFormat::R8G8B8A8_UNORM_SRGB => DxgiFormat::R8G8B8A8_UNORM,
+            DxgiFormat::B8G8R8A8_UNORM_SRGB => DxgiFormat::B8G8R8A8_UNORM,
+            DxgiFormat::B8G8R8X8_UNORM_SRGB => DxgiFormat::B8G8R8X8_UNORM,
+            _ => self,
+        }
+    }
+
+    #[allow(unused)]
+    pub(crate) fn all() -> impl Iterator<Item = DxgiFormat> {
+        (0..192).filter_map(|i| DxgiFormat::try_from(i).ok())
     }
 }
 impl TryFrom<u32> for DxgiFormat {

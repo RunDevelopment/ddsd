@@ -409,11 +409,8 @@ mod test {
         // using `surface_bytes` as the reference implementation. This is a
         // reasonable reference, since `surface_bytes` is foundational to this
         // library and tested implicitly in all tests reading DDS files.
-        for i in 0..256_u32 {
-            if let Some(pixel) = DxgiFormat::try_from(i)
-                .ok()
-                .and_then(|f| PixelInfo::try_from(f).ok())
-            {
+        for dxgi in DxgiFormat::all() {
+            if let Ok(pixel) = PixelInfo::try_from(dxgi) {
                 let size = 2 * 3 * 4 * 5 * 6;
                 let size = Size::new(size, size);
                 let bits_per_pixel_from_size =
@@ -432,15 +429,13 @@ mod test {
     #[test]
     fn from_dxgi() {
         // if it's a valid DXGI_FORMAT, it should be a valid PixelSize
-        for i in 0..256_u32 {
-            if let Ok(format) = DxgiFormat::try_from(i) {
-                if matches!(format, DxgiFormat::UNKNOWN | DxgiFormat::V208) {
-                    continue;
-                }
-
-                let result = PixelInfo::try_from(format);
-                assert!(result.is_ok(), "Failed for {:?}", format);
+        for dxgi in DxgiFormat::all() {
+            if matches!(dxgi, DxgiFormat::UNKNOWN | DxgiFormat::V208) {
+                continue;
             }
+
+            let result = PixelInfo::try_from(dxgi);
+            assert!(result.is_ok(), "Failed for {:?}", dxgi);
         }
     }
 
@@ -448,14 +443,12 @@ mod test {
     fn dxgi_supported() {
         // This test verifies that equivalent DxgiFormat and SupportFormat
         // have the same PixelInfo.
-        for i in 0..256_u32 {
-            if let Ok(dxgi) = DxgiFormat::try_from(i) {
-                if let Some(format) = DecodeFormat::from_dxgi(dxgi) {
-                    let dxgi_info = PixelInfo::try_from(dxgi).unwrap();
-                    let format_info = PixelInfo::from(format);
+        for dxgi in DxgiFormat::all() {
+            if let Some(format) = DecodeFormat::from_dxgi(dxgi) {
+                let dxgi_info = PixelInfo::try_from(dxgi).unwrap();
+                let format_info = PixelInfo::from(format);
 
-                    assert_eq!(dxgi_info, format_info, "Failed for {:?}", dxgi);
-                }
+                assert_eq!(dxgi_info, format_info, "Failed for {:?}", dxgi);
             }
         }
     }
