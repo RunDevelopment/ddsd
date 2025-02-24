@@ -1,3 +1,5 @@
+use std::num::NonZeroU8;
+
 use bitflags::bitflags;
 
 use crate::{DdsCaps2, DecodeError, Header, MiscFlags, PixelInfo, ResourceDimension, Size};
@@ -159,7 +161,7 @@ impl DataRegion for VolumeDescriptor {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Texture {
     main: SurfaceDescriptor,
-    mipmaps: u8,
+    mipmaps: NonZeroU8,
     pixels: PixelInfo,
     len: u64,
 }
@@ -168,12 +170,9 @@ impl Texture {
     fn create_at_offset_0(
         width: u32,
         height: u32,
-        mipmaps: u8,
+        mipmaps: NonZeroU8,
         pixels: PixelInfo,
     ) -> Result<Self, DecodeError> {
-        // at least one mipmap
-        debug_assert!(mipmaps > 0);
-
         // zero dimensions
         if width == 0 || height == 0 {
             return Err(DecodeError::ZeroDimension);
@@ -191,7 +190,7 @@ impl Texture {
 
         // compute len
         let mut len = main.data_len();
-        for level in 1..mipmaps {
+        for level in 1..mipmaps.get() {
             let width = get_mip_size(main.width(), level);
             let height = get_mip_size(main.height(), level);
             // this technically cannot overflow, because mip_len <= main.len,
@@ -218,7 +217,7 @@ impl Texture {
         self.main
     }
     pub fn mipmaps(&self) -> u8 {
-        self.mipmaps
+        self.mipmaps.get()
     }
     pub fn get(&self, level: u8) -> Option<SurfaceDescriptor> {
         self.iter_mips().nth(level as usize)
@@ -228,7 +227,7 @@ impl Texture {
         let width_0 = self.main.width();
         let height_0 = self.main.height();
         let pixels = self.pixels;
-        (0..self.mipmaps).map(move |level| {
+        (0..self.mipmaps.get()).map(move |level| {
             let width = get_mip_size(width_0, level);
             let height = get_mip_size(height_0, level);
             // Panic Safety: This cannot overflow, because we already checked in the constructor
@@ -256,7 +255,7 @@ impl DataRegion for Texture {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Volume {
     main: VolumeDescriptor,
-    mipmaps: u8,
+    mipmaps: NonZeroU8,
     pixels: PixelInfo,
     len: u64,
 }
@@ -266,12 +265,9 @@ impl Volume {
         width: u32,
         height: u32,
         depth: u32,
-        mipmaps: u8,
+        mipmaps: NonZeroU8,
         pixels: PixelInfo,
     ) -> Result<Self, DecodeError> {
-        // at least one mipmap
-        debug_assert!(mipmaps > 0);
-
         // zero dimensions
         if width == 0 || height == 0 || depth == 0 {
             return Err(DecodeError::ZeroDimension);
@@ -288,7 +284,7 @@ impl Volume {
 
         // compute len
         let mut len = main.data_len();
-        for level in 1..mipmaps {
+        for level in 1..mipmaps.get() {
             let width = get_mip_size(main.width(), level);
             let height = get_mip_size(main.height(), level);
             let depth = get_mip_size(main.height(), level);
@@ -318,7 +314,7 @@ impl Volume {
         self.main
     }
     pub fn mipmaps(&self) -> u8 {
-        self.mipmaps
+        self.mipmaps.get()
     }
     pub fn get(&self, level: u8) -> Option<VolumeDescriptor> {
         self.iter_mips().nth(level as usize)
@@ -329,7 +325,7 @@ impl Volume {
         let height_0 = self.main.height();
         let depth_0 = self.main.depth();
         let pixels = self.pixels;
-        (0..self.mipmaps).map(move |level| {
+        (0..self.mipmaps.get()).map(move |level| {
             let width = get_mip_size(width_0, level);
             let height = get_mip_size(height_0, level);
             let depth = get_mip_size(depth_0, level);
@@ -581,7 +577,7 @@ fn get_mip_size(main_size: u32, level: u8) -> u32 {
 struct SurfaceLayoutInfo {
     width: u32,
     height: u32,
-    mipmaps: u8,
+    mipmaps: NonZeroU8,
     pixels: PixelInfo,
 }
 impl SurfaceLayoutInfo {
@@ -590,11 +586,12 @@ impl SurfaceLayoutInfo {
         if mipmaps > 32 {
             return Err(DecodeError::TooManyMipMaps(mipmaps));
         }
+        let mipmaps = NonZeroU8::new(mipmaps as u8).unwrap();
 
         Ok(Self {
             width: header.width,
             height: header.height,
-            mipmaps: mipmaps as u8,
+            mipmaps,
             pixels,
         })
     }
@@ -616,7 +613,7 @@ struct VolumeLayoutInfo {
     width: u32,
     height: u32,
     depth: u32,
-    mipmaps: u8,
+    mipmaps: NonZeroU8,
     pixels: PixelInfo,
 }
 impl VolumeLayoutInfo {
@@ -625,12 +622,13 @@ impl VolumeLayoutInfo {
         if mipmaps > 32 {
             return Err(DecodeError::TooManyMipMaps(mipmaps));
         }
+        let mipmaps = NonZeroU8::new(mipmaps as u8).unwrap();
 
         Ok(Self {
             width: header.width,
             height: header.height,
             depth: header.depth.ok_or(DecodeError::MissingDepth)?,
-            mipmaps: mipmaps as u8,
+            mipmaps,
             pixels,
         })
     }
