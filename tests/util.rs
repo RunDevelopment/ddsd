@@ -400,7 +400,8 @@ pub fn write_simple_dds_header(
     size: Size,
     format: DxgiFormat,
 ) -> std::io::Result<()> {
-    let header = Header::new_image(size.width, size.height, format);
+    let mut header = Header::new_image(size.width, size.height, format);
+    header.dx10_mut().unwrap().alpha_mode = AlphaMode::Unknown;
 
     w.write_all(&Header::MAGIC)?;
     header.to_raw().write(w)?;

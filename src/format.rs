@@ -179,8 +179,14 @@ impl DecodeFormat {
                 .ok_or(DecodeError::UnsupportedFourCC(*four_cc)),
             PixelFormat::Mask(pixel_format) => detect::pixel_format_to_supported(pixel_format)
                 .ok_or(DecodeError::UnsupportedPixelFormat),
-            PixelFormat::Dx10(dx10) => detect::dxgi_format_to_supported(dx10.dxgi_format)
-                .ok_or(DecodeError::UnsupportedDxgiFormat(dx10.dxgi_format)),
+            PixelFormat::Dx10(dx10) => {
+                if let Some(format) = detect::special_cases(dx10) {
+                    return Ok(format);
+                }
+
+                detect::dxgi_format_to_supported(dx10.dxgi_format)
+                    .ok_or(DecodeError::UnsupportedDxgiFormat(dx10.dxgi_format))
+            }
         }
     }
     /// Returns the format of a surface from a DXGI format.

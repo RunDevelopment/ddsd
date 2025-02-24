@@ -1,7 +1,21 @@
 //! Internal module for detecting supported formats from DXGI, FourCC, and
 //! DDS pixel formats.
 
-use crate::{DecodeFormat, DxgiFormat, FourCC, MaskPixelFormat, PixelFormatFlags};
+use crate::{
+    AlphaMode, DecodeFormat, Dx10Header, DxgiFormat, FourCC, MaskPixelFormat, PixelFormatFlags,
+};
+
+pub(crate) const fn special_cases(dx10: &Dx10Header) -> Option<DecodeFormat> {
+    if matches!(dx10.alpha_mode, AlphaMode::Premultiplied) {
+        match dx10.dxgi_format {
+            DxgiFormat::BC2_UNORM => return Some(DecodeFormat::BC2_UNORM_PREMULTIPLIED_ALPHA),
+            DxgiFormat::BC3_UNORM => return Some(DecodeFormat::BC3_UNORM_PREMULTIPLIED_ALPHA),
+            _ => {}
+        }
+    }
+
+    None
+}
 
 pub(crate) const fn dxgi_format_to_supported(dxgi_format: DxgiFormat) -> Option<DecodeFormat> {
     match dxgi_format {
