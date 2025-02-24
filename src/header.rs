@@ -67,6 +67,7 @@ pub struct RawDx10Header {
     pub resource_dimension: u32,
     pub misc_flag: MiscFlags,
     pub array_size: u32,
+    /// Contains additional metadata (formerly was reserved). The lower 3 bits indicate the alpha mode of the associated resource. The upper 29 bits are reserved and are typically 0.
     pub misc_flags2: u32,
 }
 
@@ -265,7 +266,7 @@ impl Header {
                 resource_dimension: ResourceDimension::Texture2D,
                 misc_flag: MiscFlags::empty(),
                 array_size: 1,
-                misc_flags2: MiscFlags2::ALPHA_MODE_UNKNOWN,
+                alpha_mode: AlphaMode::Unknown,
             }),
             caps2: DdsCaps2::empty(),
         }
@@ -285,7 +286,7 @@ impl Header {
                 resource_dimension: ResourceDimension::Texture3D,
                 misc_flag: MiscFlags::empty(),
                 array_size: 1,
-                misc_flags2: MiscFlags2::ALPHA_MODE_UNKNOWN,
+                alpha_mode: AlphaMode::Unknown,
             }),
             caps2: DdsCaps2::VOLUME,
         }
@@ -305,7 +306,7 @@ impl Header {
                 resource_dimension: ResourceDimension::Texture2D,
                 misc_flag: MiscFlags::TEXTURE_CUBE,
                 array_size: 1,
-                misc_flags2: MiscFlags2::ALPHA_MODE_UNKNOWN,
+                alpha_mode: AlphaMode::Unknown,
             }),
             caps2: DdsCaps2::CUBE_MAP.union(DdsCaps2::CUBE_MAP_ALL_FACES),
         }
@@ -442,7 +443,7 @@ impl Header {
                     resource_dimension: dx10_header.resource_dimension.into(),
                     misc_flag: dx10_header.misc_flag,
                     array_size: dx10_header.array_size,
-                    misc_flags2: dx10_header.misc_flags2.bits(),
+                    misc_flags2: dx10_header.alpha_mode.into(),
                 }),
             ),
         };
@@ -571,8 +572,8 @@ pub struct Dx10Header {
     ///
     /// For a 3D texture, you must set this number to 1.
     pub array_size: u32,
-    /// Contains additional metadata (formerly was reserved). The lower 3 bits indicate the alpha mode of the associated resource. The upper 29 bits are reserved and are typically 0.
-    pub misc_flags2: MiscFlags2,
+    /// The alpha mode of the associated resource.
+    pub alpha_mode: AlphaMode,
 }
 impl Dx10Header {
     pub(crate) const SIZE: usize = 20;
@@ -584,7 +585,15 @@ impl Dx10Header {
             .map_err(HeaderError::InvalidResourceDimension)?;
 
         let misc_flag = raw.misc_flag;
-        let misc_flags2 = MiscFlags2::from_bits_retain(raw.misc_flags2);
+
+        let raw_alpha_mode = raw.misc_flags2 & 0b111;
+        let alpha_mode = if let Ok(alpha_mode) = AlphaMode::try_from(raw_alpha_mode) {
+            alpha_mode
+        } else if options.permissive {
+            AlphaMode::Unknown
+        } else {
+            return Err(HeaderError::InvalidAlphaMode(raw_alpha_mode));
+        };
 
         let mut array_size = raw.array_size;
         if resource_dimension == ResourceDimension::Texture3D && array_size != 1 {
@@ -600,7 +609,7 @@ impl Dx10Header {
             resource_dimension,
             misc_flag,
             array_size,
-            misc_flags2,
+            alpha_mode,
         })
     }
 }
@@ -706,20 +715,39 @@ bitflags! {
         /// Sets a resource to be a cube texture created from a Texture2DArray that contains 6 textures.
         const TEXTURE_CUBE = 0x4;
     }
+}
 
-    /// Additional metadata.
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-    pub struct MiscFlags2: u32 {
-        /// Alpha channel content is unknown. This is the value for legacy files, which typically is assumed to be 'straight' alpha.
-        const ALPHA_MODE_UNKNOWN = 0x0;
-        /// Any alpha channel content is presumed to use straight alpha.
-        const ALPHA_MODE_STRAIGHT = 0x1;
-        /// Any alpha channel content is using premultiplied alpha. The only legacy file formats that indicate this information are 'DX2' and 'DX4'.
-        const ALPHA_MODE_PREMULTIPLIED = 0x2;
-        /// Any alpha channel content is all set to fully opaque.
-        const ALPHA_MODE_OPAQUE = 0x3;
-        /// Any alpha channel content is being used as a 4th channel and is not intended to represent transparency (straight or premultiplied).
-        const ALPHA_MODE_CUSTOM = 0x4;
+/// https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header-dxt10
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum AlphaMode {
+    /// Alpha channel content is unknown. This is the value for legacy files, which typically is assumed to be 'straight' alpha.
+    Unknown = 0,
+    /// Any alpha channel content is presumed to use straight alpha.
+    Straight = 1,
+    /// Any alpha channel content is using premultiplied alpha. The only legacy file formats that indicate this information are 'DX2' and 'DX4'.
+    Premultiplied = 2,
+    /// Any alpha channel content is all set to fully opaque.
+    Opaque = 3,
+    /// Any alpha channel content is being used as a 4th channel and is not intended to represent transparency (straight or premultiplied).
+    Custom = 4,
+}
+impl TryFrom<u32> for AlphaMode {
+    type Error = u32;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(AlphaMode::Unknown),
+            1 => Ok(AlphaMode::Straight),
+            2 => Ok(AlphaMode::Premultiplied),
+            3 => Ok(AlphaMode::Opaque),
+            4 => Ok(AlphaMode::Custom),
+            _ => Err(value),
+        }
+    }
+}
+impl From<AlphaMode> for u32 {
+    fn from(value: AlphaMode) -> Self {
+        value as u32
     }
 }
 
@@ -818,7 +846,7 @@ impl std::fmt::Debug for FourCC {
 pub struct DxgiFormat(u8);
 impl DxgiFormat {
     pub const fn is_srgb(self) -> bool {
-        self.0 == self.to_srgb().0
+        self.0 != self.to_linear().0
     }
     pub const fn to_srgb(self) -> DxgiFormat {
         match self {

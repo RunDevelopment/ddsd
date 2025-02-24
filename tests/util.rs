@@ -488,6 +488,9 @@ pub fn pretty_print_header(out: &mut String, header: &Header) {
             if dx10.array_size != 1 {
                 out.push_str(&format!("        array_size: {:?}\n", dx10.array_size));
             }
+            if dx10.alpha_mode != AlphaMode::Unknown {
+                out.push_str(&format!("        alpha_mode: {:?}\n", dx10.alpha_mode));
+            }
         }
     };
 }

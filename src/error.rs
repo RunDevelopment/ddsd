@@ -143,6 +143,7 @@ pub enum HeaderError {
     InvalidPixelFormatSize(u32),
     InvalidDxgiFormat(u32),
     InvalidResourceDimension(u32),
+    InvalidAlphaMode(u32),
     InvalidArraySizeForTexture3D(u32),
 
     Io(std::io::Error),
@@ -185,6 +186,13 @@ impl std::fmt::Display for HeaderError {
                     f,
                     "Invalid resource dimension {}{} in DX10 header extension",
                     dimension, label
+                )
+            }
+            HeaderError::InvalidAlphaMode(mode) => {
+                write!(
+                    f,
+                    "Invalid alpha mode {} in DX10 header extension",
+                    mode
                 )
             }
             HeaderError::InvalidArraySizeForTexture3D(array_size) => {

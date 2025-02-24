@@ -16,7 +16,7 @@ fn simple_texture_header(size: Size, format: DxgiFormat) -> Header {
             resource_dimension: ResourceDimension::Texture2D,
             misc_flag: MiscFlags::empty(),
             array_size: 1,
-            misc_flags2: MiscFlags2::empty(),
+            alpha_mode: AlphaMode::Unknown,
         }),
     }
 }

@@ -1275,6 +1275,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: R32G32B32A32_FLOAT (2)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -1321,6 +1322,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: R16G16B16A16_FLOAT (10)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -1344,6 +1346,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: R16G16B16A16_UNORM (11)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -1367,6 +1370,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: R16G16B16A16_SNORM (13)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -1413,6 +1417,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: R32G32_FLOAT (16)
+            alpha_mode: Opaque
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -1436,6 +1441,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: R10G10B10A2_UNORM (24)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -1482,6 +1488,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: R8G8B8A8_UNORM (28)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -1505,6 +1512,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: R8G8B8A8_UNORM_SRGB (29)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -1528,6 +1536,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: R8G8B8A8_SNORM (31)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -1574,6 +1583,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: R16G16_FLOAT (34)
+            alpha_mode: Opaque
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -1666,6 +1676,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: R32_FLOAT (41)
+            alpha_mode: Opaque
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -1758,6 +1769,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: R16_FLOAT (54)
+            alpha_mode: Opaque
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -1850,6 +1862,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: R8_UNORM (61)
+            alpha_mode: Opaque
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -1919,6 +1932,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: A8_UNORM (65)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -2034,6 +2048,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: BC1_UNORM (71)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
@@ -2057,6 +2072,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: BC1_UNORM (71)
+            alpha_mode: Opaque
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
@@ -2104,6 +2120,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: BC1_UNORM_SRGB (72)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
@@ -2150,6 +2167,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: BC2_UNORM (74)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
@@ -2173,6 +2191,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: BC2_UNORM_SRGB (75)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
@@ -2196,6 +2215,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: BC3_UNORM (77)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
@@ -2219,6 +2239,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: BC3_UNORM_SRGB (78)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
@@ -2265,6 +2286,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: BC4_UNORM (80)
+            alpha_mode: Opaque
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
@@ -2334,6 +2356,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: BC5_UNORM (83)
+            alpha_mode: Opaque
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
@@ -2403,6 +2426,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: B5G5R5A1_UNORM (86)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -2426,6 +2450,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: B8G8R8A8_UNORM (87)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -2472,6 +2497,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: B8G8R8X8_UNORM (88)
+            alpha_mode: Opaque
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -2495,6 +2521,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: R10G10B10_XR_BIAS_A2_UNORM (89)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -2518,6 +2545,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: B8G8R8A8_UNORM_SRGB (91)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -2702,6 +2730,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: BC7_UNORM (98)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
@@ -2840,6 +2869,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: BC7_UNORM_SRGB (99)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
@@ -2978,6 +3008,7 @@
         mipmap_count: 8
         format: DX10 Texture2D
             dxgi_format: B4G4R4A4_UNORM (115)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PITCH | PIXEL_FORMAT | MIPMAP_COUNT)
@@ -3026,6 +3057,7 @@
         format: DX10 Texture2D
             dxgi_format: BC1_UNORM (71)
             misc_flag: MiscFlags(TEXTURE_CUBE)
+            alpha_mode: Opaque
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
@@ -3052,6 +3084,7 @@
             dxgi_format: BC1_UNORM (71)
             misc_flag: MiscFlags(TEXTURE_CUBE)
             array_size: 6
+            alpha_mode: Opaque
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
@@ -3101,6 +3134,7 @@
         caps2: DdsCaps2(VOLUME)
         format: DX10 Texture3D
             dxgi_format: BC1_UNORM (71)
+            alpha_mode: Straight
 
     Raw Header:
         flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE | DEPTH)

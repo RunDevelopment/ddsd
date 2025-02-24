@@ -223,7 +223,7 @@ fn iter_and_get_volume() {
             resource_dimension: ResourceDimension::Texture3D,
             misc_flag: MiscFlags::empty(),
             array_size: 1,
-            misc_flags2: MiscFlags2::empty(),
+            alpha_mode: AlphaMode::Unknown,
         }),
     };
 
@@ -262,7 +262,7 @@ fn iter_and_get_texture_array() {
             resource_dimension: ResourceDimension::Texture2D,
             misc_flag: MiscFlags::empty(),
             array_size: 4,
-            misc_flags2: MiscFlags2::empty(),
+            alpha_mode: AlphaMode::Unknown,
         }),
     };
 
@@ -303,7 +303,7 @@ fn empty_array() {
             resource_dimension: ResourceDimension::Texture2D,
             misc_flag: MiscFlags::empty(),
             array_size: 0, // empty
-            misc_flags2: MiscFlags2::empty(),
+            alpha_mode: AlphaMode::Unknown,
         }),
     };
 

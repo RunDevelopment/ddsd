@@ -47,7 +47,7 @@ fn get_headers() -> Vec<Header> {
                 .then(u32::from(a.dxgi_format).cmp(&u32::from(b.dxgi_format)))
                 .then(a.array_size.cmp(&b.array_size))
                 .then(cmp)
-                .then(a.misc_flags2.bits().cmp(&b.misc_flags2.bits())),
+                .then(u32::from(a.alpha_mode).cmp(&u32::from(b.alpha_mode))),
             _ => {
                 let a = match &a.format {
                     PixelFormat::FourCC(_) => 0,
