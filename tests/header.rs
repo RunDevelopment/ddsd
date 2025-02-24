@@ -136,6 +136,22 @@ fn convert_header_snapshot() {
                 output.push_str("\nChanged when converted back ");
                 util::pretty_print_header(&mut output, &converted_back);
             }
+
+            let format = DecodeFormat::from_header(header).ok();
+            let converted_format = DecodeFormat::from_header(&converted).ok();
+            let converted_back_format = DecodeFormat::from_header(&converted_back).ok();
+
+            if (converted_format, converted_back_format) != (format, format) {
+                output.push_str("\nChanged format during conversion:\n");
+                output.push_str(&format!("    Original:       {:?}\n", format));
+                output.push_str(&format!("    Converted:      {:?}\n", converted_format));
+                if converted_back_format != format {
+                    output.push_str(&format!(
+                        "    Converted back: {:?}\n",
+                        converted_back_format
+                    ));
+                }
+            }
         } else {
             output.push_str("\nCan't be converted\n");
         }

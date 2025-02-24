@@ -286,6 +286,10 @@ into_dx10 Header:
         dxgi_format: BC2_UNORM (74)
         alpha_mode: Premultiplied
 
+Changed format during conversion:
+    Original:       Some(BC2_UNORM_PREMULTIPLIED_ALPHA)
+    Converted:      Some(BC2_UNORM)
+
 
 
 Header:
@@ -354,6 +358,10 @@ into_dx10 Header:
     format: DX10 Texture2D
         dxgi_format: BC3_UNORM (77)
         alpha_mode: Premultiplied
+
+Changed format during conversion:
+    Original:       Some(BC3_UNORM_PREMULTIPLIED_ALPHA)
+    Converted:      Some(BC3_UNORM)
 
 
 
