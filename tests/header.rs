@@ -89,19 +89,70 @@ fn raw_header_snapshot() {
     let mut output = String::new();
     for header in headers {
         let info = collect_info(&header);
-
-        for line in info.lines() {
-            output.push_str(format!("    {}", line).trim_end());
-            output.push('\n');
-        }
-
-        output.push('\n');
-        output.push('\n');
-        output.push('\n');
+        output.push_str(&info);
+        output.push_str("\n\n\n");
     }
 
     util::compare_snapshot_text(
         &util::test_data_dir().join("raw_header_snapshot.txt"),
+        &output,
+    );
+}
+
+#[test]
+fn convert_header_snapshot() {
+    let headers = get_headers();
+
+    fn collect_info(header: &Header) -> String {
+        let mut output = String::new();
+
+        // HEADER
+        util::pretty_print_header(&mut output, header);
+
+        // Convert header
+        let converted = if header.dx10().is_some() {
+            header
+                .clone()
+                .into_dx9()
+                .ok()
+                .and_then(|h| Some((h.clone(), h.into_dx10().ok()?)))
+        } else {
+            header
+                .clone()
+                .into_dx10()
+                .ok()
+                .and_then(|h| Some((h.clone(), h.into_dx9().ok()?)))
+        };
+
+        if let Some((converted, converted_back)) = converted {
+            output.push_str(if converted.dx10().is_some() {
+                "\ninto_dx10 "
+            } else {
+                "\ninto_dx9 "
+            });
+            util::pretty_print_header(&mut output, &converted);
+
+            if &converted_back != header {
+                output.push_str("\nChanged when converted back ");
+                util::pretty_print_header(&mut output, &converted_back);
+            }
+        } else {
+            output.push_str("\nCan't be converted\n");
+        }
+
+        output
+    }
+
+    // create expected info
+    let mut output = String::new();
+    for header in headers {
+        let info = collect_info(&header);
+        output.push_str(&info);
+        output.push_str("\n\n\n");
+    }
+
+    util::compare_snapshot_text(
+        &util::test_data_dir().join("convert_header_snapshot.txt"),
         &output,
     );
 }

@@ -1,5 +1,6 @@
 use crate::{
     cast,
+    detect::{dxgi_to_four_cc, dxgi_to_pixel_format, four_cc_to_dxgi, pixel_format_to_dxgi},
     util::{self, read_u32_le_array},
     HeaderError, Options, PixelInfo, Size,
 };
@@ -266,7 +267,11 @@ impl Header {
                 resource_dimension: ResourceDimension::Texture2D,
                 misc_flag: MiscFlags::empty(),
                 array_size: 1,
-                alpha_mode: AlphaMode::Unknown,
+                alpha_mode: if format.has_alpha() {
+                    AlphaMode::Straight
+                } else {
+                    AlphaMode::Unknown
+                },
             }),
             caps2: DdsCaps2::empty(),
         }
@@ -286,7 +291,11 @@ impl Header {
                 resource_dimension: ResourceDimension::Texture3D,
                 misc_flag: MiscFlags::empty(),
                 array_size: 1,
-                alpha_mode: AlphaMode::Unknown,
+                alpha_mode: if format.has_alpha() {
+                    AlphaMode::Straight
+                } else {
+                    AlphaMode::Unknown
+                },
             }),
             caps2: DdsCaps2::VOLUME,
         }
@@ -306,10 +315,141 @@ impl Header {
                 resource_dimension: ResourceDimension::Texture2D,
                 misc_flag: MiscFlags::TEXTURE_CUBE,
                 array_size: 1,
-                alpha_mode: AlphaMode::Unknown,
+                alpha_mode: if format.has_alpha() {
+                    AlphaMode::Straight
+                } else {
+                    AlphaMode::Unknown
+                },
             }),
             caps2: DdsCaps2::CUBE_MAP.union(DdsCaps2::CUBE_MAP_ALL_FACES),
         }
+    }
+
+    pub fn into_dx9(mut self) -> Result<Header, Header> {
+        fn to_dx9_format(
+            mut dxgi_format: DxgiFormat,
+            alpha_mode: AlphaMode,
+        ) -> Option<PixelFormat> {
+            // convert the format to linear before, because DX9 doesn't have
+            // any sRGB formats
+            dxgi_format = dxgi_format.to_linear();
+
+            // special case for DXT2 and DXT4
+            if alpha_mode == AlphaMode::Premultiplied {
+                if dxgi_format == DxgiFormat::BC2_UNORM {
+                    return Some(PixelFormat::FourCC(FourCC::DXT2));
+                }
+                if dxgi_format == DxgiFormat::BC3_UNORM {
+                    return Some(PixelFormat::FourCC(FourCC::DXT4));
+                }
+            }
+
+            dxgi_to_four_cc(dxgi_format)
+                .map(PixelFormat::FourCC)
+                .or_else(|| dxgi_to_pixel_format(dxgi_format).map(PixelFormat::Mask))
+        }
+        if let Some(dx10) = self.dx10() {
+            let Dx10Header {
+                dxgi_format,
+                resource_dimension,
+                misc_flag,
+                array_size,
+                alpha_mode,
+            } = *dx10;
+
+            if array_size != 1 {
+                // DX9 does not support texture arrays
+                return Err(self);
+            }
+            if misc_flag.contains(MiscFlags::TEXTURE_CUBE)
+                && resource_dimension != ResourceDimension::Texture2D
+            {
+                // A cube maps with needs to have 2D textures as sides
+                return Err(self);
+            }
+
+            let mut caps2 = DdsCaps2::empty();
+            if resource_dimension == ResourceDimension::Texture3D {
+                caps2 |= DdsCaps2::VOLUME;
+            }
+            if misc_flag.contains(MiscFlags::TEXTURE_CUBE) {
+                caps2 |= DdsCaps2::CUBE_MAP | DdsCaps2::CUBE_MAP_ALL_FACES;
+            }
+
+            let format = if let Some(format) = to_dx9_format(dxgi_format, alpha_mode) {
+                format
+            } else {
+                // can't convert the DXGI format into something DX9 supports
+                return Err(self);
+            };
+
+            // finally, modify self and return
+            self.caps2 = caps2;
+            self.format = format;
+            Ok(self)
+        } else {
+            Ok(self)
+        }
+    }
+    pub fn into_dx10(mut self) -> Result<Header, Header> {
+        let mut alpha_mode = AlphaMode::Unknown;
+
+        let dxgi_format = match &self.format {
+            PixelFormat::FourCC(four_cc) => {
+                // special handling for DXT2 and DXT4
+                if *four_cc == FourCC::DXT2 {
+                    alpha_mode = AlphaMode::Premultiplied;
+                    DxgiFormat::BC2_UNORM
+                } else if *four_cc == FourCC::DXT4 {
+                    alpha_mode = AlphaMode::Premultiplied;
+                    DxgiFormat::BC3_UNORM
+                } else if let Some(dxgi) = four_cc_to_dxgi(*four_cc) {
+                    dxgi
+                } else {
+                    return Err(self);
+                }
+            }
+            PixelFormat::Mask(mask_pixel_format) => {
+                if let Some(dxgi) = pixel_format_to_dxgi(mask_pixel_format) {
+                    dxgi
+                } else {
+                    return Err(self);
+                }
+            }
+            PixelFormat::Dx10(_) => return Ok(self),
+        };
+
+        if alpha_mode == AlphaMode::Unknown && dxgi_format.has_alpha() {
+            alpha_mode = AlphaMode::Straight;
+        }
+
+        if self.caps2.contains(DdsCaps2::CUBE_MAP)
+            && !self.caps2.contains(DdsCaps2::CUBE_MAP_ALL_FACES)
+        {
+            // DX10 requires all faces to be present
+            return Err(self);
+        }
+
+        let resource_dimension = if self.caps2.contains(DdsCaps2::VOLUME) {
+            ResourceDimension::Texture3D
+        } else {
+            ResourceDimension::Texture2D
+        };
+        let misc_flag = if self.caps2.contains(DdsCaps2::CUBE_MAP) {
+            MiscFlags::TEXTURE_CUBE
+        } else {
+            MiscFlags::empty()
+        };
+
+        self.format = PixelFormat::Dx10(Dx10Header {
+            dxgi_format,
+            resource_dimension,
+            misc_flag,
+            array_size: 1,
+            alpha_mode,
+        });
+
+        Ok(self)
     }
 
     pub(crate) const SIZE: usize = 124;
@@ -871,6 +1011,55 @@ impl DxgiFormat {
             DxgiFormat::B8G8R8X8_UNORM_SRGB => DxgiFormat::B8G8R8X8_UNORM,
             _ => self,
         }
+    }
+
+    pub const fn has_alpha(self) -> bool {
+        matches!(
+            self,
+            DxgiFormat::R32G32B32A32_TYPELESS
+                | DxgiFormat::R32G32B32A32_FLOAT
+                | DxgiFormat::R32G32B32A32_UINT
+                | DxgiFormat::R32G32B32A32_SINT
+                | DxgiFormat::R16G16B16A16_TYPELESS
+                | DxgiFormat::R16G16B16A16_FLOAT
+                | DxgiFormat::R16G16B16A16_UNORM
+                | DxgiFormat::R16G16B16A16_UINT
+                | DxgiFormat::R16G16B16A16_SNORM
+                | DxgiFormat::R16G16B16A16_SINT
+                | DxgiFormat::R10G10B10A2_TYPELESS
+                | DxgiFormat::R10G10B10A2_UNORM
+                | DxgiFormat::R10G10B10A2_UINT
+                | DxgiFormat::R8G8B8A8_TYPELESS
+                | DxgiFormat::R8G8B8A8_UNORM
+                | DxgiFormat::R8G8B8A8_UNORM_SRGB
+                | DxgiFormat::R8G8B8A8_UINT
+                | DxgiFormat::R8G8B8A8_SNORM
+                | DxgiFormat::R8G8B8A8_SINT
+                | DxgiFormat::A8_UNORM
+                | DxgiFormat::BC1_TYPELESS
+                | DxgiFormat::BC1_UNORM
+                | DxgiFormat::BC1_UNORM_SRGB
+                | DxgiFormat::BC2_TYPELESS
+                | DxgiFormat::BC2_UNORM
+                | DxgiFormat::BC2_UNORM_SRGB
+                | DxgiFormat::BC3_TYPELESS
+                | DxgiFormat::BC3_UNORM
+                | DxgiFormat::BC3_UNORM_SRGB
+                | DxgiFormat::B5G5R5A1_UNORM
+                | DxgiFormat::B8G8R8A8_UNORM
+                | DxgiFormat::R10G10B10_XR_BIAS_A2_UNORM
+                | DxgiFormat::B8G8R8A8_TYPELESS
+                | DxgiFormat::B8G8R8A8_UNORM_SRGB
+                | DxgiFormat::BC7_TYPELESS
+                | DxgiFormat::BC7_UNORM
+                | DxgiFormat::BC7_UNORM_SRGB
+                | DxgiFormat::AYUV
+                | DxgiFormat::AI44
+                | DxgiFormat::IA44
+                | DxgiFormat::A8P8
+                | DxgiFormat::B4G4R4A4_UNORM
+                | DxgiFormat::A4B4G4R4_UNORM
+        )
     }
 
     #[allow(unused)]
