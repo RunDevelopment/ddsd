@@ -2,7 +2,7 @@ use crate::{
     cast,
     detect::{dxgi_to_four_cc, dxgi_to_pixel_format, four_cc_to_dxgi, pixel_format_to_dxgi},
     util::{self, read_u32_le_array},
-    HeaderError, Options, PixelInfo, Size,
+    DataLayout, DataRegion, HeaderError, Options, PixelInfo, Size,
 };
 use bitflags::bitflags;
 use std::{
@@ -452,6 +452,89 @@ impl Header {
         Ok(self)
     }
 
+    fn fix_based_on_file_len(&mut self, options: &Options) -> Option<()> {
+        fn get_expected_data_len(header: &Header, options: &Options) -> Option<u64> {
+            let non_data = Header::MAGIC.len() + header.byte_len();
+            options.file_len?.checked_sub(non_data as u64)
+        }
+
+        // Prepare the necessary information
+        let expected_data_len = get_expected_data_len(self, options)?;
+        let pixel_info = PixelInfo::from_header(self).ok()?;
+        let test = move |header: &Header| {
+            if let Ok(layout) = DataLayout::from_header_with(header, pixel_info) {
+                layout.data_len() == expected_data_len
+            } else {
+                false
+            }
+        };
+
+        // The common is that the header is already correct
+        if test(self) {
+            return Some(());
+        }
+
+        // Some DX10 writers set array_size=0 for "arrays" with one element.
+        // https://github.com/microsoft/DirectXTex/pull/490
+        //
+        // Note: Unlike the other fixes, this directly change the header even if it
+        // doesn't match the expected data length. This is because
+        // `expected_data_len > 0` always implies `array_size > 0`, so we know that
+        // `array_size = 0` is wrong, no matter what.
+        if let Some(dx10) = self.dx10_mut() {
+            if expected_data_len > 0 && dx10.array_size == 0 {
+                dx10.array_size = 1;
+
+                // update the current layout since we directly changed the header
+                if test(self) {
+                    return Some(());
+                }
+            }
+        }
+
+        // Some DDS files containing a single cube map have array_size set to 6.
+        // This is incorrect and likely stems from an incorrect MS DDS docs example.
+        // https://github.com/MicrosoftDocs/win32/pull/1970
+        if let Some(dx10) = self.dx10() {
+            if dx10.array_size == 6
+                && dx10.resource_dimension == ResourceDimension::Texture2D
+                && dx10.misc_flag.contains(MiscFlags::TEXTURE_CUBE)
+            {
+                let mut new_header = self.clone();
+                new_header.dx10_mut().unwrap().array_size = 1;
+
+                if test(&new_header) {
+                    *self = new_header;
+                    return Some(());
+                }
+            }
+        }
+
+        // Sometimes, the mipmap count is incorrect. We can try to fix this by
+        // simply guessing the correct mipmap count.
+        let mipmap = self.mipmap_count.get();
+        let max_dimension = self.width.max(self.height).max(self.depth.unwrap_or(1));
+        let max_levels = 32 - max_dimension.leading_zeros();
+        let guesses = [
+            1,          // it's very common for DDS images to have no mipmaps
+            max_levels, // or a full mipmap chain
+            mipmap - 1, // otherwise, it could be an off-by-one error
+            mipmap.saturating_add(1),
+        ];
+        for guess in guesses.into_iter().filter_map(NonZeroU32::new) {
+            let mut new_header = self.clone();
+            new_header.mipmap_count = guess;
+
+            if test(&new_header) {
+                *self = new_header;
+                return Some(());
+            }
+        }
+
+        // sadly, we couldn't fix it
+        None
+    }
+
     pub(crate) const SIZE: usize = 124;
     pub(crate) const INTS: usize = Self::SIZE / 4;
 
@@ -519,14 +602,20 @@ impl Header {
 
         let format = PixelFormat::from_raw(raw, options)?;
 
-        Ok(Self {
+        let mut header = Self {
             height,
             width,
             depth,
             mipmap_count,
             format,
             caps2: raw.caps2,
-        })
+        };
+
+        if options.permissive {
+            _ = header.fix_based_on_file_len(options);
+        }
+
+        Ok(header)
     }
 
     pub fn to_raw(&self) -> RawHeader {

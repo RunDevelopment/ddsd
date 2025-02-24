@@ -11,7 +11,7 @@ mod layout;
 mod pixel;
 mod util;
 
-use std::{io::Read, num::NonZeroU32};
+use std::io::Read;
 
 pub use color::*;
 pub use error::*;
@@ -134,7 +134,7 @@ impl DdsDecoder {
     pub fn from_header(header: Header) -> Result<Self, DecodeError> {
         Self::from_header_with(header, &Options::default())
     }
-    pub fn from_header_with(mut header: Header, options: &Options) -> Result<Self, DecodeError> {
+    pub fn from_header_with(header: Header, options: &Options) -> Result<Self, DecodeError> {
         // enforce `array_size` limit
         if let Some(dxt10) = header.dx10() {
             if dxt10.array_size > options.max_array_size {
@@ -146,12 +146,7 @@ impl DdsDecoder {
         let format = DecodeFormat::from_header(&header)?;
 
         // data layout
-        let pixel_info = format.into();
-        let layout = if options.permissive {
-            create_layout_and_fix_header(&mut header, pixel_info, options)?
-        } else {
-            DataLayout::from_header_with(&header, pixel_info)?
-        };
+        let layout = DataLayout::from_header_with(&header, format.into())?;
 
         Ok(Self {
             header,
@@ -181,106 +176,6 @@ impl DdsDecoder {
             false
         }
     }
-}
-
-fn get_expected_data_len(header: &Header, options: &Options) -> Option<u64> {
-    let non_data = Header::MAGIC.len() + header.byte_len();
-    options.file_len?.checked_sub(non_data as u64)
-}
-
-fn create_layout_and_fix_header(
-    header: &mut Header,
-    pixel_info: PixelInfo,
-    options: &Options,
-) -> Result<DataLayout, DecodeError> {
-    // Note: I can't wait for if-let-chains to be stabilized...
-
-    let mut current_layout = DataLayout::from_header_with(header, pixel_info);
-    let expected_data_len = match get_expected_data_len(header, options) {
-        Some(value) => value,
-        None => {
-            // if we don't know the expected data length, we can't fix the header
-            return current_layout;
-        }
-    };
-    // if the header is already correct, we don't need to fix it
-    if let Ok(ref layout) = current_layout {
-        if layout.data_len() == expected_data_len {
-            return current_layout;
-        }
-    }
-
-    // Some DX10 writers set array_size=0 for "arrays" with one element.
-    // https://github.com/microsoft/DirectXTex/pull/490
-    //
-    // Note: Unlike the other fixes, this directly change the header even if it
-    // doesn't match the expected data length. This is because
-    // `expected_data_len > 0` always implies `array_size > 0`, so we know that
-    // `array_size = 0` is wrong, no matter what.
-    if expected_data_len > 0 {
-        if let Some(dx10) = header.dx10_mut() {
-            if dx10.array_size == 0 {
-                dx10.array_size = 1;
-
-                // update the current layout since we directly changed the header
-                current_layout = DataLayout::from_header_with(header, pixel_info);
-                if let Ok(ref layout) = current_layout {
-                    if layout.data_len() == expected_data_len {
-                        return current_layout;
-                    }
-                }
-            }
-        }
-    }
-
-    // Some DDS files containing a single cube map have array_size set to 6.
-    // This is incorrect and likely stems from an incorrect MS DDS docs example.
-    // https://github.com/MicrosoftDocs/win32/pull/1970
-    if let Some(dx10) = header.dx10() {
-        if dx10.array_size == 6
-            && dx10.resource_dimension == ResourceDimension::Texture2D
-            && dx10.misc_flag.contains(MiscFlags::TEXTURE_CUBE)
-        {
-            let mut new_header = header.clone();
-            new_header.dx10_mut().unwrap().array_size = 1;
-
-            if let Ok(layout) = DataLayout::from_header_with(&new_header, pixel_info) {
-                if layout.data_len() == expected_data_len {
-                    *header = new_header;
-                    return Ok(layout);
-                }
-            }
-        }
-    }
-
-    // Sometimes, the mipmap count is incorrect. We can try to fix this by
-    // simply guessing the correct mipmap count.
-    let mipmap = header.mipmap_count.get();
-    let max_dimension = header
-        .width
-        .max(header.height)
-        .max(header.depth.unwrap_or(1));
-    let max_levels = 32 - max_dimension.leading_zeros();
-    let guesses = [
-        1,          // it's very common for DDS images to have no mipmaps
-        max_levels, // or a full mipmap chain
-        mipmap - 1, // otherwise, it could be an off-by-one error
-        mipmap.saturating_add(1),
-    ];
-    for guess in guesses.into_iter().filter_map(NonZeroU32::new) {
-        let mut new_header = header.clone();
-        new_header.mipmap_count = guess;
-
-        if let Ok(layout) = DataLayout::from_header_with(&new_header, pixel_info) {
-            if layout.data_len() == expected_data_len {
-                *header = new_header;
-                return Ok(layout);
-            }
-        }
-    }
-
-    // sadly, we couldn't fix it
-    current_layout
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

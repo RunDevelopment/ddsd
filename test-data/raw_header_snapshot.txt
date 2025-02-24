@@ -177,30 +177,14 @@ Raw Header:
 
 Header:
     w/h: 32 x 32
-    mipmap_count: 3
+    mipmap_count: 6
     format: FourCC(DXT1)
 
 Raw Header:
     flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
     w/h: 32 x 32 (x 1)
     linear_size: 512
-    mipmap_count: 3
-    pixel_format: FourCC(DXT1)
-    caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
-    caps2: DdsCaps2(0x0)
-
-
-
-Header:
-    w/h: 32 x 32
-    mipmap_count: 4294967295
-    format: FourCC(DXT1)
-
-Raw Header:
-    flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
-    w/h: 32 x 32 (x 1)
-    linear_size: 512
-    mipmap_count: 4294967295
+    mipmap_count: 6
     pixel_format: FourCC(DXT1)
     caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
     caps2: DdsCaps2(0x0)
@@ -2096,7 +2080,6 @@ Header:
     mipmap_count: 1
     format: DX10 Texture2D
         dxgi_format: BC1_UNORM_SRGB (72)
-        array_size: 0
 
 Raw Header:
     flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
@@ -2110,7 +2093,7 @@ Raw Header:
         dxgi_format: BC1_UNORM_SRGB (72)
         resource_dimension: Texture2D
         misc_flag: MiscFlags(0x0)
-        array_size: 0
+        array_size: 1
         misc_flags2: 0
 
 
@@ -3072,33 +3055,6 @@ Raw Header:
         resource_dimension: Texture2D
         misc_flag: MiscFlags(TEXTURE_CUBE)
         array_size: 1
-        misc_flags2: 3
-
-
-
-Header:
-    w/h: 128 x 128
-    mipmap_count: 8
-    caps2: DdsCaps2(CUBE_MAP | CUBE_MAP_POSITIVE_X | CUBE_MAP_NEGATIVE_X | CUBE_MAP_POSITIVE_Y | CUBE_MAP_NEGATIVE_Y | CUBE_MAP_POSITIVE_Z | CUBE_MAP_NEGATIVE_Z)
-    format: DX10 Texture2D
-        dxgi_format: BC1_UNORM (71)
-        misc_flag: MiscFlags(TEXTURE_CUBE)
-        array_size: 6
-        alpha_mode: Opaque
-
-Raw Header:
-    flags: DdsFlags(CAPS | HEIGHT | WIDTH | PIXEL_FORMAT | MIPMAP_COUNT | LINEAR_SIZE)
-    w/h: 128 x 128 (x 1)
-    linear_size: 8192
-    mipmap_count: 8
-    pixel_format: FourCC(DX10)
-    caps: DdsCaps(COMPLEX | MIPMAP | TEXTURE)
-    caps2: DdsCaps2(CUBE_MAP | CUBE_MAP_POSITIVE_X | CUBE_MAP_NEGATIVE_X | CUBE_MAP_POSITIVE_Y | CUBE_MAP_NEGATIVE_Y | CUBE_MAP_POSITIVE_Z | CUBE_MAP_NEGATIVE_Z)
-    DX10:
-        dxgi_format: BC1_UNORM (71)
-        resource_dimension: Texture2D
-        misc_flag: MiscFlags(TEXTURE_CUBE)
-        array_size: 6
         misc_flags2: 3
 
 

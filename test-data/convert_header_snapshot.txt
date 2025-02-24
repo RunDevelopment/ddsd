@@ -157,26 +157,12 @@ into_dx10 Header:
 
 Header:
     w/h: 32 x 32
-    mipmap_count: 3
+    mipmap_count: 6
     format: FourCC(DXT1)
 
 into_dx10 Header:
     w/h: 32 x 32
-    mipmap_count: 3
-    format: DX10 Texture2D
-        dxgi_format: BC1_UNORM (71)
-        alpha_mode: Straight
-
-
-
-Header:
-    w/h: 32 x 32
-    mipmap_count: 4294967295
-    format: FourCC(DXT1)
-
-into_dx10 Header:
-    w/h: 32 x 32
-    mipmap_count: 4294967295
+    mipmap_count: 6
     format: DX10 Texture2D
         dxgi_format: BC1_UNORM (71)
         alpha_mode: Straight
@@ -1562,9 +1548,18 @@ Header:
     mipmap_count: 1
     format: DX10 Texture2D
         dxgi_format: BC1_UNORM_SRGB (72)
-        array_size: 0
 
-Can't be converted
+into_dx9 Header:
+    w/h: 32 x 32
+    mipmap_count: 1
+    format: FourCC(DXT1)
+
+Changed when converted back Header:
+    w/h: 32 x 32
+    mipmap_count: 1
+    format: DX10 Texture2D
+        dxgi_format: BC1_UNORM (71)
+        alpha_mode: Straight
 
 
 
@@ -2149,20 +2144,6 @@ Changed when converted back Header:
         dxgi_format: BC1_UNORM (71)
         misc_flag: MiscFlags(TEXTURE_CUBE)
         alpha_mode: Straight
-
-
-
-Header:
-    w/h: 128 x 128
-    mipmap_count: 8
-    caps2: DdsCaps2(CUBE_MAP | CUBE_MAP_POSITIVE_X | CUBE_MAP_NEGATIVE_X | CUBE_MAP_POSITIVE_Y | CUBE_MAP_NEGATIVE_Y | CUBE_MAP_POSITIVE_Z | CUBE_MAP_NEGATIVE_Z)
-    format: DX10 Texture2D
-        dxgi_format: BC1_UNORM (71)
-        misc_flag: MiscFlags(TEXTURE_CUBE)
-        array_size: 6
-        alpha_mode: Opaque
-
-Can't be converted
 
 
 
