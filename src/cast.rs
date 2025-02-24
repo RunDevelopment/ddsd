@@ -4,16 +4,16 @@
 //! provide panic safety. All methods in this module are guaranteed to
 //! NEVER PANIC.
 
-use zerocopy::{FromBytes, Immutable, IntoBytes, Ref};
+use zerocopy::{FromBytes, Immutable, IntoBytes};
 
 pub(crate) trait Castable: FromBytes + IntoBytes + Immutable {}
 impl<T: FromBytes + IntoBytes + Immutable> Castable for T {}
 
 pub(crate) fn from_bytes<T: Castable>(bytes: &[u8]) -> Option<&[T]> {
-    Ref::from_bytes(bytes).ok().map(Ref::into_ref)
+    FromBytes::ref_from_bytes(bytes).ok()
 }
 pub(crate) fn from_bytes_mut<T: Castable>(bytes: &mut [u8]) -> Option<&mut [T]> {
-    Ref::from_bytes(bytes).ok().map(Ref::into_mut)
+    FromBytes::mut_from_bytes(bytes).ok()
 }
 
 /// Casts a slice of `T` to a slice of `u8`.
@@ -50,7 +50,6 @@ where
     T: Castable,
     [T; N]: Castable,
 {
-    // PANIC SAFETY: This unwrap can never fail, because T isn't a ZST.
     from_bytes(as_bytes(buffer))
 }
 /// An implementation of something similar to `slice::array_chunks_mut`.
@@ -59,7 +58,6 @@ where
     T: Castable,
     [T; N]: Castable,
 {
-    // PANIC SAFETY: This unwrap can never fail, because T isn't a ZST.
     from_bytes_mut(as_bytes_mut(buffer))
 }
 

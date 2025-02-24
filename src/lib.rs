@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 mod cast;
+mod color;
 mod decode;
 mod detect;
 mod error;
@@ -12,6 +13,7 @@ mod util;
 
 use std::{io::Read, num::NonZeroU32};
 
+pub use color::*;
 pub use error::*;
 pub use format::*;
 pub use header::*;
@@ -279,4 +281,60 @@ fn create_layout_and_fix_header(
 
     // sadly, we couldn't fix it
     current_layout
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Size {
+    pub width: u32,
+    pub height: u32,
+}
+impl Size {
+    pub const fn new(width: u32, height: u32) -> Self {
+        Self { width, height }
+    }
+    pub const fn is_empty(&self) -> bool {
+        self.width == 0 || self.height == 0
+    }
+    pub const fn pixels(&self) -> u64 {
+        self.width as u64 * self.height as u64
+    }
+}
+impl From<(u32, u32)> for Size {
+    fn from((width, height): (u32, u32)) -> Self {
+        Self { width, height }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Rect {
+    pub x: u32,
+    pub y: u32,
+    pub width: u32,
+    pub height: u32,
+}
+impl Rect {
+    pub const fn new(x: u32, y: u32, width: u32, height: u32) -> Self {
+        Self {
+            x,
+            y,
+            width,
+            height,
+        }
+    }
+
+    pub const fn size(&self) -> Size {
+        Size::new(self.width, self.height)
+    }
+
+    /// Returns `true` if this rectangle is completely within the bounds of the
+    /// given size.
+    ///
+    /// This means that `self.x + self.width <= size.width` and
+    /// `self.y + self.height <= size.height`.
+    pub(crate) fn is_within_bounds(&self, size: Size) -> bool {
+        // use u64 to prevent overflow
+        let end_x = self.x as u64 + self.width as u64;
+        let end_y = self.y as u64 + self.height as u64;
+        end_x <= size.width as u64 && end_y <= size.height as u64
+    }
 }
