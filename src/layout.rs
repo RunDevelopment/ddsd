@@ -462,71 +462,70 @@ impl DataLayout {
         Self::from_header_with(header, PixelInfo::from_header(header)?)
     }
     pub fn from_header_with(header: &Header, pixel_info: PixelInfo) -> Result<Self, DecodeError> {
-        if let Some(header_dxt10) = header.dx10() {
-            // DirectX 10+
+        match header {
+            Header::Dx10(dx10) => {
+                match dx10.resource_dimension {
+                    ResourceDimension::Texture1D => {
+                        let mut info = SurfaceLayoutInfo::from_header(header, pixel_info)?;
+                        info.height = 1;
+                        let array_size = dx10.array_size;
 
-            match header_dxt10.resource_dimension {
-                ResourceDimension::Texture1D => {
-                    let mut info = SurfaceLayoutInfo::from_header(header, pixel_info)?;
-                    info.height = 1;
-                    let array_size = header_dxt10.array_size;
-
-                    if array_size == 1 {
-                        Ok(Self::Texture(info.create()?))
-                    } else {
-                        Ok(Self::TextureArray(
-                            info.create_array(TextureArrayKind::Textures, array_size)?,
-                        ))
+                        if array_size == 1 {
+                            Ok(Self::Texture(info.create()?))
+                        } else {
+                            Ok(Self::TextureArray(
+                                info.create_array(TextureArrayKind::Textures, array_size)?,
+                            ))
+                        }
                     }
-                }
-                ResourceDimension::Texture2D => {
-                    let info = SurfaceLayoutInfo::from_header(header, pixel_info)?;
-                    let array_size = header_dxt10.array_size;
-                    let is_cube_map = header_dxt10.misc_flag.contains(MiscFlags::TEXTURE_CUBE);
+                    ResourceDimension::Texture2D => {
+                        let info = SurfaceLayoutInfo::from_header(header, pixel_info)?;
+                        let array_size = dx10.array_size;
+                        let is_cube_map = dx10.misc_flag.contains(MiscFlags::TEXTURE_CUBE);
 
-                    if is_cube_map {
-                        // "For a 2D texture that is also a cube-map texture, array_size represents the number of cubes."
-                        let cube_map_faces = array_size
-                            .checked_mul(6)
-                            .ok_or(DecodeError::ArraySizeTooBig(array_size))?;
-                        return Ok(Self::TextureArray(
-                            info.create_array(TextureArrayKind::CubeMaps, cube_map_faces)?,
-                        ));
-                    }
+                        if is_cube_map {
+                            // "For a 2D texture that is also a cube-map texture, array_size represents the number of cubes."
+                            let cube_map_faces = array_size
+                                .checked_mul(6)
+                                .ok_or(DecodeError::ArraySizeTooBig(array_size))?;
+                            return Ok(Self::TextureArray(
+                                info.create_array(TextureArrayKind::CubeMaps, cube_map_faces)?,
+                            ));
+                        }
 
-                    if array_size == 1 {
-                        Ok(Self::Texture(info.create()?))
-                    } else {
-                        Ok(Self::TextureArray(
-                            info.create_array(TextureArrayKind::Textures, array_size)?,
-                        ))
+                        if array_size == 1 {
+                            Ok(Self::Texture(info.create()?))
+                        } else {
+                            Ok(Self::TextureArray(
+                                info.create_array(TextureArrayKind::Textures, array_size)?,
+                            ))
+                        }
                     }
-                }
-                ResourceDimension::Texture3D => {
-                    let info = VolumeLayoutInfo::from_header(header, pixel_info)?;
-                    Ok(Self::Volume(info.create()?))
+                    ResourceDimension::Texture3D => {
+                        let info = VolumeLayoutInfo::from_header(header, pixel_info)?;
+                        Ok(Self::Volume(info.create()?))
+                    }
                 }
             }
-        } else {
-            // DirectX <=9
+            Header::Dx9(dx9) => {
+                if dx9.caps2.contains(DdsCaps2::VOLUME) {
+                    let info = VolumeLayoutInfo::from_header(header, pixel_info)?;
+                    Ok(Self::Volume(info.create()?))
+                } else if dx9.caps2.contains(DdsCaps2::CUBE_MAP) {
+                    let info = SurfaceLayoutInfo::from_header(header, pixel_info)?;
+                    let sides = CubeMapSide::from(dx9.caps2);
+                    let side_count = sides.count();
 
-            if header.caps2.contains(DdsCaps2::VOLUME) {
-                let info = VolumeLayoutInfo::from_header(header, pixel_info)?;
-                Ok(Self::Volume(info.create()?))
-            } else if header.caps2.contains(DdsCaps2::CUBE_MAP) {
-                let info = SurfaceLayoutInfo::from_header(header, pixel_info)?;
-                let sides = CubeMapSide::from(header.caps2);
-                let side_count = sides.count();
-
-                let kind = if side_count == 6 {
-                    TextureArrayKind::CubeMaps
+                    let kind = if side_count == 6 {
+                        TextureArrayKind::CubeMaps
+                    } else {
+                        TextureArrayKind::PartialCubeMap(sides)
+                    };
+                    Ok(Self::TextureArray(info.create_array(kind, side_count)?))
                 } else {
-                    TextureArrayKind::PartialCubeMap(sides)
-                };
-                Ok(Self::TextureArray(info.create_array(kind, side_count)?))
-            } else {
-                let info = SurfaceLayoutInfo::from_header(header, pixel_info)?;
-                Ok(Self::Texture(info.create()?))
+                    let info = SurfaceLayoutInfo::from_header(header, pixel_info)?;
+                    Ok(Self::Texture(info.create()?))
+                }
             }
         }
     }
@@ -582,15 +581,15 @@ struct SurfaceLayoutInfo {
 }
 impl SurfaceLayoutInfo {
     fn from_header(header: &Header, pixels: PixelInfo) -> Result<Self, DecodeError> {
-        let mipmaps = header.mipmap_count.get();
+        let mipmaps = header.mipmap_count().get();
         if mipmaps > 32 {
             return Err(DecodeError::TooManyMipMaps(mipmaps));
         }
         let mipmaps = NonZeroU8::new(mipmaps as u8).unwrap();
 
         Ok(Self {
-            width: header.width,
-            height: header.height,
+            width: header.width(),
+            height: header.height(),
             mipmaps,
             pixels,
         })
@@ -618,16 +617,16 @@ struct VolumeLayoutInfo {
 }
 impl VolumeLayoutInfo {
     fn from_header(header: &Header, pixels: PixelInfo) -> Result<Self, DecodeError> {
-        let mipmaps = header.mipmap_count.get();
+        let mipmaps = header.mipmap_count().get();
         if mipmaps > 32 {
             return Err(DecodeError::TooManyMipMaps(mipmaps));
         }
         let mipmaps = NonZeroU8::new(mipmaps as u8).unwrap();
 
         Ok(Self {
-            width: header.width,
-            height: header.height,
-            depth: header.depth.ok_or(DecodeError::MissingDepth)?,
+            width: header.width(),
+            height: header.height(),
+            depth: header.depth().ok_or(DecodeError::MissingDepth)?,
             mipmaps,
             pixels,
         })

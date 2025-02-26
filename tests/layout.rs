@@ -212,20 +212,18 @@ fn full_layout_snapshot() {
 
 #[test]
 fn iter_and_get_volume() {
-    let header_volume = Header {
+    let header_volume = Dx10Header {
         height: 128,
         width: 256,
         depth: Some(4),
         mipmap_count: NonZero::new(5).unwrap(),
-        caps2: DdsCaps2::empty(),
-        format: PixelFormat::Dx10(Dx10Header {
-            dxgi_format: DxgiFormat::R8G8B8A8_UNORM,
-            resource_dimension: ResourceDimension::Texture3D,
-            misc_flag: MiscFlags::empty(),
-            array_size: 1,
-            alpha_mode: AlphaMode::Unknown,
-        }),
-    };
+        dxgi_format: DxgiFormat::R8G8B8A8_UNORM,
+        resource_dimension: ResourceDimension::Texture3D,
+        misc_flag: MiscFlags::empty(),
+        array_size: 1,
+        alpha_mode: AlphaMode::Unknown,
+    }
+    .into();
 
     let layout = DataLayout::from_header(&header_volume).unwrap();
     assert!(matches!(layout, DataLayout::Volume(_)));
@@ -251,20 +249,18 @@ fn iter_and_get_volume() {
 
 #[test]
 fn iter_and_get_texture_array() {
-    let header_texture_array = Header {
+    let header_texture_array = Dx10Header {
         height: 128,
         width: 256,
         depth: None,
         mipmap_count: NonZero::new(5).unwrap(),
-        caps2: DdsCaps2::empty(),
-        format: PixelFormat::Dx10(Dx10Header {
-            dxgi_format: DxgiFormat::R8G8B8A8_UNORM,
-            resource_dimension: ResourceDimension::Texture2D,
-            misc_flag: MiscFlags::empty(),
-            array_size: 4,
-            alpha_mode: AlphaMode::Unknown,
-        }),
-    };
+        dxgi_format: DxgiFormat::R8G8B8A8_UNORM,
+        resource_dimension: ResourceDimension::Texture2D,
+        misc_flag: MiscFlags::empty(),
+        array_size: 4,
+        alpha_mode: AlphaMode::Unknown,
+    }
+    .into();
 
     let layout = DataLayout::from_header(&header_texture_array).unwrap();
     assert!(matches!(layout, DataLayout::TextureArray(_)));
@@ -292,20 +288,18 @@ fn iter_and_get_texture_array() {
 fn empty_array() {
     #![allow(clippy::len_zero)]
 
-    let header_texture_array = Header {
+    let header_texture_array = Dx10Header {
         height: 128,
         width: 256,
         depth: None,
         mipmap_count: NonZero::new(5).unwrap(),
-        caps2: DdsCaps2::empty(),
-        format: PixelFormat::Dx10(Dx10Header {
-            dxgi_format: DxgiFormat::R8G8B8A8_UNORM,
-            resource_dimension: ResourceDimension::Texture2D,
-            misc_flag: MiscFlags::empty(),
-            array_size: 0, // empty
-            alpha_mode: AlphaMode::Unknown,
-        }),
-    };
+        dxgi_format: DxgiFormat::R8G8B8A8_UNORM,
+        resource_dimension: ResourceDimension::Texture2D,
+        misc_flag: MiscFlags::empty(),
+        array_size: 0, // empty
+        alpha_mode: AlphaMode::Unknown,
+    }
+    .into();
 
     let layout = DataLayout::from_header(&header_texture_array).unwrap();
     let array = layout.texture_array().unwrap();

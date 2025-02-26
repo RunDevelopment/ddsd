@@ -446,42 +446,50 @@ pub fn compare_snapshot_text(snapshot_file: &Path, text: &str) {
 
 pub fn pretty_print_header(out: &mut String, header: &Header) {
     out.push_str("Header:\n");
-    if let Some(d) = header.depth {
+    if let Some(d) = header.depth() {
         out.push_str(&format!(
             "    w/h/d: {:?} x {:?} x {:?}\n",
-            header.width, header.height, d
+            header.width(),
+            header.height(),
+            d
         ));
     } else {
         out.push_str(&format!(
             "    w/h: {:?} x {:?}\n",
-            header.width, header.height
+            header.width(),
+            header.height()
         ));
     }
-    out.push_str(&format!("    mipmap_count: {:?}\n", header.mipmap_count));
-    if !header.caps2.is_empty() {
-        out.push_str(&format!("    caps2: {:?}\n", header.caps2));
-    }
-    match &header.format {
-        PixelFormat::FourCC(four_cc) => {
-            out.push_str(&format!("    format: {:?}\n", four_cc));
+    out.push_str(&format!("    mipmap_count: {:?}\n", header.mipmap_count()));
+    match header {
+        Header::Dx9(dx9) => {
+            if !dx9.caps2.is_empty() {
+                out.push_str(&format!("    caps2: {:?}\n", dx9.caps2));
+            }
+
+            match &dx9.pixel_format {
+                Dx9PixelFormat::FourCC(four_cc) => {
+                    out.push_str(&format!("    format: {:?}\n", four_cc));
+                }
+                Dx9PixelFormat::Mask(pixel_format) => {
+                    out.push_str("    format: masked\n");
+                    out.push_str(&format!("        flags: {:?}\n", pixel_format.flags));
+                    out.push_str(&format!(
+                        "        rgb_bit_count: {:?}\n",
+                        pixel_format.rgb_bit_count
+                    ));
+                    out.push_str(&format!(
+                        "        bit_mask: r:0x{:x} g:0x{:x} b:0x{:x} a:0x{:x}\n",
+                        pixel_format.r_bit_mask,
+                        pixel_format.g_bit_mask,
+                        pixel_format.b_bit_mask,
+                        pixel_format.a_bit_mask
+                    ));
+                }
+            }
         }
-        PixelFormat::Mask(pixel_format) => {
-            out.push_str("    format: masked\n");
-            out.push_str(&format!("        flags: {:?}\n", pixel_format.flags));
-            out.push_str(&format!(
-                "        rgb_bit_count: {:?}\n",
-                pixel_format.rgb_bit_count
-            ));
-            out.push_str(&format!(
-                "        bit_mask: r:0x{:x} g:0x{:x} b:0x{:x} a:0x{:x}\n",
-                pixel_format.r_bit_mask,
-                pixel_format.g_bit_mask,
-                pixel_format.b_bit_mask,
-                pixel_format.a_bit_mask
-            ));
-        }
-        PixelFormat::Dx10(dx10) => {
-            out.push_str(&format!("    format: DX10 {:?}\n", dx10.resource_dimension));
+        Header::Dx10(dx10) => {
+            out.push_str(&format!("    DX10: {:?}\n", dx10.resource_dimension));
             out.push_str(&format!("        dxgi_format: {:?}\n", dx10.dxgi_format));
             if !dx10.misc_flag.is_empty() {
                 out.push_str(&format!("        misc_flag: {:?}\n", dx10.misc_flag));

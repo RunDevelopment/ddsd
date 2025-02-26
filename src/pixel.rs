@@ -1,4 +1,4 @@
-use crate::{util::div_ceil, DecodeError, DecodeFormat, DxgiFormat, Header, PixelFormat, Size};
+use crate::{util::div_ceil, DecodeError, DecodeFormat, Dx9PixelFormat, DxgiFormat, Header, Size};
 
 /// This describes the number of bits per pixel and the layout of pixels within
 /// a surface.
@@ -76,19 +76,21 @@ impl PixelInfo {
     }
 
     pub fn from_header(header: &Header) -> Result<Self, DecodeError> {
-        match &header.format {
-            PixelFormat::FourCC(four_cc) => DecodeFormat::from_four_cc(*four_cc)
-                .map(Into::into)
-                .ok_or(DecodeError::UnsupportedFourCC(*four_cc)),
-            PixelFormat::Mask(pixel_format) => {
-                let bit_count = pixel_format.rgb_bit_count;
-                if bit_count > 0 && bit_count <= 32 && bit_count % 8 == 0 {
-                    Ok(PixelInfo::fixed((bit_count / 8) as u8))
-                } else {
-                    Err(DecodeError::UnsupportedPixelFormat)
+        match header {
+            Header::Dx9(dx9) => match &dx9.pixel_format {
+                Dx9PixelFormat::FourCC(four_cc) => DecodeFormat::from_four_cc(*four_cc)
+                    .map(Into::into)
+                    .ok_or(DecodeError::UnsupportedFourCC(*four_cc)),
+                Dx9PixelFormat::Mask(pixel_format) => {
+                    let bit_count = pixel_format.rgb_bit_count;
+                    if bit_count > 0 && bit_count <= 32 && bit_count % 8 == 0 {
+                        Ok(PixelInfo::fixed((bit_count / 8) as u8))
+                    } else {
+                        Err(DecodeError::UnsupportedPixelFormat)
+                    }
                 }
-            }
-            PixelFormat::Dx10(dx10) => dx10
+            },
+            Header::Dx10(dx10) => dx10
                 .dxgi_format
                 .try_into()
                 .map_err(|_| DecodeError::UnsupportedDxgiFormat(dx10.dxgi_format)),

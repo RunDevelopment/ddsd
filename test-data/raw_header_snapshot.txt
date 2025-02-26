@@ -1257,7 +1257,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R32G32B32A32_FLOAT (2)
         alpha_mode: Straight
 
@@ -1281,7 +1281,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R32G32B32_FLOAT (6)
 
 Raw Header:
@@ -1304,7 +1304,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R16G16B16A16_FLOAT (10)
         alpha_mode: Straight
 
@@ -1328,7 +1328,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R16G16B16A16_UNORM (11)
         alpha_mode: Straight
 
@@ -1352,7 +1352,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R16G16B16A16_SNORM (13)
         alpha_mode: Straight
 
@@ -1376,7 +1376,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R32G32_FLOAT (16)
 
 Raw Header:
@@ -1399,7 +1399,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R32G32_FLOAT (16)
         alpha_mode: Opaque
 
@@ -1423,7 +1423,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R10G10B10A2_UNORM (24)
         alpha_mode: Straight
 
@@ -1447,7 +1447,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R11G11B10_FLOAT (26)
 
 Raw Header:
@@ -1470,7 +1470,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R8G8B8A8_UNORM (28)
         alpha_mode: Straight
 
@@ -1494,7 +1494,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R8G8B8A8_UNORM_SRGB (29)
         alpha_mode: Straight
 
@@ -1518,7 +1518,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R8G8B8A8_SNORM (31)
         alpha_mode: Straight
 
@@ -1542,7 +1542,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R16G16_FLOAT (34)
 
 Raw Header:
@@ -1565,7 +1565,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R16G16_FLOAT (34)
         alpha_mode: Opaque
 
@@ -1589,7 +1589,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R16G16_UNORM (35)
 
 Raw Header:
@@ -1612,7 +1612,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R16G16_SNORM (37)
 
 Raw Header:
@@ -1635,7 +1635,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R32_FLOAT (41)
 
 Raw Header:
@@ -1658,7 +1658,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R32_FLOAT (41)
         alpha_mode: Opaque
 
@@ -1682,7 +1682,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R8G8_UNORM (49)
 
 Raw Header:
@@ -1705,7 +1705,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R8G8_SNORM (51)
 
 Raw Header:
@@ -1728,7 +1728,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R16_FLOAT (54)
 
 Raw Header:
@@ -1751,7 +1751,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R16_FLOAT (54)
         alpha_mode: Opaque
 
@@ -1775,7 +1775,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R16_UNORM (56)
 
 Raw Header:
@@ -1798,7 +1798,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R16_SNORM (58)
 
 Raw Header:
@@ -1821,7 +1821,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R8_UNORM (61)
 
 Raw Header:
@@ -1844,7 +1844,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R8_UNORM (61)
         alpha_mode: Opaque
 
@@ -1868,7 +1868,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R8_SNORM (63)
 
 Raw Header:
@@ -1891,7 +1891,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: A8_UNORM (65)
 
 Raw Header:
@@ -1914,7 +1914,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: A8_UNORM (65)
         alpha_mode: Straight
 
@@ -1938,7 +1938,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 1
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R1_UNORM (66)
 
 Raw Header:
@@ -1961,7 +1961,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R9G9B9E5_SHAREDEXP (67)
 
 Raw Header:
@@ -1984,7 +1984,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R8G8_B8G8_UNORM (68)
 
 Raw Header:
@@ -2007,7 +2007,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: G8R8_G8B8_UNORM (69)
 
 Raw Header:
@@ -2030,7 +2030,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC1_UNORM (71)
         alpha_mode: Straight
 
@@ -2054,7 +2054,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC1_UNORM (71)
         alpha_mode: Opaque
 
@@ -2078,7 +2078,7 @@ Raw Header:
 Header:
     w/h: 32 x 32
     mipmap_count: 1
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC1_UNORM_SRGB (72)
 
 Raw Header:
@@ -2101,7 +2101,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC1_UNORM_SRGB (72)
         alpha_mode: Straight
 
@@ -2125,7 +2125,7 @@ Raw Header:
 Header:
     w/h: 256 x 256
     mipmap_count: 9
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC1_UNORM_SRGB (72)
 
 Raw Header:
@@ -2148,7 +2148,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC2_UNORM (74)
         alpha_mode: Straight
 
@@ -2172,7 +2172,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC2_UNORM_SRGB (75)
         alpha_mode: Straight
 
@@ -2196,7 +2196,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC3_UNORM (77)
         alpha_mode: Straight
 
@@ -2220,7 +2220,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC3_UNORM_SRGB (78)
         alpha_mode: Straight
 
@@ -2244,7 +2244,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC4_UNORM (80)
 
 Raw Header:
@@ -2267,7 +2267,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC4_UNORM (80)
         alpha_mode: Opaque
 
@@ -2291,7 +2291,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC4_SNORM (81)
 
 Raw Header:
@@ -2314,7 +2314,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC5_UNORM (83)
 
 Raw Header:
@@ -2337,7 +2337,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC5_UNORM (83)
         alpha_mode: Opaque
 
@@ -2361,7 +2361,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC5_SNORM (84)
 
 Raw Header:
@@ -2384,7 +2384,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: B5G6R5_UNORM (85)
 
 Raw Header:
@@ -2407,7 +2407,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: B5G5R5A1_UNORM (86)
         alpha_mode: Straight
 
@@ -2431,7 +2431,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: B8G8R8A8_UNORM (87)
         alpha_mode: Straight
 
@@ -2455,7 +2455,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: B8G8R8X8_UNORM (88)
 
 Raw Header:
@@ -2478,7 +2478,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: B8G8R8X8_UNORM (88)
         alpha_mode: Opaque
 
@@ -2502,7 +2502,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: R10G10B10_XR_BIAS_A2_UNORM (89)
         alpha_mode: Straight
 
@@ -2526,7 +2526,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: B8G8R8A8_UNORM_SRGB (91)
         alpha_mode: Straight
 
@@ -2550,7 +2550,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: B8G8R8X8_UNORM_SRGB (93)
 
 Raw Header:
@@ -2573,7 +2573,7 @@ Raw Header:
 Header:
     w/h: 64 x 64
     mipmap_count: 1
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC6H_UF16 (95)
 
 Raw Header:
@@ -2596,7 +2596,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC6H_UF16 (95)
 
 Raw Header:
@@ -2619,7 +2619,7 @@ Raw Header:
 Header:
     w/h: 256 x 128
     mipmap_count: 1
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC6H_UF16 (95)
 
 Raw Header:
@@ -2642,7 +2642,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC6H_SF16 (96)
 
 Raw Header:
@@ -2665,7 +2665,7 @@ Raw Header:
 Header:
     w/h: 256 x 128
     mipmap_count: 1
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC6H_SF16 (96)
 
 Raw Header:
@@ -2688,7 +2688,7 @@ Raw Header:
 Header:
     w/h: 64 x 64
     mipmap_count: 1
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC7_UNORM (98)
 
 Raw Header:
@@ -2711,7 +2711,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC7_UNORM (98)
         alpha_mode: Straight
 
@@ -2735,7 +2735,7 @@ Raw Header:
 Header:
     w/h: 256 x 256
     mipmap_count: 1
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC7_UNORM (98)
 
 Raw Header:
@@ -2758,7 +2758,7 @@ Raw Header:
 Header:
     w/h: 512 x 256
     mipmap_count: 1
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC7_UNORM (98)
 
 Raw Header:
@@ -2781,7 +2781,7 @@ Raw Header:
 Header:
     w/h: 1024 x 16
     mipmap_count: 1
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC7_UNORM (98)
 
 Raw Header:
@@ -2804,7 +2804,7 @@ Raw Header:
 Header:
     w/h: 1024 x 32
     mipmap_count: 1
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC7_UNORM (98)
 
 Raw Header:
@@ -2827,7 +2827,7 @@ Raw Header:
 Header:
     w/h: 1024 x 64
     mipmap_count: 1
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC7_UNORM (98)
 
 Raw Header:
@@ -2850,7 +2850,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC7_UNORM_SRGB (99)
         alpha_mode: Straight
 
@@ -2874,7 +2874,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: AYUV (100)
 
 Raw Header:
@@ -2897,7 +2897,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: Y410 (101)
 
 Raw Header:
@@ -2920,7 +2920,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: Y416 (102)
 
 Raw Header:
@@ -2943,7 +2943,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: Y210 (108)
 
 Raw Header:
@@ -2966,7 +2966,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: Y216 (109)
 
 Raw Header:
@@ -2989,7 +2989,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: B4G4R4A4_UNORM (115)
         alpha_mode: Straight
 
@@ -3013,7 +3013,7 @@ Raw Header:
 Header:
     w/h: 129 x 66
     mipmap_count: 8
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: A4B4G4R4_UNORM (191)
 
 Raw Header:
@@ -3036,8 +3036,7 @@ Raw Header:
 Header:
     w/h: 128 x 128
     mipmap_count: 8
-    caps2: DdsCaps2(CUBE_MAP | CUBE_MAP_POSITIVE_X | CUBE_MAP_NEGATIVE_X | CUBE_MAP_POSITIVE_Y | CUBE_MAP_NEGATIVE_Y | CUBE_MAP_POSITIVE_Z | CUBE_MAP_NEGATIVE_Z)
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: BC1_UNORM (71)
         misc_flag: MiscFlags(TEXTURE_CUBE)
         alpha_mode: Opaque
@@ -3062,8 +3061,7 @@ Raw Header:
 Header:
     w/h: 128 x 128
     mipmap_count: 1
-    caps2: DdsCaps2(CUBE_MAP | CUBE_MAP_POSITIVE_X | CUBE_MAP_NEGATIVE_X | CUBE_MAP_POSITIVE_Y | CUBE_MAP_NEGATIVE_Y | CUBE_MAP_POSITIVE_Z | CUBE_MAP_NEGATIVE_Z)
-    format: DX10 Texture2D
+    DX10: Texture2D
         dxgi_format: B5G6R5_UNORM (85)
         misc_flag: MiscFlags(TEXTURE_CUBE)
 
@@ -3087,8 +3085,7 @@ Raw Header:
 Header:
     w/h/d: 64 x 64 x 64
     mipmap_count: 7
-    caps2: DdsCaps2(VOLUME)
-    format: DX10 Texture3D
+    DX10: Texture3D
         dxgi_format: BC1_UNORM (71)
         alpha_mode: Straight
 

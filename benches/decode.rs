@@ -1,25 +1,6 @@
-use std::num::NonZeroU32;
-
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ddsd::*;
 use rand::{seq::SliceRandom, Rng, RngCore};
-
-fn simple_texture_header(size: Size, format: DxgiFormat) -> Header {
-    Header {
-        height: size.height,
-        width: size.width,
-        depth: None,
-        mipmap_count: NonZeroU32::new(1).unwrap(),
-        caps2: DdsCaps2::empty(),
-        format: PixelFormat::Dx10(Dx10Header {
-            dxgi_format: format,
-            resource_dimension: ResourceDimension::Texture2D,
-            misc_flag: MiscFlags::empty(),
-            array_size: 1,
-            alpha_mode: AlphaMode::Unknown,
-        }),
-    }
-}
 
 fn random_bytes(len: usize) -> Vec<u8> {
     let mut out = vec![0; len];
@@ -64,7 +45,7 @@ fn bench_decoder_with(
     }
 
     c.bench_function(&name, |b| {
-        let header = simple_texture_header(config.size, format);
+        let header = Header::new_image(config.size.width, config.size.height, format);
 
         let reader = DdsDecoder::from_header(header).unwrap();
         let format = reader.format();

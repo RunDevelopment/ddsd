@@ -73,9 +73,12 @@ pub struct RawDx10Header {
 }
 
 impl RawHeader {
+    pub(crate) const SIZE: u32 = 124;
+    pub(crate) const INTS: usize = Self::SIZE as usize / 4;
+
     /// Reads the raw header without magic bytes from a reader.
     pub fn read<R: Read>(reader: &mut R) -> std::io::Result<Self> {
-        let mut buffer: [u32; Header::INTS] = Default::default();
+        let mut buffer: [u32; RawHeader::INTS] = Default::default();
         read_u32_le_array(reader, &mut buffer)?;
 
         let mut header: Self = Self {
@@ -184,9 +187,11 @@ impl RawHeader {
 }
 
 impl RawPixelFormat {
+    const SIZE: u32 = 32;
+
     fn new_four_cc(four_cc: FourCC) -> RawPixelFormat {
         Self {
-            size: 32,
+            size: Self::SIZE,
             flags: PixelFormatFlags::FOURCC,
             four_cc,
             rgb_bit_count: 0,
@@ -196,6 +201,22 @@ impl RawPixelFormat {
             a_bit_mask: 0,
         }
     }
+    fn new_mask(mask: &MaskPixelFormat) -> RawPixelFormat {
+        Self {
+            size: Self::SIZE,
+            flags: mask.flags,
+            four_cc: FourCC::NONE,
+            rgb_bit_count: mask.rgb_bit_count,
+            r_bit_mask: mask.r_bit_mask,
+            g_bit_mask: mask.g_bit_mask,
+            b_bit_mask: mask.b_bit_mask,
+            a_bit_mask: mask.a_bit_mask,
+        }
+    }
+}
+
+impl RawDx10Header {
+    pub(crate) const SIZE: u32 = 20;
 }
 
 /// The DDS header and the DX10 extension header if any.
@@ -203,8 +224,15 @@ impl RawPixelFormat {
 /// This structure contains parsed data. Using by the decoder.
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header
+/// Version-specific header data.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Header {
+pub enum Header {
+    Dx9(Dx9Header),
+    Dx10(Dx10Header),
+}
+/// DX9-specific header data.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Dx9Header {
     /// Surface height (in pixels).
     pub height: u32,
     /// Surface width (in pixels).
@@ -215,19 +243,176 @@ pub struct Header {
     pub mipmap_count: NonZeroU32,
     /// Additional detail about the surfaces stored.
     pub caps2: DdsCaps2,
-    pub format: PixelFormat,
+    pub pixel_format: Dx9PixelFormat,
+}
+/// DX9 pixel format.
+///
+/// DDS files define their pixel format either with a (legacy) `DDS_PIXELFORMAT`
+/// structure or with a `DXGI_FORMAT` from the Direct3D 10 and later APIs. This
+/// enum represents all cases in a single type.
+///
+/// https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-pixelformat
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum Dx9PixelFormat {
+    FourCC(FourCC),
+    Mask(MaskPixelFormat),
+}
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct MaskPixelFormat {
+    /// Values which indicate what type of data is in the surface.
+    pub flags: PixelFormatFlags,
+    /// Number of bits in an RGB (possibly including alpha) format. Valid when dwFlags includes DDPF_RGB, DDPF_LUMINANCE, or DDPF_YUV.
+    pub rgb_bit_count: u32,
+    /// Red (or luminance or Y) mask for reading color data. For instance, given the A8R8G8B8 format, the red mask would be 0x00ff0000.
+    pub r_bit_mask: u32,
+    /// Green (or U) mask for reading color data. For instance, given the A8R8G8B8 format, the green mask would be 0x0000ff00.
+    pub g_bit_mask: u32,
+    /// Blue (or V) mask for reading color data. For instance, given the A8R8G8B8 format, the blue mask would be 0x000000ff.
+    pub b_bit_mask: u32,
+    /// Alpha mask for reading alpha data. dwFlags must include DDPF_ALPHAPIXELS or DDPF_ALPHA. For instance, given the A8R8G8B8 format, the alpha mask would be 0xff000000.
+    pub a_bit_mask: u32,
+}
+/// DDS header extension to handle resource arrays, DXGI pixel formats that don't map to the legacy Microsoft DirectDraw pixel format structures, and additional metadata.
+///
+/// https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header-dxt10
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Dx10Header {
+    /// Surface height (in pixels).
+    pub height: u32,
+    /// Surface width (in pixels).
+    pub width: u32,
+    /// Depth of a volume texture (in pixels).
+    pub depth: Option<u32>,
+    /// Number of mipmap levels.
+    pub mipmap_count: NonZeroU32,
+
+    /// The surface pixel format.
+    pub dxgi_format: DxgiFormat,
+    /// Identifies the type of resource.
+    pub resource_dimension: ResourceDimension,
+    /// Identifies other, less common options for resources.
+    ///
+    /// The following value for this member is a subset of the values in the D3D10_RESOURCE_MISC_FLAG or D3D11_RESOURCE_MISC_FLAG enumeration.
+    pub misc_flag: MiscFlags,
+    /// The number of elements in the array.
+    ///
+    /// For a 2D texture that is also a cube-map texture, this number represents the number of cubes. This number is the same as the number in the NumCubes member of D3D10_TEXCUBE_ARRAY_SRV1 or D3D11_TEXCUBE_ARRAY_SRV). In this case, the DDS file contains arraySize*6 2D textures. For more information about this case, see the miscFlag description.
+    ///
+    /// For a 3D texture, you must set this number to 1.
+    pub array_size: u32,
+    /// The alpha mode of the associated resource.
+    pub alpha_mode: AlphaMode,
+}
+
+impl From<Dx9Header> for Header {
+    fn from(header: Dx9Header) -> Self {
+        Self::Dx9(header)
+    }
+}
+impl From<Dx10Header> for Header {
+    fn from(header: Dx10Header) -> Self {
+        Self::Dx10(header)
+    }
+}
+impl From<FourCC> for Dx9PixelFormat {
+    fn from(four_cc: FourCC) -> Self {
+        Self::FourCC(four_cc)
+    }
+}
+impl From<MaskPixelFormat> for Dx9PixelFormat {
+    fn from(mask: MaskPixelFormat) -> Self {
+        Self::Mask(mask)
+    }
 }
 
 impl Header {
+    pub const fn width(&self) -> u32 {
+        match self {
+            Header::Dx9(header) => header.width,
+            Header::Dx10(header) => header.width,
+        }
+    }
+    pub const fn width_mut(&mut self) -> &mut u32 {
+        match self {
+            Header::Dx9(header) => &mut header.width,
+            Header::Dx10(header) => &mut header.width,
+        }
+    }
+    pub const fn height(&self) -> u32 {
+        match self {
+            Header::Dx9(header) => header.height,
+            Header::Dx10(header) => header.height,
+        }
+    }
+    pub const fn height_mut(&mut self) -> &mut u32 {
+        match self {
+            Header::Dx9(header) => &mut header.height,
+            Header::Dx10(header) => &mut header.height,
+        }
+    }
+    pub const fn size(&self) -> Size {
+        Size::new(self.width(), self.height())
+    }
+    pub const fn depth(&self) -> Option<u32> {
+        match self {
+            Header::Dx9(header) => header.depth,
+            Header::Dx10(header) => header.depth,
+        }
+    }
+    pub const fn depth_mut(&mut self) -> &mut Option<u32> {
+        match self {
+            Header::Dx9(header) => &mut header.depth,
+            Header::Dx10(header) => &mut header.depth,
+        }
+    }
+    pub const fn mipmap_count(&self) -> NonZeroU32 {
+        match self {
+            Header::Dx9(header) => header.mipmap_count,
+            Header::Dx10(header) => header.mipmap_count,
+        }
+    }
+    pub const fn mipmap_count_mut(&mut self) -> &mut NonZeroU32 {
+        match self {
+            Header::Dx9(header) => &mut header.mipmap_count,
+            Header::Dx10(header) => &mut header.mipmap_count,
+        }
+    }
+    /// The [`Dx10Header::array_size`] value, or 1 if it's a DX9 header.
+    pub const fn array_size(&self) -> u32 {
+        match self {
+            Self::Dx9(_) => 1,
+            Self::Dx10(header) => header.array_size,
+        }
+    }
+    /// Returns [`Dx10Header::alpha_mode`] or [`Dx9Header::alpha_mode`].
+    pub const fn alpha_mode(&self) -> AlphaMode {
+        match self {
+            Self::Dx9(header) => header.alpha_mode(),
+            Self::Dx10(header) => header.alpha_mode,
+        }
+    }
+
+    pub const fn dx9(&self) -> Option<&Dx9Header> {
+        match self {
+            Header::Dx9(dx9) => Some(dx9),
+            _ => None,
+        }
+    }
+    pub const fn dx9_mut(&mut self) -> Option<&mut Dx9Header> {
+        match self {
+            Header::Dx9(dx9) => Some(dx9),
+            _ => None,
+        }
+    }
     pub const fn dx10(&self) -> Option<&Dx10Header> {
-        match &self.format {
-            PixelFormat::Dx10(dx10) => Some(dx10),
+        match self {
+            Header::Dx10(dx10) => Some(dx10),
             _ => None,
         }
     }
     pub const fn dx10_mut(&mut self) -> Option<&mut Dx10Header> {
-        match &mut self.format {
-            PixelFormat::Dx10(dx10) => Some(dx10),
+        match self {
+            Header::Dx10(dx10) => Some(dx10),
             _ => None,
         }
     }
@@ -241,15 +426,11 @@ impl Header {
     /// The returned value will be 144 for DX10 DDS files and 124 for legacy
     /// files.
     pub const fn byte_len(&self) -> usize {
-        let mut size = Header::SIZE;
-        if matches!(self.format, PixelFormat::Dx10(_)) {
-            size += Dx10Header::SIZE;
+        let mut size = RawHeader::SIZE;
+        if self.dx10().is_some() {
+            size += RawDx10Header::SIZE;
         }
-        size
-    }
-
-    pub const fn size(&self) -> Size {
-        Size::new(self.width, self.height)
+        size as usize
     }
 
     /// Creates a new header for DX10 texture 2D with the given dimensions and
@@ -257,199 +438,80 @@ impl Header {
     ///
     /// The mipmap count is set to 1 and the alpha mode is set to unknown.
     pub const fn new_image(width: u32, height: u32, format: DxgiFormat) -> Self {
-        Self {
+        Self::Dx10(Dx10Header {
             height,
             width,
             depth: None,
             mipmap_count: NonZeroU32::new(1).unwrap(),
-            format: PixelFormat::Dx10(Dx10Header {
-                dxgi_format: format,
-                resource_dimension: ResourceDimension::Texture2D,
-                misc_flag: MiscFlags::empty(),
-                array_size: 1,
-                alpha_mode: if format.has_alpha() {
-                    AlphaMode::Straight
-                } else {
-                    AlphaMode::Unknown
-                },
-            }),
-            caps2: DdsCaps2::empty(),
-        }
+            dxgi_format: format,
+            resource_dimension: ResourceDimension::Texture2D,
+            misc_flag: MiscFlags::empty(),
+            array_size: 1,
+            alpha_mode: if format.has_alpha() {
+                AlphaMode::Straight
+            } else {
+                AlphaMode::Unknown
+            },
+        })
     }
     /// Creates a new header for DX10 texture 3D with the given dimensions and
     /// format.
     ///
     /// The mipmap count is set to 1 and the alpha mode is set to unknown.
     pub const fn new_volume(width: u32, height: u32, depth: u32, format: DxgiFormat) -> Self {
-        Self {
+        Self::Dx10(Dx10Header {
             height,
             width,
             depth: Some(depth),
             mipmap_count: NonZeroU32::new(1).unwrap(),
-            format: PixelFormat::Dx10(Dx10Header {
-                dxgi_format: format,
-                resource_dimension: ResourceDimension::Texture3D,
-                misc_flag: MiscFlags::empty(),
-                array_size: 1,
-                alpha_mode: if format.has_alpha() {
-                    AlphaMode::Straight
-                } else {
-                    AlphaMode::Unknown
-                },
-            }),
-            caps2: DdsCaps2::VOLUME,
-        }
+            dxgi_format: format,
+            resource_dimension: ResourceDimension::Texture3D,
+            misc_flag: MiscFlags::empty(),
+            array_size: 1,
+            alpha_mode: if format.has_alpha() {
+                AlphaMode::Straight
+            } else {
+                AlphaMode::Unknown
+            },
+        })
     }
     /// Creates a new header for DX10 cube map with the given dimensions and
     /// format.
     ///
     /// The mipmap count is set to 1 and the alpha mode is set to unknown.
     pub const fn new_cube_map(width: u32, height: u32, format: DxgiFormat) -> Self {
-        Self {
+        Self::Dx10(Dx10Header {
             height,
             width,
             depth: None,
             mipmap_count: NonZeroU32::new(1).unwrap(),
-            format: PixelFormat::Dx10(Dx10Header {
-                dxgi_format: format,
-                resource_dimension: ResourceDimension::Texture2D,
-                misc_flag: MiscFlags::TEXTURE_CUBE,
-                array_size: 1,
-                alpha_mode: if format.has_alpha() {
-                    AlphaMode::Straight
-                } else {
-                    AlphaMode::Unknown
-                },
-            }),
-            caps2: DdsCaps2::CUBE_MAP.union(DdsCaps2::CUBE_MAP_ALL_FACES),
-        }
-    }
-
-    pub fn into_dx9(mut self) -> Result<Header, Header> {
-        fn to_dx9_format(
-            mut dxgi_format: DxgiFormat,
-            alpha_mode: AlphaMode,
-        ) -> Option<PixelFormat> {
-            // convert the format to linear before, because DX9 doesn't have
-            // any sRGB formats
-            dxgi_format = dxgi_format.to_linear();
-
-            // special case for DXT2 and DXT4
-            if alpha_mode == AlphaMode::Premultiplied {
-                if dxgi_format == DxgiFormat::BC2_UNORM {
-                    return Some(PixelFormat::FourCC(FourCC::DXT2));
-                }
-                if dxgi_format == DxgiFormat::BC3_UNORM {
-                    return Some(PixelFormat::FourCC(FourCC::DXT4));
-                }
-            }
-
-            dxgi_to_four_cc(dxgi_format)
-                .map(PixelFormat::FourCC)
-                .or_else(|| dxgi_to_pixel_format(dxgi_format).map(PixelFormat::Mask))
-        }
-        if let Some(dx10) = self.dx10() {
-            let Dx10Header {
-                dxgi_format,
-                resource_dimension,
-                misc_flag,
-                array_size,
-                alpha_mode,
-            } = *dx10;
-
-            if array_size != 1 {
-                // DX9 does not support texture arrays
-                return Err(self);
-            }
-            if misc_flag.contains(MiscFlags::TEXTURE_CUBE)
-                && resource_dimension != ResourceDimension::Texture2D
-            {
-                // A cube maps with needs to have 2D textures as sides
-                return Err(self);
-            }
-
-            let mut caps2 = DdsCaps2::empty();
-            if resource_dimension == ResourceDimension::Texture3D {
-                caps2 |= DdsCaps2::VOLUME;
-            }
-            if misc_flag.contains(MiscFlags::TEXTURE_CUBE) {
-                caps2 |= DdsCaps2::CUBE_MAP | DdsCaps2::CUBE_MAP_ALL_FACES;
-            }
-
-            let format = if let Some(format) = to_dx9_format(dxgi_format, alpha_mode) {
-                format
-            } else {
-                // can't convert the DXGI format into something DX9 supports
-                return Err(self);
-            };
-
-            // finally, modify self and return
-            self.caps2 = caps2;
-            self.format = format;
-            Ok(self)
-        } else {
-            Ok(self)
-        }
-    }
-    pub fn into_dx10(mut self) -> Result<Header, Header> {
-        let mut alpha_mode = AlphaMode::Unknown;
-
-        let dxgi_format = match &self.format {
-            PixelFormat::FourCC(four_cc) => {
-                // special handling for DXT2 and DXT4
-                if *four_cc == FourCC::DXT2 {
-                    alpha_mode = AlphaMode::Premultiplied;
-                    DxgiFormat::BC2_UNORM
-                } else if *four_cc == FourCC::DXT4 {
-                    alpha_mode = AlphaMode::Premultiplied;
-                    DxgiFormat::BC3_UNORM
-                } else if let Some(dxgi) = four_cc_to_dxgi(*four_cc) {
-                    dxgi
-                } else {
-                    return Err(self);
-                }
-            }
-            PixelFormat::Mask(mask_pixel_format) => {
-                if let Some(dxgi) = pixel_format_to_dxgi(mask_pixel_format) {
-                    dxgi
-                } else {
-                    return Err(self);
-                }
-            }
-            PixelFormat::Dx10(_) => return Ok(self),
-        };
-
-        if alpha_mode == AlphaMode::Unknown && dxgi_format.has_alpha() {
-            alpha_mode = AlphaMode::Straight;
-        }
-
-        if self.caps2.contains(DdsCaps2::CUBE_MAP)
-            && !self.caps2.contains(DdsCaps2::CUBE_MAP_ALL_FACES)
-        {
-            // DX10 requires all faces to be present
-            return Err(self);
-        }
-
-        let resource_dimension = if self.caps2.contains(DdsCaps2::VOLUME) {
-            ResourceDimension::Texture3D
-        } else {
-            ResourceDimension::Texture2D
-        };
-        let misc_flag = if self.caps2.contains(DdsCaps2::CUBE_MAP) {
-            MiscFlags::TEXTURE_CUBE
-        } else {
-            MiscFlags::empty()
-        };
-
-        self.format = PixelFormat::Dx10(Dx10Header {
-            dxgi_format,
-            resource_dimension,
-            misc_flag,
+            dxgi_format: format,
+            resource_dimension: ResourceDimension::Texture2D,
+            misc_flag: MiscFlags::TEXTURE_CUBE,
             array_size: 1,
-            alpha_mode,
-        });
+            alpha_mode: if format.has_alpha() {
+                AlphaMode::Straight
+            } else {
+                AlphaMode::Unknown
+            },
+        })
+    }
 
-        Ok(self)
+    /// Converts this header into a DX9 header if possible. If the header is a
+    /// DX9 header already, it will be returned as is.
+    pub fn into_dx9(self) -> Option<Dx9Header> {
+        match self {
+            Header::Dx9(dx9_header) => Some(dx9_header),
+            Header::Dx10(dx10_header) => dx10_header.to_dx9(),
+        }
+    }
+    /// Converts this header into a DX10 header if possible. If the header is a
+    /// DX10 header already, it will be returned as is.
+    pub fn into_dx10(self) -> Option<Dx10Header> {
+        match self {
+            Header::Dx9(dx9_header) => dx9_header.to_dx10(),
+            Header::Dx10(dx10_header) => Some(dx10_header),
+        }
     }
 
     fn fix_based_on_file_len(&mut self, options: &Options) -> Option<()> {
@@ -512,8 +574,11 @@ impl Header {
 
         // Sometimes, the mipmap count is incorrect. We can try to fix this by
         // simply guessing the correct mipmap count.
-        let mipmap = self.mipmap_count.get();
-        let max_dimension = self.width.max(self.height).max(self.depth.unwrap_or(1));
+        let mipmap = self.mipmap_count().get();
+        let max_dimension = self
+            .width()
+            .max(self.height())
+            .max(self.depth().unwrap_or(1));
         let max_levels = 32 - max_dimension.leading_zeros();
         let guesses = [
             1,          // it's very common for DDS images to have no mipmaps
@@ -523,7 +588,7 @@ impl Header {
         ];
         for guess in guesses.into_iter().filter_map(NonZeroU32::new) {
             let mut new_header = self.clone();
-            new_header.mipmap_count = guess;
+            *new_header.mipmap_count_mut() = guess;
 
             if test(&new_header) {
                 *self = new_header;
@@ -534,9 +599,6 @@ impl Header {
         // sadly, we couldn't fix it
         None
     }
-
-    pub(crate) const SIZE: usize = 124;
-    pub(crate) const INTS: usize = Self::SIZE / 4;
 
     /// The magic bytes (`'DDS '`) at the start of every DDS file.
     pub const MAGIC: [u8; 4] = *b"DDS ";
@@ -570,7 +632,7 @@ impl Header {
 
     pub fn from_raw(raw: &RawHeader, options: &Options) -> Result<Self, HeaderError> {
         // verify header size
-        if raw.size != Self::SIZE as u32 {
+        if raw.size != RawHeader::SIZE {
             if options.permissive && raw.size == 24 {
                 // Some DDS files from the game Stalker 2 have their header size
                 // set to 24 instead of 124. This is likely a typo in the source
@@ -600,15 +662,57 @@ impl Header {
         };
         let mipmap_count = NonZeroU32::new(mipmap_count.max(1)).unwrap();
 
-        let format = PixelFormat::from_raw(raw, options)?;
+        // this always has to be parsed to throw an error if it's invalid
+        let pixel_format = Dx9PixelFormat::from_raw(&raw.pixel_format, options)?;
 
-        let mut header = Self {
-            height,
-            width,
-            depth,
-            mipmap_count,
-            format,
-            caps2: raw.caps2,
+        let mut header = if let Some(dx10) = &raw.dx10 {
+            let dxgi_format =
+                DxgiFormat::try_from(dx10.dxgi_format).map_err(HeaderError::InvalidDxgiFormat)?;
+            let resource_dimension = ResourceDimension::try_from(dx10.resource_dimension)
+                .map_err(HeaderError::InvalidResourceDimension)?;
+
+            let misc_flag = dx10.misc_flag;
+
+            let raw_alpha_mode = dx10.misc_flags2 & 0b111;
+            let alpha_mode = if let Ok(alpha_mode) = AlphaMode::try_from(raw_alpha_mode) {
+                alpha_mode
+            } else if options.permissive {
+                AlphaMode::Unknown
+            } else {
+                return Err(HeaderError::InvalidAlphaMode(raw_alpha_mode));
+            };
+
+            let mut array_size = dx10.array_size;
+            if resource_dimension == ResourceDimension::Texture3D && array_size != 1 {
+                if options.permissive {
+                    array_size = 1;
+                } else {
+                    return Err(HeaderError::InvalidArraySizeForTexture3D(array_size));
+                }
+            }
+
+            // DX10 header
+            Header::Dx10(Dx10Header {
+                height,
+                width,
+                depth,
+                mipmap_count,
+                dxgi_format,
+                resource_dimension,
+                misc_flag,
+                array_size,
+                alpha_mode,
+            })
+        } else {
+            // DX9 header
+            Header::Dx9(Dx9Header {
+                height,
+                width,
+                depth,
+                mipmap_count,
+                caps2: raw.caps2,
+                pixel_format,
+            })
         };
 
         if options.permissive {
@@ -622,10 +726,10 @@ impl Header {
         let mut flags = DdsFlags::REQUIRED | DdsFlags::MIPMAP_COUNT;
         let mut caps = DdsCaps::REQUIRED;
 
-        if self.mipmap_count.get() > 1 {
+        if self.mipmap_count().get() > 1 {
             caps |= DdsCaps::MIPMAP | DdsCaps::COMPLEX;
         }
-        if self.depth.is_some() {
+        if self.depth().is_some() {
             flags |= DdsFlags::DEPTH;
         }
 
@@ -634,14 +738,14 @@ impl Header {
         let mut pitch_or_linear_size = 0;
         if let Ok(pixel_info) = PixelInfo::from_header(self) {
             if let PixelInfo::Fixed { bytes_per_pixel } = pixel_info {
-                let pitch = self.width.checked_mul(bytes_per_pixel as u32);
+                let pitch = self.width().checked_mul(bytes_per_pixel as u32);
                 if let Some(pitch) = pitch {
                     pitch_or_linear_size = pitch;
                     flags |= DdsFlags::PITCH;
                 }
             } else {
                 let linear_size: Option<u32> = pixel_info
-                    .surface_bytes(Size::new(self.width, self.height))
+                    .surface_bytes(self.size())
                     .and_then(|size| size.try_into().ok());
                 if let Some(linear_size) = linear_size {
                     pitch_or_linear_size = linear_size;
@@ -650,45 +754,50 @@ impl Header {
             }
         }
 
-        let (pixel_format, dx10) = match &self.format {
-            PixelFormat::FourCC(four_cc) => (RawPixelFormat::new_four_cc(*four_cc), None),
-            PixelFormat::Mask(mask_pixel_format) => (
-                RawPixelFormat {
-                    size: 32,
-                    flags: mask_pixel_format.flags,
-                    four_cc: FourCC::NONE,
-                    rgb_bit_count: mask_pixel_format.rgb_bit_count,
-                    r_bit_mask: mask_pixel_format.r_bit_mask,
-                    g_bit_mask: mask_pixel_format.g_bit_mask,
-                    b_bit_mask: mask_pixel_format.b_bit_mask,
-                    a_bit_mask: mask_pixel_format.a_bit_mask,
-                },
-                None,
-            ),
-            PixelFormat::Dx10(dx10_header) => (
-                RawPixelFormat::new_four_cc(FourCC::DX10),
-                Some(RawDx10Header {
+        let (caps2, pixel_format, dx10) = match self {
+            Header::Dx9(dx9_header) => {
+                let format = match &dx9_header.pixel_format {
+                    Dx9PixelFormat::FourCC(four_cc) => RawPixelFormat::new_four_cc(*four_cc),
+                    Dx9PixelFormat::Mask(mask_pixel_format) => {
+                        RawPixelFormat::new_mask(mask_pixel_format)
+                    }
+                };
+
+                (dx9_header.caps2, format, None)
+            }
+            Header::Dx10(dx10_header) => {
+                let mut caps2 = DdsCaps2::empty();
+                if dx10_header.resource_dimension == ResourceDimension::Texture3D {
+                    caps2 |= DdsCaps2::VOLUME;
+                }
+                if dx10_header.misc_flag.contains(MiscFlags::TEXTURE_CUBE) {
+                    caps2 |= DdsCaps2::CUBE_MAP | DdsCaps2::CUBE_MAP_ALL_FACES;
+                }
+
+                let dx10 = RawDx10Header {
                     dxgi_format: dx10_header.dxgi_format.into(),
                     resource_dimension: dx10_header.resource_dimension.into(),
                     misc_flag: dx10_header.misc_flag,
                     array_size: dx10_header.array_size,
                     misc_flags2: dx10_header.alpha_mode.into(),
-                }),
-            ),
+                };
+
+                (caps2, RawPixelFormat::new_four_cc(FourCC::DX10), Some(dx10))
+            }
         };
 
         RawHeader {
-            size: 124,
+            size: RawHeader::SIZE,
             flags,
-            height: self.height,
-            width: self.width,
+            height: self.height(),
+            width: self.width(),
             pitch_or_linear_size,
-            depth: self.depth.unwrap_or(1),
-            mipmap_count: self.mipmap_count.get(),
+            depth: self.depth().unwrap_or(1),
+            mipmap_count: self.mipmap_count().get(),
             reserved1: [0; 11],
             pixel_format,
             caps,
-            caps2: self.caps2,
+            caps2,
             caps3: 0,
             caps4: 0,
             reserved2: 0,
@@ -697,40 +806,10 @@ impl Header {
     }
 }
 
-/// A combined pixel format and DX10 header.
-///
-/// DDS files define their pixel format either with a (legacy) `DDS_PIXELFORMAT`
-/// structure or with a `DXGI_FORMAT` from the Direct3D 10 and later APIs. This
-/// enum represents all cases in a single type.
-///
-/// https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-pixelformat
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum PixelFormat {
-    FourCC(FourCC),
-    Mask(MaskPixelFormat),
-    Dx10(Dx10Header),
-}
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct MaskPixelFormat {
-    /// Values which indicate what type of data is in the surface.
-    pub flags: PixelFormatFlags,
-    /// Number of bits in an RGB (possibly including alpha) format. Valid when dwFlags includes DDPF_RGB, DDPF_LUMINANCE, or DDPF_YUV.
-    pub rgb_bit_count: u32,
-    /// Red (or luminance or Y) mask for reading color data. For instance, given the A8R8G8B8 format, the red mask would be 0x00ff0000.
-    pub r_bit_mask: u32,
-    /// Green (or U) mask for reading color data. For instance, given the A8R8G8B8 format, the green mask would be 0x0000ff00.
-    pub g_bit_mask: u32,
-    /// Blue (or V) mask for reading color data. For instance, given the A8R8G8B8 format, the blue mask would be 0x000000ff.
-    pub b_bit_mask: u32,
-    /// Alpha mask for reading alpha data. dwFlags must include DDPF_ALPHAPIXELS or DDPF_ALPHA. For instance, given the A8R8G8B8 format, the alpha mask would be 0xff000000.
-    pub a_bit_mask: u32,
-}
-impl PixelFormat {
-    const SIZE: u32 = 32;
-
-    fn from_raw(raw: &RawHeader, options: &Options) -> Result<Self, HeaderError> {
-        let size = raw.pixel_format.size;
-        if size != Self::SIZE {
+impl Dx9PixelFormat {
+    fn from_raw(raw: &RawPixelFormat, options: &Options) -> Result<Self, HeaderError> {
+        let size = raw.size;
+        if size != RawPixelFormat::SIZE {
             if options.permissive && size == 0 {
                 // Some DDS files have their pixel format size set to 0.
                 // https://github.com/microsoft/DirectXTex/issues/392
@@ -744,14 +823,9 @@ impl PixelFormat {
             }
         }
 
-        if let Some(dx10) = &raw.dx10 {
-            let dx10 = Dx10Header::from_raw(dx10, options)?;
-            return Ok(Self::Dx10(dx10));
-        }
-
-        let mut flags = raw.pixel_format.flags;
-        let four_cc = raw.pixel_format.four_cc;
-        let rgb_bit_count = raw.pixel_format.rgb_bit_count;
+        let mut flags = raw.flags;
+        let four_cc = raw.four_cc;
+        let rgb_bit_count = raw.rgb_bit_count;
 
         if options.permissive
             && rgb_bit_count == 0
@@ -767,78 +841,147 @@ impl PixelFormat {
             flags |= PixelFormatFlags::FOURCC;
         }
 
-        if flags.contains(PixelFormatFlags::FOURCC) {
-            return Ok(Self::FourCC(four_cc));
+        let format = if flags.contains(PixelFormatFlags::FOURCC) {
+            Dx9PixelFormat::FourCC(four_cc)
+        } else {
+            Dx9PixelFormat::Mask(MaskPixelFormat {
+                flags,
+                rgb_bit_count,
+                r_bit_mask: raw.r_bit_mask,
+                g_bit_mask: raw.g_bit_mask,
+                b_bit_mask: raw.b_bit_mask,
+                a_bit_mask: raw.a_bit_mask,
+            })
         };
 
-        Ok(Self::Mask(MaskPixelFormat {
-            flags,
-            rgb_bit_count,
-            r_bit_mask: raw.pixel_format.r_bit_mask,
-            g_bit_mask: raw.pixel_format.g_bit_mask,
-            b_bit_mask: raw.pixel_format.b_bit_mask,
-            a_bit_mask: raw.pixel_format.a_bit_mask,
-        }))
+        Ok(format)
     }
 }
 
-/// DDS header extension to handle resource arrays, DXGI pixel formats that don't map to the legacy Microsoft DirectDraw pixel format structures, and additional metadata.
-///
-/// https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header-dxt10
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Dx10Header {
-    /// The surface pixel format.
-    pub dxgi_format: DxgiFormat,
-    /// Identifies the type of resource.
-    pub resource_dimension: ResourceDimension,
-    /// Identifies other, less common options for resources.
+impl Dx9Header {
+    /// Returns the alpha mode of the pixel format.
     ///
-    /// The following value for this member is a subset of the values in the D3D10_RESOURCE_MISC_FLAG or D3D11_RESOURCE_MISC_FLAG enumeration.
-    pub misc_flag: MiscFlags,
-    /// The number of elements in the array.
-    ///
-    /// For a 2D texture that is also a cube-map texture, this number represents the number of cubes. This number is the same as the number in the NumCubes member of D3D10_TEXCUBE_ARRAY_SRV1 or D3D11_TEXCUBE_ARRAY_SRV). In this case, the DDS file contains arraySize*6 2D textures. For more information about this case, see the miscFlag description.
-    ///
-    /// For a 3D texture, you must set this number to 1.
-    pub array_size: u32,
-    /// The alpha mode of the associated resource.
-    pub alpha_mode: AlphaMode,
-}
-impl Dx10Header {
-    pub(crate) const SIZE: usize = 20;
-
-    fn from_raw(raw: &RawDx10Header, options: &Options) -> Result<Self, HeaderError> {
-        let dxgi_format =
-            DxgiFormat::try_from(raw.dxgi_format).map_err(HeaderError::InvalidDxgiFormat)?;
-        let resource_dimension = ResourceDimension::try_from(raw.resource_dimension)
-            .map_err(HeaderError::InvalidResourceDimension)?;
-
-        let misc_flag = raw.misc_flag;
-
-        let raw_alpha_mode = raw.misc_flags2 & 0b111;
-        let alpha_mode = if let Ok(alpha_mode) = AlphaMode::try_from(raw_alpha_mode) {
-            alpha_mode
-        } else if options.permissive {
-            AlphaMode::Unknown
-        } else {
-            return Err(HeaderError::InvalidAlphaMode(raw_alpha_mode));
-        };
-
-        let mut array_size = raw.array_size;
-        if resource_dimension == ResourceDimension::Texture3D && array_size != 1 {
-            if options.permissive {
-                array_size = 1;
-            } else {
-                return Err(HeaderError::InvalidArraySizeForTexture3D(array_size));
+    /// This will mostly be `AlphaMode::Unknown` because DX9 doesn't have a
+    /// concept of alpha modes. However, `DXT2` and `DXT4` formats are specified
+    /// to be premultiplied alpha and will return `AlphaMode::Premultiplied`.
+    pub const fn alpha_mode(&self) -> AlphaMode {
+        if let Dx9PixelFormat::FourCC(four_cc) = self.pixel_format {
+            if four_cc.0 == FourCC::DXT2.0 || four_cc.0 == FourCC::DXT4.0 {
+                return AlphaMode::Premultiplied;
             }
         }
+        AlphaMode::Unknown
+    }
 
-        Ok(Self {
+    pub fn to_dx10(&self) -> Option<Dx10Header> {
+        let alpha_mode = self.alpha_mode();
+
+        let dxgi_format = match &self.pixel_format {
+            Dx9PixelFormat::FourCC(four_cc) => {
+                // special handling for DXT2 and DXT4
+                if *four_cc == FourCC::DXT2 {
+                    DxgiFormat::BC2_UNORM
+                } else if *four_cc == FourCC::DXT4 {
+                    DxgiFormat::BC3_UNORM
+                } else if let Some(dxgi) = four_cc_to_dxgi(*four_cc) {
+                    dxgi
+                } else {
+                    return None;
+                }
+            }
+            Dx9PixelFormat::Mask(mask_pixel_format) => pixel_format_to_dxgi(mask_pixel_format)?,
+        };
+
+        if self.caps2.contains(DdsCaps2::CUBE_MAP)
+            && !self.caps2.contains(DdsCaps2::CUBE_MAP_ALL_FACES)
+        {
+            // DX10 requires all faces to be present
+            return None;
+        }
+
+        let resource_dimension = if self.caps2.contains(DdsCaps2::VOLUME) {
+            ResourceDimension::Texture3D
+        } else {
+            ResourceDimension::Texture2D
+        };
+        let misc_flag = if self.caps2.contains(DdsCaps2::CUBE_MAP) {
+            MiscFlags::TEXTURE_CUBE
+        } else {
+            MiscFlags::empty()
+        };
+
+        Some(Dx10Header {
+            height: self.height,
+            width: self.width,
+            depth: self.depth,
+            mipmap_count: self.mipmap_count,
             dxgi_format,
             resource_dimension,
             misc_flag,
-            array_size,
+            array_size: 1,
             alpha_mode,
+        })
+    }
+}
+
+impl Dx10Header {
+    pub fn to_dx9(&self) -> Option<Dx9Header> {
+        fn to_dx9_format(
+            mut dxgi_format: DxgiFormat,
+            alpha_mode: AlphaMode,
+        ) -> Option<Dx9PixelFormat> {
+            // convert the format to linear before, because DX9 doesn't have
+            // any sRGB formats
+            dxgi_format = dxgi_format.to_linear();
+
+            // special case for DXT2 and DXT4
+            if alpha_mode == AlphaMode::Premultiplied {
+                if dxgi_format == DxgiFormat::BC2_UNORM {
+                    return Some(FourCC::DXT2.into());
+                }
+                if dxgi_format == DxgiFormat::BC3_UNORM {
+                    return Some(FourCC::DXT4.into());
+                }
+            }
+
+            dxgi_to_four_cc(dxgi_format)
+                .map(Dx9PixelFormat::FourCC)
+                .or_else(|| dxgi_to_pixel_format(dxgi_format).map(Dx9PixelFormat::Mask))
+        }
+
+        if self.array_size != 1 {
+            // DX9 does not support texture arrays
+            return None;
+        }
+        if self.misc_flag.contains(MiscFlags::TEXTURE_CUBE)
+            && self.resource_dimension != ResourceDimension::Texture2D
+        {
+            // A cube maps with needs to have 2D textures as sides
+            return None;
+        }
+
+        let mut caps2 = DdsCaps2::empty();
+        if self.resource_dimension == ResourceDimension::Texture3D {
+            caps2 |= DdsCaps2::VOLUME;
+        }
+        if self.misc_flag.contains(MiscFlags::TEXTURE_CUBE) {
+            caps2 |= DdsCaps2::CUBE_MAP | DdsCaps2::CUBE_MAP_ALL_FACES;
+        }
+
+        let format = if let Some(format) = to_dx9_format(self.dxgi_format, self.alpha_mode) {
+            format
+        } else {
+            // can't convert the DXGI format into something DX9 supports
+            return None;
+        };
+
+        Some(Dx9Header {
+            height: self.height,
+            width: self.width,
+            depth: self.depth,
+            mipmap_count: self.mipmap_count,
+            caps2,
+            pixel_format: format,
         })
     }
 }

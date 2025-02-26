@@ -3,8 +3,8 @@ use std::io::{Read, Seek};
 use crate::{
     cast,
     decode::{self, DecoderSet, ReadSeek},
-    detect, Channels, ColorFormat, DecodeError, DxgiFormat, FourCC, Header, PixelFormat, Precision,
-    Rect, Size,
+    detect, Channels, ColorFormat, DecodeError, Dx9PixelFormat, DxgiFormat, FourCC, Header,
+    Precision, Rect, Size,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -86,12 +86,16 @@ pub enum DecodeFormat {
 impl DecodeFormat {
     /// Returns the format of the surfaces from a DDS header.
     pub fn from_header(header: &Header) -> Result<DecodeFormat, DecodeError> {
-        match &header.format {
-            PixelFormat::FourCC(four_cc) => detect::four_cc_to_supported(*four_cc)
-                .ok_or(DecodeError::UnsupportedFourCC(*four_cc)),
-            PixelFormat::Mask(pixel_format) => detect::pixel_format_to_supported(pixel_format)
-                .ok_or(DecodeError::UnsupportedPixelFormat),
-            PixelFormat::Dx10(dx10) => {
+        match header {
+            Header::Dx9(dx9) => match &dx9.pixel_format {
+                Dx9PixelFormat::FourCC(four_cc) => detect::four_cc_to_supported(*four_cc)
+                    .ok_or(DecodeError::UnsupportedFourCC(*four_cc)),
+                Dx9PixelFormat::Mask(pixel_format) => {
+                    detect::pixel_format_to_supported(pixel_format)
+                        .ok_or(DecodeError::UnsupportedPixelFormat)
+                }
+            },
+            Header::Dx10(dx10) => {
                 if let Some(format) = detect::special_cases(dx10) {
                     return Ok(format);
                 }
