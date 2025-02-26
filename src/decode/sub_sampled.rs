@@ -1,8 +1,8 @@
 use crate::cast::FromLeBytes;
 use crate::util::closure_types;
+use crate::{n1, n8, yuv10, yuv16, yuv8, ToRgba, WithPrecision};
 use crate::{Channels::*, ColorFormat};
 
-use super::convert::{n1, n8, yuv10, yuv16, yuv8, ToRgba, WithPrecision};
 use super::read_write::{
     for_each_block_rect_untyped, for_each_block_untyped, process_2x1_blocks_helper,
     process_8x1_blocks_helper, PixelRange,
@@ -180,6 +180,7 @@ pub(crate) const Y216: DecoderSet = DecoderSet::new(&[
 #[inline]
 fn r1_bits(bits: u8) -> [u8; 8] {
     let mut out = [0; 8];
+    #[allow(clippy::needless_range_loop)]
     for i in 0..8 {
         out[i] = (bits >> (7 - i)) & 1;
     }

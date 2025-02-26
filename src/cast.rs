@@ -61,10 +61,23 @@ where
     from_bytes_mut(as_bytes_mut(buffer))
 }
 
+pub(crate) trait IsByteArray {}
+impl<const N: usize> IsByteArray for [u8; N] {}
+pub(crate) trait NonEmpty {}
+macro_rules! non_empty {
+    ($($n:literal),*) => {
+        $(
+            impl<T> NonEmpty for [T; $n] {}
+        )*
+    };
+}
+non_empty!(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+
 /// Returns the native endian bytes of a value.
 pub(crate) trait IntoNeBytes {
-    type Bytes: Castable + Copy + Default;
+    type Bytes: IsByteArray + NonEmpty + Castable + Copy + Default;
     fn into_ne_bytes(self) -> Self::Bytes;
+    fn from_ne_bytes(bytes: Self::Bytes) -> Self;
 }
 
 /// Creates a value from little-endian bytes.
@@ -81,6 +94,10 @@ macro_rules! to_ne_bytes {
                 fn into_ne_bytes(self) -> Self::Bytes {
                     Self::to_ne_bytes(self)
                 }
+                #[inline(always)]
+                fn from_ne_bytes(bytes: Self::Bytes) -> Self {
+                    Self::from_ne_bytes(bytes)
+                }
             }
             impl FromLeBytes for $t {
                 #[inline(always)]
@@ -93,26 +110,29 @@ macro_rules! to_ne_bytes {
 }
 to_ne_bytes!(u8, u16, u32, f32);
 
-macro_rules! u8_array_to_ne_bytes {
-    ($($n:literal),*) => {
-        $(
-            impl IntoNeBytes for [u8; $n] {
-                type Bytes = [u8; $n];
-                #[inline(always)]
-                fn into_ne_bytes(self) -> Self::Bytes {
-                    self
-                }
-            }
-            impl FromLeBytes for [u8; $n] {
-                #[inline(always)]
-                fn from_le_bytes(bytes: Self::Bytes) -> Self {
-                    bytes
-                }
-            }
-        )*
-    };
+impl<const N: usize> IntoNeBytes for [u8; N]
+where
+    [u8; N]: NonEmpty + Default,
+{
+    type Bytes = [u8; N];
+    #[inline(always)]
+    fn into_ne_bytes(self) -> Self::Bytes {
+        self
+    }
+    #[inline(always)]
+    fn from_ne_bytes(bytes: Self::Bytes) -> Self {
+        bytes
+    }
 }
-u8_array_to_ne_bytes!(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+impl<const N: usize> FromLeBytes for [u8; N]
+where
+    [u8; N]: IntoNeBytes<Bytes = Self>,
+{
+    #[inline(always)]
+    fn from_le_bytes(bytes: Self::Bytes) -> Self {
+        bytes
+    }
+}
 
 macro_rules! transmute_array {
     ($([$t:ty; $n:literal]),*) => {
@@ -122,6 +142,10 @@ macro_rules! transmute_array {
                 #[inline(always)]
                 fn into_ne_bytes(self) -> Self::Bytes {
                     zerocopy::transmute!(self)
+                }
+                #[inline(always)]
+                fn from_ne_bytes(bytes: Self::Bytes) -> Self {
+                    zerocopy::transmute!(bytes)
                 }
             }
             impl FromLeBytes for [$t; $n] {

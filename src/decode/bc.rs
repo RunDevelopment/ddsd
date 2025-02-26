@@ -1,4 +1,4 @@
-use super::convert::{Norm, NormConvert, ToRgb, ToRgba, WithPrecision};
+use crate::{Norm, NormConvert, ToRgb, ToRgba, WithPrecision};
 use super::read_write::{
     for_each_block_rect_untyped, for_each_block_untyped, process_4x4_blocks_helper, PixelRange,
 };
@@ -255,7 +255,8 @@ pub(crate) const BC7_UNORM: DecoderSet = DecoderSet::new(&[
 
 /// Internal module for the underlying logic of decoding BC1-7 blocks.
 mod blocks {
-    use crate::decode::convert::{bc6h_uf16, fp16, n4, n8, s8, Norm, ToRgba, B5G6R5};
+    // use crate::decode::convert::{bc6h_uf16, fp16, n4, n8, s8, Norm, ToRgba, B5G6R5};
+    use crate::{bc6h_uf16, fp16, n4, n8, s8, Norm, ToRgba, B5G6R5};
 
     /// Decodes a BC1 block into 16 RGBA pixels.
     pub(crate) fn bc1_u8_rgba(block_bytes: [u8; 8]) -> [[u8; 4]; 16] {

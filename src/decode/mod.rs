@@ -3,7 +3,6 @@ mod bc;
 mod bc6;
 mod bc7;
 mod bcn_util;
-mod convert;
 mod decoder;
 mod read_write;
 mod sub_sampled;

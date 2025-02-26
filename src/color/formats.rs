@@ -3,7 +3,7 @@
 //! Most magic constants for the U/SNorm conversion are from:
 //! https://rundevelopment.github.io/projects/multiply-add-constants-finder
 
-use crate::Precision;
+use super::Norm;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct B5G6R5 {
@@ -1001,27 +1001,6 @@ impl<T> SwapRB for [T; 4] {
     }
 }
 
-pub(crate) trait Norm: Copy + Default {
-    const ZERO: Self;
-    const HALF: Self;
-    const ONE: Self;
-}
-impl Norm for u8 {
-    const ZERO: Self = 0;
-    const HALF: Self = 128;
-    const ONE: Self = u8::MAX;
-}
-impl Norm for u16 {
-    const ZERO: Self = 0;
-    const HALF: Self = 32768;
-    const ONE: Self = u16::MAX;
-}
-impl Norm for f32 {
-    const ZERO: Self = 0.0;
-    const HALF: Self = 0.5;
-    const ONE: Self = 1.0;
-}
-
 pub(crate) trait NormConvert<To> {
     fn to(self) -> To;
 }
@@ -1068,22 +1047,9 @@ impl NormConvert<u16> for f32 {
     }
 }
 
-pub(crate) trait WithPrecision {
-    const PRECISION: Precision;
-}
-impl WithPrecision for u8 {
-    const PRECISION: Precision = Precision::U8;
-}
-impl WithPrecision for u16 {
-    const PRECISION: Precision = Precision::U16;
-}
-impl WithPrecision for f32 {
-    const PRECISION: Precision = Precision::F32;
-}
-
 #[cfg(test)]
 mod test {
-    use crate::decode::convert::fp;
+    use super::*;
 
     macro_rules! test_to_unorm {
         ($t:ident, $name:ident, $convert:path, $max_in:expr) => {

@@ -968,12 +968,7 @@ impl Dx10Header {
             caps2 |= DdsCaps2::CUBE_MAP | DdsCaps2::CUBE_MAP_ALL_FACES;
         }
 
-        let format = if let Some(format) = to_dx9_format(self.dxgi_format, self.alpha_mode) {
-            format
-        } else {
-            // can't convert the DXGI format into something DX9 supports
-            return None;
-        };
+        let format = to_dx9_format(self.dxgi_format, self.alpha_mode)?;
 
         Some(Dx9Header {
             height: self.height,
