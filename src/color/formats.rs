@@ -727,6 +727,60 @@ pub(crate) mod bc6h_uf16 {
     }
 }
 
+/// This will round the mantissa of the given `f32` value to `n` bits (not
+/// including the implicit 1 bit). Round half up is used.
+///
+/// All bits after the first `n` bits are set to zero.
+#[inline]
+fn f32_mantissa_round_half_up(n: u32, mut x: f32) -> f32 {
+    debug_assert!(x >= 0.0);
+
+    // This implements round to nearest even to a 6-bit mantissa.
+    // It works as follows:
+    // 1. Exact the f32 mantissa (23 bits). This will have a value of
+    //    (1.)mmm... where mmm... is the mantissa.
+    // 2. Truncate the mantissa to n+1 bits.
+    // 3. Round-to-nearest-even only rounds up if the last 2 bits are
+    //    0b11.
+    // 4. If we DO NOT round up, truncate the mantissa to n bits. Done.
+    // 5. If we DO round up, truncate the mantissa to n bits and add 1.
+    //    This has to be done carefully, because the +1 might cause the
+    //    mantissa to overflow n bits and increment the exponent.
+    const MANTISSA_MASK: u32 = 0x007F_FFFF;
+
+    // Add 0.5 * 2^(exp - n) for rounding
+
+    // The f32 value with the mantissa all zero.
+    // This represents a value of 2^exp
+    let f_m0 = x.to_bits() & !MANTISSA_MASK;
+    // The f32 value with only the (n+1)-th mantissa bit set
+    // This represents a value of 2^exp + 2^(exp - n - 1)
+    let f_mn = f_m0 | (1 << (23 - n - 1));
+    let f_0_5 = f32::from_bits(f_mn) - f32::from_bits(f_m0);
+
+    x += f_0_5;
+
+    // truncate to n bits
+    f32::from_bits(x.to_bits() & !(MANTISSA_MASK >> n))
+}
+fn f32_to_unsigned_fp_e5(n: u32, mut x: f32) -> u16 {
+    if x.is_nan() {
+        let nan: u16 = (1 << (n + 5)) - 1;
+        return nan;
+    }
+    if x <= 0.0 {
+        return 0;
+    }
+
+    if x.is_normal() {
+        x = f32_mantissa_round_half_up(n, x);
+    }
+
+    let f16 = super::fp16::from_f32(x);
+    let exp: u16 = f16 >> 10 & 0b1_1111;
+    let mant: u16 = (f16 & 0b11_1111_1111) >> (10 - n);
+    exp << n | mant
+}
 /// Functions for converting `f11` values to other formats.
 pub(crate) mod fp11 {
     use crate::util::{two_powi, unlikely_branch};
@@ -793,23 +847,58 @@ pub(crate) mod fp11 {
 
     #[inline]
     pub fn from_f32(x: f32) -> u16 {
-        const NAN: u16 = 0b11111_111111;
+        super::f32_to_unsigned_fp_e5(6, x)
+    }
 
-        if x.is_nan() {
-            return NAN;
-        }
-        if x <= 0.0 {
-            return 0;
-        }
+    #[cfg(test)]
+    mod tests {
+        use super::super::*;
 
-        if x.is_normal() {
-            // TODO: round nearest even for mant
-        }
+        #[test]
+        fn creation() {
+            // all negative values should go to zero
+            let negative_values = [-0.0, -1.0, -1e-20, f32::NEG_INFINITY];
+            for value in negative_values {
+                assert_eq!(fp11::f32(fp11::from_f32(value)), 0.0, "value: {}", value);
+            }
 
-        let f16 = super::fp16::from_f32(x);
-        let exp: u16 = f16 >> 10 & 0b1_1111;
-        let mant: u16 = (f16 & 0b11_1111_1111) >> 4;
-        exp << 6 | mant
+            // the following can be presented exactly
+            let exact_values = [
+                0.0,
+                0.5,
+                1.0,
+                1.5,
+                33.0,
+                65.0,
+                127.0,
+                128.0,
+                130.0,
+                f32::INFINITY,
+            ];
+            for value in exact_values {
+                let f11 = fp11::from_f32(value);
+                let f32 = fp11::f32(f11);
+                assert_eq!(value, f32, "value: {}", value);
+            }
+            assert_eq!(fp11::from_f32(f32::NAN), 0b11111_111111);
+            assert!(fp11::f32(fp11::from_f32(f32::NAN)).is_nan());
+
+            // inexact values are rounded round-to-nearest-even
+            let inexact_values = [
+                (129.0, 130.0),
+                (131.0, 132.0),
+                (133.0, 134.0),
+                (135.0, 136.0),
+                (137.0, 138.0),
+                (255.0, 256.0),
+                (257.0, 256.0),
+            ];
+            for (value, expected) in inexact_values {
+                let f11 = fp11::from_f32(value);
+                let f32 = fp11::f32(f11);
+                assert_eq!(expected, f32, "value: {}", value);
+            }
+        }
     }
 }
 
@@ -879,23 +968,7 @@ pub(crate) mod fp10 {
 
     #[inline]
     pub fn from_f32(x: f32) -> u16 {
-        const NAN: u16 = 0b11111_11111;
-
-        if x.is_nan() {
-            return NAN;
-        }
-        if x <= 0.0 {
-            return 0;
-        }
-
-        if x.is_normal() {
-            // TODO: round nearest even for mant
-        }
-
-        let f16 = super::fp16::from_f32(x);
-        let exp: u16 = f16 >> 10 & 0b1_1111;
-        let mant: u16 = (f16 & 0b11_1111_1111) >> 5;
-        exp << 5 | mant
+        super::f32_to_unsigned_fp_e5(5, x)
     }
 }
 
