@@ -1,7 +1,7 @@
 use crate::cast;
 
 mod formats;
-pub(crate) mod pixel;
+pub(crate) mod ch;
 
 pub(crate) use formats::*;
 
@@ -20,6 +20,9 @@ pub enum Channels {
     Rgba,
 }
 impl Channels {
+    /// The number of different channel variants.
+    pub(crate) const COUNT: usize = 4;
+
     /// Returns the number of channels.
     pub const fn count(&self) -> u8 {
         match self {
@@ -85,7 +88,9 @@ impl ColorFormat {
     ///
     /// The key is guaranteed to be less than 32.
     pub(crate) const fn key(&self) -> u8 {
-        self.channels as u8 * Precision::COUNT as u8 + self.precision as u8
+        let key = self.precision as u8 * Channels::COUNT as u8 + self.channels as u8;
+        debug_assert!(key < 32);
+        key
     }
 
     pub const GRAYSCALE_U8: Self = Self::new(Channels::Grayscale, Precision::U8);
@@ -107,6 +112,83 @@ impl ColorFormat {
 impl core::fmt::Display for ColorFormat {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:?} {:?}", self.channels, self.precision)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct ColorFormatSet {
+    data: u16,
+}
+impl ColorFormatSet {
+    pub const EMPTY: Self = Self { data: 0 };
+    pub const ALL: Self = Self { data: u16::MAX };
+
+    pub const U8: Self = Self::from_slice(&[
+        ColorFormat::GRAYSCALE_U8,
+        ColorFormat::ALPHA_U8,
+        ColorFormat::RGB_U8,
+        ColorFormat::RGBA_U8,
+    ]);
+    pub const U16: Self = Self::from_slice(&[
+        ColorFormat::GRAYSCALE_U16,
+        ColorFormat::ALPHA_U16,
+        ColorFormat::RGB_U16,
+        ColorFormat::RGBA_U16,
+    ]);
+    pub const F32: Self = Self::from_slice(&[
+        ColorFormat::GRAYSCALE_F32,
+        ColorFormat::ALPHA_F32,
+        ColorFormat::RGB_F32,
+        ColorFormat::RGBA_F32,
+    ]);
+
+    pub const fn from_precision(precision: Precision) -> Self {
+        match precision {
+            Precision::U8 => Self::U8,
+            Precision::U16 => Self::U16,
+            Precision::F32 => Self::F32,
+        }
+    }
+    pub const fn from_single(format: ColorFormat) -> Self {
+        Self {
+            data: 1 << format.key(),
+        }
+    }
+    pub const fn from_slice(formats: &[ColorFormat]) -> Self {
+        let mut data = 0;
+
+        let mut i = 0;
+        while i < formats.len() {
+            data |= 1 << formats[i].key();
+            i += 1;
+        }
+
+        Self { data }
+    }
+
+    pub const fn is_empty(self) -> bool {
+        self.data == 0
+    }
+    pub const fn len(self) -> u8 {
+        self.data.count_ones() as u8
+    }
+
+    pub const fn contains(&self, format: ColorFormat) -> bool {
+        self.data & (1 << format.key()) != 0
+    }
+    pub const fn contains_all(&self, other: Self) -> bool {
+        (self.data & other.data) == other.data
+    }
+
+    pub const fn union(self, other: Self) -> Self {
+        Self {
+            data: self.data | other.data,
+        }
+    }
+    pub const fn intersection(self, other: Self) -> Self {
+        Self {
+            data: self.data & other.data,
+        }
     }
 }
 
@@ -164,7 +246,7 @@ pub(crate) fn convert_channels<Precision: Norm + cast::Castable>(
         }
     }
 
-    use pixel::*;
+    use ch::*;
     use Channels::*;
 
     debug_assert!(from_buffer.len() % from.count() as usize == 0);
@@ -238,7 +320,7 @@ pub(crate) fn convert_channels_untyped<Precision>(
         decoded.fill(value.into_ne_bytes());
     }
 
-    use pixel::*;
+    use ch::*;
     use Channels::*;
 
     debug_assert!(from_buffer.len() % (size_of::<Precision>() * from.count() as usize) == 0);
@@ -315,7 +397,7 @@ fn convert_u8_to_rgba_f32(from: Channels, from_buffer: &[u8], to_buffer: &mut [[
         }
     }
 
-    use pixel::*;
+    use ch::*;
     use Channels::*;
 
     match from {
@@ -350,7 +432,7 @@ fn convert_t_to_rgba_f32<T>(
         }
     }
 
-    use pixel::*;
+    use ch::*;
     use Channels::*;
 
     match from {

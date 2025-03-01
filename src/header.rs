@@ -438,63 +438,21 @@ impl Header {
     ///
     /// The mipmap count is set to 1 and the alpha mode is set to unknown.
     pub const fn new_image(width: u32, height: u32, format: DxgiFormat) -> Self {
-        Self::Dx10(Dx10Header {
-            height,
-            width,
-            depth: None,
-            mipmap_count: NonZeroU32::new(1).unwrap(),
-            dxgi_format: format,
-            resource_dimension: ResourceDimension::Texture2D,
-            misc_flag: MiscFlags::empty(),
-            array_size: 1,
-            alpha_mode: if format.has_alpha() {
-                AlphaMode::Straight
-            } else {
-                AlphaMode::Unknown
-            },
-        })
+        Self::Dx10(Dx10Header::new_image(width, height, format))
     }
     /// Creates a new header for DX10 texture 3D with the given dimensions and
     /// format.
     ///
     /// The mipmap count is set to 1 and the alpha mode is set to unknown.
     pub const fn new_volume(width: u32, height: u32, depth: u32, format: DxgiFormat) -> Self {
-        Self::Dx10(Dx10Header {
-            height,
-            width,
-            depth: Some(depth),
-            mipmap_count: NonZeroU32::new(1).unwrap(),
-            dxgi_format: format,
-            resource_dimension: ResourceDimension::Texture3D,
-            misc_flag: MiscFlags::empty(),
-            array_size: 1,
-            alpha_mode: if format.has_alpha() {
-                AlphaMode::Straight
-            } else {
-                AlphaMode::Unknown
-            },
-        })
+        Self::Dx10(Dx10Header::new_volume(width, height, depth, format))
     }
     /// Creates a new header for DX10 cube map with the given dimensions and
     /// format.
     ///
     /// The mipmap count is set to 1 and the alpha mode is set to unknown.
     pub const fn new_cube_map(width: u32, height: u32, format: DxgiFormat) -> Self {
-        Self::Dx10(Dx10Header {
-            height,
-            width,
-            depth: None,
-            mipmap_count: NonZeroU32::new(1).unwrap(),
-            dxgi_format: format,
-            resource_dimension: ResourceDimension::Texture2D,
-            misc_flag: MiscFlags::TEXTURE_CUBE,
-            array_size: 1,
-            alpha_mode: if format.has_alpha() {
-                AlphaMode::Straight
-            } else {
-                AlphaMode::Unknown
-            },
-        })
+        Self::Dx10(Dx10Header::new_cube_map(width, height, format))
     }
 
     /// Converts this header into a DX9 header if possible. If the header is a
@@ -873,6 +831,49 @@ impl Dx9Header {
         AlphaMode::Unknown
     }
 
+    /// Creates a new header for DX10 texture 2D with the given dimensions and
+    /// format.
+    ///
+    /// The mipmap count is set to 1.
+    pub const fn new_image(width: u32, height: u32, format: Dx9PixelFormat) -> Self {
+        Self {
+            height,
+            width,
+            depth: None,
+            mipmap_count: NonZeroU32::new(1).unwrap(),
+            caps2: DdsCaps2::empty(),
+            pixel_format: format,
+        }
+    }
+    /// Creates a new header for DX10 texture 3D with the given dimensions and
+    /// format.
+    ///
+    /// The mipmap count is set to 1.
+    pub const fn new_volume(width: u32, height: u32, depth: u32, format: Dx9PixelFormat) -> Self {
+        Self {
+            height,
+            width,
+            depth: Some(depth),
+            mipmap_count: NonZeroU32::new(1).unwrap(),
+            caps2: DdsCaps2::VOLUME,
+            pixel_format: format,
+        }
+    }
+    /// Creates a new header for DX9 cube map with the given dimensions and
+    /// format.
+    ///
+    /// The mipmap count is set to 1 and the cube map faces are set.
+    pub const fn new_cube_map(width: u32, height: u32, format: Dx9PixelFormat) -> Self {
+        Self {
+            height,
+            width,
+            depth: None,
+            mipmap_count: NonZeroU32::new(1).unwrap(),
+            caps2: DdsCaps2::CUBE_MAP.union(DdsCaps2::CUBE_MAP_ALL_FACES),
+            pixel_format: format,
+        }
+    }
+
     pub fn to_dx10(&self) -> Option<Dx10Header> {
         let alpha_mode = self.alpha_mode();
 
@@ -925,6 +926,70 @@ impl Dx9Header {
 }
 
 impl Dx10Header {
+    /// Creates a new header for DX10 texture 2D with the given dimensions and
+    /// format.
+    ///
+    /// The mipmap count is set to 1 and the alpha mode is set to unknown.
+    pub const fn new_image(width: u32, height: u32, format: DxgiFormat) -> Self {
+        Self {
+            height,
+            width,
+            depth: None,
+            mipmap_count: NonZeroU32::new(1).unwrap(),
+            dxgi_format: format,
+            resource_dimension: ResourceDimension::Texture2D,
+            misc_flag: MiscFlags::empty(),
+            array_size: 1,
+            alpha_mode: if format.has_alpha() {
+                AlphaMode::Straight
+            } else {
+                AlphaMode::Unknown
+            },
+        }
+    }
+    /// Creates a new header for DX10 texture 3D with the given dimensions and
+    /// format.
+    ///
+    /// The mipmap count is set to 1 and the alpha mode is set to unknown.
+    pub const fn new_volume(width: u32, height: u32, depth: u32, format: DxgiFormat) -> Self {
+        Self {
+            height,
+            width,
+            depth: Some(depth),
+            mipmap_count: NonZeroU32::new(1).unwrap(),
+            dxgi_format: format,
+            resource_dimension: ResourceDimension::Texture3D,
+            misc_flag: MiscFlags::empty(),
+            array_size: 1,
+            alpha_mode: if format.has_alpha() {
+                AlphaMode::Straight
+            } else {
+                AlphaMode::Unknown
+            },
+        }
+    }
+    /// Creates a new header for DX10 cube map with the given dimensions and
+    /// format.
+    ///
+    /// The mipmap count is set to 1 and the alpha mode is set to unknown.
+    pub const fn new_cube_map(width: u32, height: u32, format: DxgiFormat) -> Self {
+        Self {
+            height,
+            width,
+            depth: None,
+            mipmap_count: NonZeroU32::new(1).unwrap(),
+            dxgi_format: format,
+            resource_dimension: ResourceDimension::Texture2D,
+            misc_flag: MiscFlags::TEXTURE_CUBE,
+            array_size: 1,
+            alpha_mode: if format.has_alpha() {
+                AlphaMode::Straight
+            } else {
+                AlphaMode::Unknown
+            },
+        }
+    }
+
     pub fn to_dx9(&self) -> Option<Dx9Header> {
         fn to_dx9_format(
             mut dxgi_format: DxgiFormat,

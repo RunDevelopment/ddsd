@@ -56,6 +56,7 @@ pub fn example_dds_files_in(parent_dir: &str) -> Vec<PathBuf> {
     .collect()
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Image<T> {
     pub data: Vec<T>,
     pub channels: Channels,
@@ -209,6 +210,32 @@ pub fn to_png_compatible_channels(channels: Channels) -> (Channels, png::ColorTy
     }
 }
 
+pub fn read_png_u8(png_path: &Path) -> Result<Image<u8>, Box<dyn std::error::Error>> {
+    let png_decoder = png::Decoder::new(File::open(png_path)?);
+    let mut png_reader = png_decoder.read_info()?;
+    let (color, bits) = png_reader.output_color_type();
+
+    if bits != png::BitDepth::Eight {
+        return Err("Output PNG is not 8-bit, which shouldn't happen.".into());
+    }
+    let channels = match color {
+        png::ColorType::Grayscale => Channels::Grayscale,
+        png::ColorType::Rgb => Channels::Rgb,
+        png::ColorType::Rgba => Channels::Rgba,
+        _ => return Err("Unsupported PNG color type".into()),
+    };
+
+    let mut png_image_data = vec![0; png_reader.output_buffer_size()];
+    png_reader.next_frame(&mut png_image_data)?;
+    png_reader.finish()?;
+
+    Ok(Image {
+        data: png_image_data,
+        channels,
+        size: Size::new(png_reader.info().width, png_reader.info().height),
+    })
+}
+
 pub fn compare_snapshot_png_u8(
     png_path: &PathBuf,
     image: &Image<u8>,
@@ -219,31 +246,21 @@ pub fn compare_snapshot_png_u8(
     // compare to PNG
     let png_exists = png_path.exists();
     if png_exists {
-        let png_decoder = png::Decoder::new(File::open(png_path)?);
-        let mut png_reader = png_decoder.read_info()?;
-        let (mut png_color, png_bits) = png_reader.output_color_type();
-        if png_bits != png::BitDepth::Eight {
-            return Err("Output PNG is not 8-bit, which shouldn't happen.".into());
-        }
+        let mut png = read_png_u8(png_path)?;
 
-        let mut png_image_data = vec![0; png_reader.output_buffer_size()];
-        png_reader.next_frame(&mut png_image_data)?;
-        png_reader.finish()?;
-
-        if color == png::ColorType::Rgba && png_color == png::ColorType::Rgb {
+        if image.channels == Channels::Rgba && png.channels == Channels::Rgb {
             // convert to RGBA
-            png_image_data = convert_channels(&png_image_data, Channels::Rgb, Channels::Rgba);
-            png_color = png::ColorType::Rgba;
+            png.data = convert_channels(&png.data, Channels::Rgb, Channels::Rgba);
+            png.channels = Channels::Rgba;
         }
 
-        if png_color != color {
-            eprintln!("Color mismatch: {:?} != {:?}", png_color, color);
-        } else {
-            assert!(png_image_data.len() == image.data.len());
-            if png_image_data == image.data {
-                // all good
-                return Ok(());
-            }
+        if png.data == image.data {
+            // all good
+            return Ok(());
+        }
+
+        if image.channels != png.channels {
+            eprintln!("Color mismatch: {:?} != {:?}", png.channels, image.channels);
         }
     }
 

@@ -148,6 +148,14 @@ pub(crate) mod n1 {
             1.0
         }
     }
+
+    pub fn from_f32(x: f32) -> u8 {
+        if x >= 0.5 {
+            1
+        } else {
+            0
+        }
+    }
 }
 
 /// Functions for converting **FROM Unorm2** values to other formats.
@@ -168,6 +176,10 @@ pub(crate) mod n2 {
         // This turns out to be exact, so we don't need another method.
         const F: f32 = 1.0 / 3.0;
         x as f32 * F
+    }
+
+    pub fn from_f32(x: f32) -> u8 {
+        (x.min(1.0) * 3.0 + 0.5) as u8
     }
 }
 
@@ -198,6 +210,10 @@ pub(crate) mod n4 {
         const K1: f32 = 1.0 / (15.0 * K0);
         (x as f32 * K0) * K1
     }
+
+    pub fn from_f32(x: f32) -> u8 {
+        (x.min(1.0) * 15.0 + 0.5) as u8
+    }
 }
 
 /// Functions for converting **FROM Unorm5** values to other formats.
@@ -226,6 +242,10 @@ pub(crate) mod n5 {
         const K0: f32 = 3.0;
         const K1: f32 = 1.0 / (31.0 * K0);
         (x as f32 * K0) * K1
+    }
+
+    pub fn from_f32(x: f32) -> u8 {
+        (x.min(1.0) * 31.0 + 0.5) as u8
     }
 }
 
@@ -256,6 +276,10 @@ pub(crate) mod n6 {
         const K1: f32 = 1.0 / (63.0 * K0);
         (x as f32 * K0) * K1
     }
+
+    pub fn from_f32(x: f32) -> u8 {
+        (x.min(1.0) * 63.0 + 0.5) as u8
+    }
 }
 
 /// Functions for converting **FROM Unorm8** values to other formats.
@@ -275,6 +299,10 @@ pub(crate) mod n8 {
         const K0: f32 = 3.0;
         const K1: f32 = 1.0 / (255.0 * K0);
         (x as f32 * K0) * K1
+    }
+
+    pub fn from_f32(x: f32) -> u8 {
+        (x * 255.0 + 0.5) as u8
     }
 }
 
@@ -305,6 +333,10 @@ pub(crate) mod n10 {
         const K1: f32 = 1.0 / (1023.0 * K0);
         (x as f32 * K0) * K1
     }
+
+    pub fn from_f32(x: f32) -> u16 {
+        (x.min(1.0) * 1023.0 + 0.5) as u16
+    }
 }
 
 /// Functions for converting **FROM Unorm16** values to other formats.
@@ -327,6 +359,10 @@ pub(crate) mod n16 {
         const C1: f32 = (1.0 + 65536.0) / 65536.0 / 65536.0 / 65536.0;
         let temp = x as f32;
         (temp * C0) + (temp * C1)
+    }
+
+    pub fn from_f32(x: f32) -> u16 {
+        (x * 65535.0 + 0.5) as u16
     }
 }
 
@@ -368,6 +404,17 @@ pub(crate) mod s8 {
         const K1: f32 = 1.0 / (254.0 * K0);
         (x as f32 * K0) * K1
     }
+
+    pub fn from_n8(x: u8) -> u8 {
+        // this computes round(x / 255 * 254)
+        // range: 0-254
+        let norm = ((x as u16 * 254 + 254) >> 8) as u8;
+        (norm + 1).wrapping_sub(128)
+    }
+    pub fn from_uf32(x: f32) -> u8 {
+        let norm = (x.min(1.0) * 254.0 + 0.5) as u8;
+        (norm + 1).wrapping_sub(128)
+    }
 }
 
 /// Functions for converting **FROM Snorm16** values to other formats.
@@ -405,6 +452,17 @@ pub(crate) mod s16 {
         const K0: f32 = 73.0;
         const K1: f32 = 1.0 / (65534.0 * K0);
         (x as f32 * K0) * K1
+    }
+
+    pub fn from_n16(x: u16) -> u16 {
+        // this computes round(x / 65535 * 65534)
+        // range: 0-254
+        let norm = ((x as u32 * 65534 + 65534) >> 16) as u16;
+        (norm + 1).wrapping_sub(32768)
+    }
+    pub fn from_uf32(x: f32) -> u16 {
+        let norm = (x.min(1.0) * 65534.0 + 0.5) as u16;
+        (norm + 1).wrapping_sub(32768)
     }
 }
 
@@ -448,6 +506,11 @@ pub(crate) mod xr10 {
         // 0x180 == 1.5 in 2.8 fixed-point.
         const F: f32 = 1.0 / 510.0;
         (x as i16 - 0x180) as f32 * F
+    }
+
+    #[inline(always)]
+    pub fn from_f32(x: f32) -> u16 {
+        ((x * 510.0 + 384.5) as u16).min(1023)
     }
 }
 
@@ -544,6 +607,69 @@ pub(crate) mod fp16 {
             -val
         } else {
             val
+        }
+    }
+
+    pub fn from_f32(value: f32) -> u16 {
+        // Source: https://github.com/starkat99/half-rs/blob/2c4122db4e8f7d8ce030bb4b5ed8913bd6bbf2b1/src/binary16/arch.rs#L482
+        // Author: Kathryn Long
+        // License: MIT OR Apache-2.0
+
+        // Convert to raw bytes
+        let x: u32 = value.to_bits();
+
+        // Extract IEEE754 components
+        let sign = x & 0x8000_0000u32;
+        let exp = x & 0x7F80_0000u32;
+        let man = x & 0x007F_FFFFu32;
+
+        // Check for all exponent bits being set, which is Infinity or NaN
+        if exp == 0x7F80_0000u32 {
+            // Set mantissa MSB for NaN (and also keep shifted mantissa bits)
+            let nan_bit = if man == 0 { 0 } else { 0x0200u32 };
+            return ((sign >> 16) | 0x7C00u32 | nan_bit | (man >> 13)) as u16;
+        }
+
+        // The number is normalized, start assembling half precision version
+        let half_sign = sign >> 16;
+        // Unbias the exponent, then bias for half precision
+        let unbiased_exp = ((exp >> 23) as i32) - 127;
+        let half_exp = unbiased_exp + 15;
+
+        // Check for exponent overflow, return +infinity
+        if half_exp >= 0x1F {
+            return (half_sign | 0x7C00u32) as u16;
+        }
+
+        // Check for underflow
+        if half_exp <= 0 {
+            // Check mantissa for what we can do
+            if 14 - half_exp > 24 {
+                // No rounding possibility, so this is a full underflow, return signed zero
+                return half_sign as u16;
+            }
+            // Don't forget about hidden leading mantissa bit when assembling mantissa
+            let man = man | 0x0080_0000u32;
+            let mut half_man = man >> (14 - half_exp);
+            // Check for rounding (see comment above functions)
+            let round_bit = 1 << (13 - half_exp);
+            if (man & round_bit) != 0 && (man & (3 * round_bit - 1)) != 0 {
+                half_man += 1;
+            }
+            // No exponent for subnormals
+            return (half_sign | half_man) as u16;
+        }
+
+        // Rebias the exponent
+        let half_exp = (half_exp as u32) << 10;
+        let half_man = man >> 13;
+        // Check for rounding (see comment above functions)
+        let round_bit = 0x0000_1000u32;
+        if (man & round_bit) != 0 && (man & (3 * round_bit - 1)) != 0 {
+            // Round it
+            ((half_sign | half_exp | half_man) + 1) as u16
+        } else {
+            (half_sign | half_exp | half_man) as u16
         }
     }
 }
@@ -664,6 +790,27 @@ pub(crate) mod fp11 {
             }
         }
     }
+
+    #[inline]
+    pub fn from_f32(x: f32) -> u16 {
+        const NAN: u16 = 0b11111_111111;
+
+        if x.is_nan() {
+            return NAN;
+        }
+        if x <= 0.0 {
+            return 0;
+        }
+
+        if x.is_normal() {
+            // TODO: round nearest even for mant
+        }
+
+        let f16 = super::fp16::from_f32(x);
+        let exp: u16 = f16 >> 10 & 0b1_1111;
+        let mant: u16 = (f16 & 0b11_1111_1111) >> 4;
+        exp << 6 | mant
+    }
 }
 
 /// Functions for converting `f10` values to other formats.
@@ -729,17 +876,36 @@ pub(crate) mod fp10 {
             }
         }
     }
+
+    #[inline]
+    pub fn from_f32(x: f32) -> u16 {
+        const NAN: u16 = 0b11111_11111;
+
+        if x.is_nan() {
+            return NAN;
+        }
+        if x <= 0.0 {
+            return 0;
+        }
+
+        if x.is_normal() {
+            // TODO: round nearest even for mant
+        }
+
+        let f16 = super::fp16::from_f32(x);
+        let exp: u16 = f16 >> 10 & 0b1_1111;
+        let mant: u16 = (f16 & 0b11_1111_1111) >> 5;
+        exp << 5 | mant
+    }
 }
 
 // TODO: Check whether these methods correctly implement the DirectX spec:
 // https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm#3.2.2%20Floating%20Point%20Conversion
 
 /// Optimized functions for the R9G9B9E5_SHAREDEXP format.
+/// https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm#3.2.2%20Floating%20Point%20Conversion
 pub(crate) mod rgb9995f {
     use crate::util::two_powi;
-
-    // This is 2 ** -23
-    const C23: f32 = 1.0 / 8388608.0;
 
     #[inline]
     pub fn f32(rgb: u32) -> [f32; 3] {
@@ -748,20 +914,8 @@ pub(crate) mod rgb9995f {
         let b_mant = (rgb >> 18) & 0x1FF;
         let exp = (rgb >> 27) & 0x1F;
 
-        if exp == 0 {
-            // denorm
-            let f = C23;
-            [r_mant as f32 * f, g_mant as f32 * f, b_mant as f32 * f]
-        } else if exp != 31 {
-            let f = two_powi(exp as i8 - 24);
-            [r_mant as f32 * f, g_mant as f32 * f, b_mant as f32 * f]
-        } else {
-            [
-                if r_mant == 0 { f32::INFINITY } else { f32::NAN },
-                if g_mant == 0 { f32::INFINITY } else { f32::NAN },
-                if b_mant == 0 { f32::INFINITY } else { f32::NAN },
-            ]
-        }
+        let f = two_powi(exp as i8 - 24);
+        [r_mant as f32 * f, g_mant as f32 * f, b_mant as f32 * f]
     }
     #[inline]
     pub fn n8(rgb: u32) -> [u8; 3] {
@@ -770,37 +924,22 @@ pub(crate) mod rgb9995f {
         let b_mant = (rgb >> 18) & 0x1FF;
         let exp = (rgb >> 27) & 0x1F;
 
-        if exp == 0 {
-            // denorms are technically a special case, but since they will
-            // always be rounded to 0, no matter the mantissa, we can just let
-            // them fall through. One branch less.
-        }
+        // This is just the f32 conversion and f32 -> UNORM8 conversion
+        // combined into one step.
+        //
+        // NOTE: I originally used a fixed-point math implementation, but
+        // it was around 50% slower. I also looked into using f16 -> u8
+        // hardware instructions (x86 f16c VCVTPH2PS), but this isn't
+        // possible simply because the mantissa here has an *explicit* one
+        // at the start. I also suspect that fixing up the one bit would make
+        // R9G9B9E5 -> f16 -> f32 -> u8 slower than what I use below.
 
-        if exp != 31 {
-            // This is just the f32 conversion and f32 -> UNORM8 conversion
-            // combined into one step.
-            //
-            // NOTE: I originally used a fixed-point math implementation, but
-            // it was around 50% slower. I also looked into using f16 -> u8
-            // hardware instructions (x86 f16c VCVTPH2PS), but this isn't
-            // possible simply because the mantissa here has an *explicit* one
-            // at the start. I also suspect that fixing up the one bit would make
-            // R9G9B9E5 -> f16 -> f32 -> u8 slower than what I use below.
-
-            let f = two_powi(exp as i8 - 24) * 255.0;
-            [
-                (r_mant as f32 * f + 0.5) as u8,
-                (g_mant as f32 * f + 0.5) as u8,
-                (b_mant as f32 * f + 0.5) as u8,
-            ]
-        } else {
-            // NaN maps to 0 and Inf maps to 255
-            [
-                if r_mant == 0 { 255 } else { 0 },
-                if g_mant == 0 { 255 } else { 0 },
-                if b_mant == 0 { 255 } else { 0 },
-            ]
-        }
+        let f = two_powi(exp as i8 - 24) * 255.0;
+        [
+            (r_mant as f32 * f + 0.5) as u8,
+            (g_mant as f32 * f + 0.5) as u8,
+            (b_mant as f32 * f + 0.5) as u8,
+        ]
     }
     #[inline]
     pub fn n16(rgb: u32) -> [u16; 3] {
@@ -813,28 +952,40 @@ pub(crate) mod rgb9995f {
         // above for more information. The only difference is that denorms can
         // no longer fall through.
 
-        if exp == 0 {
-            // denorm
-            const F: f32 = C23 * 65535.0;
-            [
-                (r_mant as f32 * F + 0.5) as u16,
-                (g_mant as f32 * F + 0.5) as u16,
-                (b_mant as f32 * F + 0.5) as u16,
-            ]
-        } else if exp != 31 {
-            let f = two_powi(exp as i8 - 24) * 65535.0;
-            [
-                (r_mant as f32 * f + 0.5) as u16,
-                (g_mant as f32 * f + 0.5) as u16,
-                (b_mant as f32 * f + 0.5) as u16,
-            ]
-        } else {
-            [
-                if r_mant == 0 { u16::MAX } else { 0 },
-                if g_mant == 0 { u16::MAX } else { 0 },
-                if b_mant == 0 { u16::MAX } else { 0 },
-            ]
+        let f = two_powi(exp as i8 - 24) * 65535.0;
+        [
+            (r_mant as f32 * f + 0.5) as u16,
+            (g_mant as f32 * f + 0.5) as u16,
+            (b_mant as f32 * f + 0.5) as u16,
+        ]
+    }
+
+    #[inline]
+    pub fn from_f32(rgb: [f32; 3]) -> u32 {
+        // values are now either in range or NaN
+        let [r, g, b] = rgb.map(|c| c.clamp(0.0, 65408.0));
+        let max = r.max(g).max(b);
+
+        if max.is_nan() || max == 0.0 || max.is_subnormal() {
+            // all channels are either NaN or zero
+            // sub-normal numbers also map to zero
+            return 0;
         }
+
+        // get the f32 exponent of max
+        let raw_exp = max.to_bits() >> 23 & 0xFF;
+        let exp = (raw_exp as i32 - 127 + 16).max(0) as u32;
+        debug_assert!(exp <= 31);
+
+        let f = two_powi(-(exp as i8 - 24));
+        let r_mant = (r * f + 0.5) as u32;
+        let g_mant = (g * f + 0.5) as u32;
+        let b_mant = (b * f + 0.5) as u32;
+        debug_assert!(r_mant <= 511);
+        debug_assert!(g_mant <= 511);
+        debug_assert!(b_mant <= 511);
+
+        r_mant | g_mant << 9 | b_mant << 18 | exp << 27
     }
 }
 
@@ -879,6 +1030,16 @@ pub(crate) mod yuv8 {
 
         [r, g, b]
     }
+
+    pub fn from_rgb_f32(rgb: [f32; 3]) -> [u8; 3] {
+        let [r, g, b] = rgb.map(|c| c * 255.);
+
+        let y = (f32::round(0.256788 * r + 0.504129 * g + 0.097906 * b) + 16.) as u8;
+        let u = (f32::round(-0.148223 * r - 0.290993 * g + 0.439216 * b) + 128.) as u8;
+        let v = (f32::round(0.439216 * r - 0.367788 * g - 0.071427 * b) + 128.) as u8;
+
+        [y, u, v]
+    }
 }
 pub(crate) mod yuv10 {
     // https://learn.microsoft.com/en-us/windows/win32/medfound/10-bit-and-16-bit-yuv-video-formats
@@ -907,6 +1068,16 @@ pub(crate) mod yuv10 {
 
         [r, g, b]
     }
+
+    pub fn from_rgb_f32(rgb: [f32; 3]) -> [u16; 3] {
+        let [r, g, b] = rgb.map(|c| c * 1023.);
+
+        let y = (f32::round(0.256788 * r + 0.504129 * g + 0.097906 * b) + 64.) as u16;
+        let u = (f32::round(-0.148223 * r - 0.290993 * g + 0.439216 * b) + 512.) as u16;
+        let v = (f32::round(0.439216 * r - 0.367788 * g - 0.071427 * b) + 512.) as u16;
+
+        [y, u, v]
+    }
 }
 pub(crate) mod yuv16 {
     // https://learn.microsoft.com/en-us/windows/win32/medfound/10-bit-and-16-bit-yuv-video-formats
@@ -934,6 +1105,16 @@ pub(crate) mod yuv16 {
         let b = (b * F).clamp(0.0, 1.0);
 
         [r, g, b]
+    }
+
+    pub fn from_rgb_f32(rgb: [f32; 3]) -> [u16; 3] {
+        let [r, g, b] = rgb.map(|c| c * 65535.);
+
+        let y = (f32::round(0.256788 * r + 0.504129 * g + 0.097906 * b) + 4096.) as u16;
+        let u = (f32::round(-0.148223 * r - 0.290993 * g + 0.439216 * b) + 32768.) as u16;
+        let v = (f32::round(0.439216 * r - 0.367788 * g - 0.071427 * b) + 32768.) as u16;
+
+        [y, u, v]
     }
 }
 

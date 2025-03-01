@@ -4,6 +4,7 @@ mod cast;
 mod color;
 mod decode;
 mod detect;
+mod encode;
 mod error;
 mod format;
 mod header;
@@ -14,6 +15,7 @@ mod util;
 use std::io::Read;
 
 pub use color::*;
+pub use encode::{DitheredChannels, EncodeError, EncodeFormat, EncodeOptions};
 pub use error::*;
 pub use format::*;
 pub use header::*;
