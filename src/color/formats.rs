@@ -1047,18 +1047,58 @@ pub(crate) mod rgb9995f {
 
         // get the f32 exponent of max
         let raw_exp = max.to_bits() >> 23 & 0xFF;
-        let exp = (raw_exp as i32 - 127 + 16).max(0) as u32;
+        let mut exp = (raw_exp as i32 - 127 + 16).max(0) as u32;
         debug_assert!(exp <= 31);
 
         let f = two_powi(-(exp as i8 - 24));
-        let r_mant = (r * f + 0.5) as u32;
-        let g_mant = (g * f + 0.5) as u32;
-        let b_mant = (b * f + 0.5) as u32;
+        let mut r_mant = (r * f + 0.5) as u32;
+        let mut g_mant = (g * f + 0.5) as u32;
+        let mut b_mant = (b * f + 0.5) as u32;
+        if r_mant == 512 || g_mant == 512 || b_mant == 512 {
+            // This means that the mantissa overflowed to 10-bit while rounding.
+            // So we need to increment the exponent and re-calculate the mantissas.
+            exp += 1;
+            debug_assert!(exp <= 31);
+
+            let f = two_powi(-(exp as i8 - 24));
+            r_mant = (r * f + 0.5) as u32;
+            g_mant = (g * f + 0.5) as u32;
+            b_mant = (b * f + 0.5) as u32;
+        }
         debug_assert!(r_mant <= 511);
         debug_assert!(g_mant <= 511);
         debug_assert!(b_mant <= 511);
 
         r_mant | g_mant << 9 | b_mant << 18 | exp << 27
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::super::*;
+
+        #[test]
+        fn creation() {
+            // these values are presented by zero
+            let go_to_zero = [0.0, -1.0, 1e-20, f32::NAN, f32::NEG_INFINITY];
+            for value in go_to_zero {
+                assert_eq!(rgb9995f::f32(rgb9995f::from_f32([value, 0.0, 0.0]))[0], 0.0);
+            }
+
+            // all 9-bit values should be presented exactly
+            for value in (0..=512).map(|v| v as f32) {
+                let actual = rgb9995f::f32(rgb9995f::from_f32([value, 0.0, 0.0]));
+                assert_eq!(actual, [value, 0.0, 0.0]);
+            }
+
+            // overflow when rounding should be handled correctly
+            let actual = rgb9995f::f32(rgb9995f::from_f32([1023.0, 0.0, 0.0]));
+            assert_eq!(actual, [1024.0, 0.0, 0.0]);
+
+            // doesn't crash for any u16 values
+            for value in (0..65556).map(|v| v as f32) {
+                _ = rgb9995f::from_f32([value, 0.0, 1.0]);
+            }
+        }
     }
 }
 
