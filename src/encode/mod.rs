@@ -5,7 +5,14 @@ use crate::{
     PixelFormatFlags, Precision, Size,
 };
 
+mod bc;
+mod bc4;
+mod sub_sampled;
 mod uncompressed;
+mod write;
+
+use bc::*;
+use sub_sampled::*;
 use uncompressed::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -269,9 +276,9 @@ impl EncodeFormat {
             // EncodeFormat::BC2_UNORM_PREMULTIPLIED_ALPHA => &BC2_UNORM_PREMULTIPLIED_ALPHA,
             // EncodeFormat::BC3_UNORM => &BC3_UNORM,
             // EncodeFormat::BC3_UNORM_PREMULTIPLIED_ALPHA => &BC3_UNORM_PREMULTIPLIED_ALPHA,
-            // EncodeFormat::BC4_UNORM => &BC4_UNORM,
+            EncodeFormat::BC4_UNORM => &BC4_UNORM,
             // EncodeFormat::BC4_SNORM => &BC4_SNORM,
-            // EncodeFormat::BC5_UNORM => &BC5_UNORM,
+            EncodeFormat::BC5_UNORM => &BC5_UNORM,
             // EncodeFormat::BC5_SNORM => &BC5_SNORM,
             // EncodeFormat::BC6H_UF16 => &BC6H_UF16,
             // EncodeFormat::BC6H_SF16 => &BC6H_SF16,
