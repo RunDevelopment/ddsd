@@ -8,7 +8,7 @@ use crate::{
     ColorFormatSet, Precision,
 };
 
-use super::{Args, DecodedArgs, EncodeError, Encoder};
+use super::{Args, DecodedArgs, DitheredChannels, EncodeError, EncodeOptions, Encoder};
 
 bitflags! {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -17,19 +17,25 @@ bitflags! {
         /// precision.
         ///
         /// SNORM8 is considered exact.
-        const EXACT_U8 = 0b001;
+        const EXACT_U8 = 0x1;
         /// Whether all U16 values will be encoded exactly, meaning no loss of
         /// precision.
         ///
         /// SNORM16 is considered exact.
         ///
         /// This flag implies `EXACT_U8`.
-        const EXACT_U16 = 0b011;
+        const EXACT_U16 = 0x2 | Self::EXACT_U8.bits();
         /// Whether all F32 values will be encoded exactly, meaning no loss of
         /// precision.
         ///
         /// This flag implies `EXACT_U16` and `EXACT_U8`.
-        const EXACT_F32 = 0b111;
+        const EXACT_F32 = 0x4 | Self::EXACT_U16.bits();
+        /// Whether color dithering is supported.
+        const DITHER_COLOR = 0x8;
+        /// Whether alpha dithering is supported.
+        const DITHER_ALPHA = 0x16;
+        /// Whether both alpha and color dithering is supported.
+        const DITHER_ALL = Self::DITHER_COLOR.bits() | Self::DITHER_ALPHA.bits();
     }
 }
 
@@ -69,18 +75,30 @@ impl Encoder for UncompressedEncoder {
         self.color_formats
     }
 
+    fn supports_dithering(&self) -> DitheredChannels {
+        let color = self.flags.contains(Flags::DITHER_COLOR);
+        let alpha = self.flags.contains(Flags::DITHER_ALPHA);
+        match (color, alpha) {
+            (true, true) => DitheredChannels::All,
+            (true, false) => DitheredChannels::ColorOnly,
+            (false, true) => DitheredChannels::AlphaOnly,
+            (false, false) => DitheredChannels::None,
+        }
+    }
+
     fn encode(
         &self,
         data: &[u8],
         width: u32,
         color: ColorFormat,
         writer: &mut dyn Write,
+        options: &EncodeOptions,
     ) -> Result<(), EncodeError> {
         if !self.color_formats.contains(color) {
             return Err(EncodeError::UnsupportedColorFormat(color));
         }
 
-        (self.encode)(Args(data, width, color, writer))
+        (self.encode)(Args(data, width, color, writer, options.clone()))
     }
 }
 impl Encoder for &[UncompressedEncoder] {
@@ -92,20 +110,72 @@ impl Encoder for &[UncompressedEncoder] {
         set
     }
 
+    fn supports_dithering(&self) -> DitheredChannels {
+        self.iter()
+            .filter_map(|e| {
+                let d = e.supports_dithering();
+                if d != DitheredChannels::None {
+                    Some(d)
+                } else {
+                    None
+                }
+            })
+            .next()
+            .unwrap_or(DitheredChannels::None)
+    }
+
     fn encode(
         &self,
         data: &[u8],
         width: u32,
         color: ColorFormat,
         writer: &mut dyn Write,
+        options: &EncodeOptions,
     ) -> Result<(), EncodeError> {
+        // Firstly, if we have an encoder that can encode the current precision
+        // exactly, use it.
+        let precision_flag = Flags::exact_for(color.precision);
+        for encoder in *self {
+            if encoder.supported_color_formats().contains(color)
+                && encoder.flags.contains(precision_flag)
+            {
+                return encoder.encode(data, width, color, writer, options);
+            }
+        }
+
+        // Secondly, search for encoders that perform the requested dithering.
+        for encoder in *self {
+            if encoder.supported_color_formats().contains(color)
+                && encoder.supports_dithering().intersect(options.dither) != DitheredChannels::None
+            {
+                return encoder.encode(data, width, color, writer, options);
+            }
+        }
+
+        // Lastly, just pick any encoder that can do the job.
         for encoder in *self {
             if encoder.supported_color_formats().contains(color) {
-                return encoder.encode(data, width, color, writer);
+                return encoder.encode(data, width, color, writer, options);
             }
         }
         Err(EncodeError::UnsupportedColorFormat(color))
     }
+}
+
+fn f4_add(a: [f32; 4], b: [f32; 4]) -> [f32; 4] {
+    [a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]]
+}
+fn f4_sub(a: [f32; 4], b: [f32; 4]) -> [f32; 4] {
+    [a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]]
+}
+fn f4_mul(a: [f32; 4], b: [f32; 4]) -> [f32; 4] {
+    [a[0] * b[0], a[1] * b[1], a[2] * b[2], a[3] * b[3]]
+}
+fn f4_fma(a: &mut [f32; 4], b: [f32; 4], scale: f32) {
+    a[0] += b[0] * scale;
+    a[1] += b[1] * scale;
+    a[2] += b[2] * scale;
+    a[3] += b[3] * scale;
 }
 
 fn process_subsample<const BLOCK_WIDTH: usize, EncodedBlock, F>(
@@ -159,7 +229,8 @@ where
     for y_line in data.chunks(width * bytes_per_pixel) {
         debug_assert!(y_line.len() == width * bytes_per_pixel);
 
-        let chunk_size = BUFFER_PIXELS * bytes_per_pixel;
+        let chunk_pixels = BUFFER_PIXELS / block_width * block_width;
+        let chunk_size = chunk_pixels * bytes_per_pixel;
         for chunk in y_line.chunks(chunk_size) {
             let pixels = chunk.len() / bytes_per_pixel;
 
@@ -172,6 +243,76 @@ where
 
             ToLe::to_le(encoded);
 
+            writer.write_all(cast::as_bytes(encoded))?;
+        }
+    }
+
+    Ok(())
+}
+
+fn uncompressed_universal_dither<EncodedPixel, F>(args: Args, f: F) -> Result<(), EncodeError>
+where
+    EncodedPixel: Default + Copy + ToLe + cast::Castable,
+    F: Fn([f32; 4]) -> (EncodedPixel, [f32; 4]),
+{
+    let DecodedArgs {
+        data,
+        color,
+        writer,
+        width,
+        options,
+        ..
+    } = DecodedArgs::from(args)?;
+    let bytes_per_pixel = color.bytes_per_pixel() as usize;
+
+    let error_padding = 2;
+    let mut error_buffer = vec![[0_f32; 4]; 2 * (width + error_padding * 2)];
+    let (mut current_error, mut next_error) = error_buffer.split_at_mut(width + error_padding * 2);
+
+    let error_mask = match options.dither {
+        DitheredChannels::None => [0.0; 4],
+        DitheredChannels::All => [1.0; 4],
+        DitheredChannels::ColorOnly => [1.0, 1.0, 1.0, 0.0],
+        DitheredChannels::AlphaOnly => [0.0, 0.0, 0.0, 1.0],
+    };
+
+    const BUFFER_PIXELS: usize = 512;
+    let mut intermediate_buffer = [[0_f32; 4]; BUFFER_PIXELS];
+    let mut encoded_buffer = [EncodedPixel::default(); BUFFER_PIXELS];
+
+    for row in data.chunks(width * bytes_per_pixel) {
+        debug_assert!(row.len() == width * bytes_per_pixel);
+
+        // prepare error buffers
+        std::mem::swap(&mut current_error, &mut next_error);
+        next_error.fill([0.0; 4]);
+        let mut error_offset = error_padding;
+
+        let chunk_size = BUFFER_PIXELS * bytes_per_pixel;
+        for line in row.chunks(chunk_size) {
+            debug_assert!(line.len() % bytes_per_pixel == 0);
+            let pixels = line.len() / bytes_per_pixel;
+
+            let intermediate = &mut intermediate_buffer[..pixels];
+            let encoded = &mut encoded_buffer[..pixels];
+            convert_to_rgba_f32(color, line, intermediate);
+
+            for (i, out) in intermediate.iter().zip(encoded.iter_mut()) {
+                let error = current_error[error_offset];
+                let (encoded_pixel, mut error) = f(f4_add(*i, error));
+                error = f4_mul(error, error_mask);
+
+                // diffuse error with Floyd-Steinberg weights
+                f4_fma(&mut current_error[error_offset + 1], error, 7.0 / 16.0);
+                f4_fma(&mut next_error[error_offset - 1], error, 3.0 / 16.0);
+                f4_fma(&mut next_error[error_offset], error, 5.0 / 16.0);
+                f4_fma(&mut next_error[error_offset + 1], error, 1.0 / 16.0);
+
+                *out = encoded_pixel;
+                error_offset += 1;
+            }
+
+            ToLe::to_le(encoded);
             writer.write_all(cast::as_bytes(encoded))?;
         }
     }
@@ -431,6 +572,15 @@ macro_rules! universal {
         }
     }};
 }
+macro_rules! universal_dither {
+    ($out:ty, $f:expr) => {
+        UncompressedEncoder {
+            color_formats: ColorFormatSet::ALL,
+            flags: Flags::empty(),
+            encode: |args| uncompressed_universal_dither::<$out, _>(args, $f),
+        }
+    };
+}
 
 macro_rules! universal_subsample {
     ($block_width:literal, $out:ty, $f:expr) => {{
@@ -533,36 +683,91 @@ pub const B8G8R8X8_UNORM: &[UncompressedEncoder] = &[
     ]),
 ];
 
-pub const B5G6R5_UNORM: &[UncompressedEncoder] = &[universal!(u16, |[r, g, b, _]| {
-    let r = n5::from_f32(r) as u16;
-    let g = n6::from_f32(g) as u16;
-    let b = n5::from_f32(b) as u16;
-    b | (g << 5) | (r << 11)
-})];
+pub const B5G6R5_UNORM: &[UncompressedEncoder] = &[
+    universal!(u16, |[r, g, b, _]| {
+        let r = n5::from_f32(r) as u16;
+        let g = n6::from_f32(g) as u16;
+        let b = n5::from_f32(b) as u16;
+        b | (g << 5) | (r << 11)
+    }),
+    universal_dither!(u16, |pixel| {
+        let r = n5::from_f32(pixel[0]) as u16;
+        let g = n6::from_f32(pixel[1]) as u16;
+        let b = n5::from_f32(pixel[2]) as u16;
 
-pub const B5G5R5A1_UNORM: &[UncompressedEncoder] = &[universal!(u16, |[r, g, b, a]| {
-    let r = n5::from_f32(r) as u16;
-    let g = n5::from_f32(g) as u16;
-    let b = n5::from_f32(b) as u16;
-    let a = n1::from_f32(a) as u16;
-    b | (g << 5) | (r << 10) | (a << 15)
-})];
+        let back = [n5::f32(r as u8), n6::f32(g as u8), n5::f32(b as u8), 1.0];
+        let error = f4_sub(pixel, back);
 
-pub const B4G4R4A4_UNORM: &[UncompressedEncoder] = &[universal!(u16, |[r, g, b, a]| {
-    let r = n4::from_f32(r) as u16;
-    let g = n4::from_f32(g) as u16;
-    let b = n4::from_f32(b) as u16;
-    let a = n4::from_f32(a) as u16;
-    b | (g << 4) | (r << 8) | (a << 12)
-})];
+        (b | (g << 5) | (r << 11), error)
+    })
+    .add_flags(Flags::DITHER_COLOR),
+];
 
-pub const A4B4G4R4_UNORM: &[UncompressedEncoder] = &[universal!(u16, |[r, g, b, a]| {
-    let r = n4::from_f32(r) as u16;
-    let g = n4::from_f32(g) as u16;
-    let b = n4::from_f32(b) as u16;
-    let a = n4::from_f32(a) as u16;
-    a | (b << 4) | (g << 8) | (r << 12)
-})];
+pub const B5G5R5A1_UNORM: &[UncompressedEncoder] = &[
+    universal!(u16, |[r, g, b, a]| {
+        let r = n5::from_f32(r) as u16;
+        let g = n5::from_f32(g) as u16;
+        let b = n5::from_f32(b) as u16;
+        let a = n1::from_f32(a) as u16;
+        b | (g << 5) | (r << 10) | (a << 15)
+    }),
+    universal_dither!(u16, |pixel| {
+        let r = n5::from_f32(pixel[0]) as u16;
+        let g = n5::from_f32(pixel[1]) as u16;
+        let b = n5::from_f32(pixel[2]) as u16;
+        let a = n1::from_f32(pixel[3]) as u16;
+
+        let back = [
+            n5::f32(r as u8),
+            n5::f32(g as u8),
+            n5::f32(b as u8),
+            n1::f32(a as u8),
+        ];
+        let error = f4_sub(pixel, back);
+
+        (b | (g << 5) | (r << 10) | (a << 15), error)
+    })
+    .add_flags(Flags::DITHER_ALL),
+];
+
+fn rgba4_encode_with_error(pixel: [f32; 4]) -> ([u8; 4], [f32; 4]) {
+    let encoded = pixel.map(n4::from_f32);
+    let back = encoded.map(n4::f32);
+    let error = f4_sub(pixel, back);
+    (encoded, error)
+}
+
+pub const B4G4R4A4_UNORM: &[UncompressedEncoder] = &[
+    universal!(u16, |[r, g, b, a]| {
+        let r = n4::from_f32(r) as u16;
+        let g = n4::from_f32(g) as u16;
+        let b = n4::from_f32(b) as u16;
+        let a = n4::from_f32(a) as u16;
+        b | (g << 4) | (r << 8) | (a << 12)
+    }),
+    universal_dither!(u16, |pixel| {
+        let (encoded, error) = rgba4_encode_with_error(pixel);
+        let [r, g, b, a] = encoded.map(|c| c as u16);
+        (b | (g << 4) | (r << 8) | (a << 12), error)
+    })
+    .add_flags(Flags::DITHER_ALL),
+];
+
+pub const A4B4G4R4_UNORM: &[UncompressedEncoder] = &[
+    universal!(u16, |[r, g, b, a]| {
+        let r = n4::from_f32(r) as u16;
+        let g = n4::from_f32(g) as u16;
+        let b = n4::from_f32(b) as u16;
+        let a = n4::from_f32(a) as u16;
+        a | (b << 4) | (g << 8) | (r << 12)
+    }),
+    universal_dither!(u16, |pixel| {
+        let (encoded, error) = rgba4_encode_with_error(pixel);
+        let [r, g, b, a] = encoded.map(|c| c as u16);
+        (a | (b << 4) | (g << 8) | (r << 12), error)
+    })
+    .add_flags(Flags::DITHER_ALL),
+];
 
 pub const R8_UNORM: &[UncompressedEncoder] = &[
     UncompressedEncoder::copy(ColorFormat::GRAYSCALE_U8),
@@ -615,20 +820,58 @@ pub const R16G16B16A16_SNORM: &[UncompressedEncoder] = &[
     universal!([u16; 4], |rgba| rgba.map(s16::from_uf32)),
 ];
 
-pub const R10G10B10A2_UNORM: &[UncompressedEncoder] = &[universal!(u32, |[r, g, b, a]| {
-    let r = n10::from_f32(r) as u32;
-    let g = n10::from_f32(g) as u32;
-    let b = n10::from_f32(b) as u32;
-    let a = n2::from_f32(a) as u32;
-    (a << 30) | (b << 20) | (g << 10) | r
-})];
+pub const R10G10B10A2_UNORM: &[UncompressedEncoder] = &[
+    universal!(u32, |[r, g, b, a]| {
+        let r = n10::from_f32(r) as u32;
+        let g = n10::from_f32(g) as u32;
+        let b = n10::from_f32(b) as u32;
+        let a = n2::from_f32(a) as u32;
+        (a << 30) | (b << 20) | (g << 10) | r
+    }),
+    universal_dither!(u32, |pixel| {
+        let [r, g, b, a] = pixel;
+        let r = n10::from_f32(r) as u32;
+        let g = n10::from_f32(g) as u32;
+        let b = n10::from_f32(b) as u32;
+        let a = n2::from_f32(a) as u32;
 
-pub const R11G11B10_FLOAT: &[UncompressedEncoder] = &[universal!(u32, |[r, g, b, _]| {
-    let r11 = fp11::from_f32(r) as u32;
-    let g11 = fp11::from_f32(g) as u32;
-    let b10 = fp10::from_f32(b) as u32;
-    (b10 << 22) | (g11 << 11) | r11
-})];
+        let back = [
+            n10::f32(r as u16),
+            n10::f32(g as u16),
+            n10::f32(b as u16),
+            n2::f32(a as u8),
+        ];
+        let error = f4_sub(pixel, back);
+
+        ((a << 30) | (b << 20) | (g << 10) | r, error)
+    })
+    .add_flags(Flags::DITHER_ALL),
+];
+
+pub const R11G11B10_FLOAT: &[UncompressedEncoder] = &[
+    universal!(u32, |[r, g, b, _]| {
+        let r11 = fp11::from_f32(r) as u32;
+        let g11 = fp11::from_f32(g) as u32;
+        let b10 = fp10::from_f32(b) as u32;
+        (b10 << 22) | (g11 << 11) | r11
+    }),
+    universal_dither!(u32, |pixel| {
+        let r11 = fp11::from_f32(pixel[0]) as u32;
+        let g11 = fp11::from_f32(pixel[1]) as u32;
+        let b10 = fp10::from_f32(pixel[2]) as u32;
+
+        let back = [
+            fp11::f32(r11 as u16),
+            fp11::f32(g11 as u16),
+            fp10::f32(b10 as u16),
+            1.0,
+        ];
+        let error = f4_sub(pixel, back);
+
+        ((b10 << 22) | (g11 << 11) | r11, error)
+    })
+    .add_flags(Flags::DITHER_COLOR),
+];
 
 pub const R9G9B9E5_SHAREDEXP: &[UncompressedEncoder] =
     &[
@@ -666,13 +909,33 @@ pub const R32G32B32A32_FLOAT: &[UncompressedEncoder] = &[
     universal!([f32; 4], |[r, g, b, a]| [r, g, b, a]),
 ];
 
-pub const R10G10B10_XR_BIAS_A2_UNORM: &[UncompressedEncoder] = &[universal!(u32, |[r, g, b, a]| {
-    let r = xr10::from_f32(r) as u32;
-    let g = xr10::from_f32(g) as u32;
-    let b = xr10::from_f32(b) as u32;
-    let a = n2::from_f32(a) as u32;
-    (a << 30) | (b << 20) | (g << 10) | r
-})];
+pub const R10G10B10_XR_BIAS_A2_UNORM: &[UncompressedEncoder] = &[
+    universal!(u32, |[r, g, b, a]| {
+        let r = xr10::from_f32(r) as u32;
+        let g = xr10::from_f32(g) as u32;
+        let b = xr10::from_f32(b) as u32;
+        let a = n2::from_f32(a) as u32;
+        (a << 30) | (b << 20) | (g << 10) | r
+    }),
+    universal_dither!(u32, |pixel| {
+        let [r, g, b, a] = pixel;
+        let r = xr10::from_f32(r) as u32;
+        let g = xr10::from_f32(g) as u32;
+        let b = xr10::from_f32(b) as u32;
+        let a = n2::from_f32(a) as u32;
+
+        let back = [
+            xr10::f32(r as u16),
+            xr10::f32(g as u16),
+            xr10::f32(b as u16),
+            n2::f32(a as u8),
+        ];
+        let error = f4_sub(pixel, back);
+
+        ((a << 30) | (b << 20) | (g << 10) | r, error)
+    })
+    .add_flags(Flags::DITHER_ALL),
+];
 
 pub const AYUV: &[UncompressedEncoder] = &[universal!([u8; 4], |[r, g, b, a]| {
     let [y, u, v] = yuv8::from_rgb_f32([r, g, b]);
@@ -680,11 +943,26 @@ pub const AYUV: &[UncompressedEncoder] = &[universal!([u8; 4], |[r, g, b, a]| {
     [v, u, y, a]
 })];
 
-pub const Y410: &[UncompressedEncoder] = &[universal!(u32, |[r, g, b, a]| {
-    let [y, u, v] = yuv10::from_rgb_f32([r, g, b]);
-    let a = n2::from_f32(a) as u32;
-    (a << 30) | ((v as u32) << 20) | ((y as u32) << 10) | (u as u32)
-})];
+pub const Y410: &[UncompressedEncoder] = &[
+    universal!(u32, |[r, g, b, a]| {
+        let [y, u, v] = yuv10::from_rgb_f32([r, g, b]);
+        let a = n2::from_f32(a) as u32;
+        (a << 30) | ((v as u32) << 20) | ((y as u32) << 10) | (u as u32)
+    }),
+    universal_dither!(u32, |[r, g, b, a_f32]| {
+        let [y, u, v] = yuv10::from_rgb_f32([r, g, b]);
+        let a = n2::from_f32(a_f32) as u32;
+
+        let a_back = n2::f32(a as u8);
+        let error = [0.0, 0.0, 0.0, a_f32 - a_back];
+
+        (
+            (a << 30) | ((v as u32) << 20) | ((y as u32) << 10) | (u as u32),
+            error,
+        )
+    })
+    .add_flags(Flags::DITHER_ALPHA),
+];
 
 pub const Y416: &[UncompressedEncoder] = &[universal!([u16; 4], |[r, g, b, a]| {
     let [y, u, v] = yuv16::from_rgb_f32([r, g, b]);

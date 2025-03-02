@@ -66,13 +66,41 @@ impl<T> Image<T> {
     pub fn stride(&self) -> usize {
         self.size.width as usize * self.channels.count() as usize * std::mem::size_of::<T>()
     }
-}
-impl<T: WithPrecision> Image<T> {
-    pub fn precision(&self) -> Precision {
+
+    pub fn as_bytes(&self) -> &[u8]
+    where
+        T: Castable,
+    {
+        as_bytes(&self.data)
+    }
+
+    pub fn precision(&self) -> Precision
+    where
+        T: WithPrecision,
+    {
         T::PRECISION
     }
-    pub fn color(&self) -> ColorFormat {
+    pub fn color(&self) -> ColorFormat
+    where
+        T: WithPrecision,
+    {
         ColorFormat::new(self.channels, T::PRECISION)
+    }
+}
+impl Image<u8> {
+    pub fn to_u16(&self) -> Image<u16> {
+        Image {
+            data: self.data.iter().map(|&x| x as u16 * 257).collect(),
+            channels: self.channels,
+            size: self.size,
+        }
+    }
+    pub fn to_f32(&self) -> Image<f32> {
+        Image {
+            data: self.data.iter().map(|&x| x as f32 / 255.0).collect(),
+            channels: self.channels,
+            size: self.size,
+        }
     }
 }
 

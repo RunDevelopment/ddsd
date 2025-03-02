@@ -201,13 +201,21 @@ impl EncodeFormat {
         size: Size,
         color: ColorFormat,
         data: &[u8],
+        options: &EncodeOptions,
     ) -> Result<(), EncodeError> {
         if let Some(encoder) = self.get_encoder() {
-            encoder.encode(data, size.width, color, writer)
+            encoder.encode(data, size.width, color, writer, options)
         } else {
             // TODO:
             Err(EncodeError::UnsupportedColorFormat(color))
         }
+    }
+
+    pub fn supports_dither(self) -> DitheredChannels {
+        self.get_encoder()
+            .map_or(DitheredChannels::None, |encoder| {
+                encoder.supports_dithering()
+            })
     }
 
     const fn get_encoder(self) -> Option<&'static dyn Encoder> {
@@ -427,6 +435,8 @@ trait Encoder {
     /// [`Encoder::encode`].
     fn supported_color_formats(&self) -> ColorFormatSet;
 
+    fn supports_dithering(&self) -> DitheredChannels;
+
     /// Encodes the given image.
     fn encode(
         &self,
@@ -434,6 +444,7 @@ trait Encoder {
         width: u32,
         color: ColorFormat,
         writer: &mut dyn Write,
+        options: &EncodeOptions,
     ) -> Result<(), EncodeError>;
 }
 
@@ -441,6 +452,13 @@ trait Encoder {
 #[non_exhaustive]
 pub struct EncodeOptions {
     pub dither: DitheredChannels,
+}
+impl Default for EncodeOptions {
+    fn default() -> Self {
+        Self {
+            dither: DitheredChannels::None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -451,9 +469,27 @@ pub enum DitheredChannels {
     All,
     /// Dithering is enabled only for color channels (RGB).
     ColorOnly,
+    /// Dithering is enabled only for the alpha channel.
+    AlphaOnly,
+}
+impl DitheredChannels {
+    pub(crate) fn intersect(self, other: Self) -> Self {
+        match (self, other) {
+            (DitheredChannels::None, _) | (_, DitheredChannels::None) => DitheredChannels::None,
+            (DitheredChannels::All, other) | (other, DitheredChannels::All) => other,
+            (DitheredChannels::ColorOnly, DitheredChannels::AlphaOnly)
+            | (DitheredChannels::AlphaOnly, DitheredChannels::ColorOnly) => DitheredChannels::None,
+            (DitheredChannels::ColorOnly, DitheredChannels::ColorOnly) => {
+                DitheredChannels::ColorOnly
+            }
+            (DitheredChannels::AlphaOnly, DitheredChannels::AlphaOnly) => {
+                DitheredChannels::AlphaOnly
+            }
+        }
+    }
 }
 
-pub(crate) struct Args<'a, 'b>(&'a [u8], u32, ColorFormat, &'b mut dyn Write);
+pub(crate) struct Args<'a, 'b>(&'a [u8], u32, ColorFormat, &'b mut dyn Write, EncodeOptions);
 
 pub(crate) struct DecodedArgs<'a, 'b> {
     data: &'a [u8],
@@ -461,11 +497,13 @@ pub(crate) struct DecodedArgs<'a, 'b> {
     height: usize,
     color: ColorFormat,
     writer: &'b mut dyn Write,
+    options: EncodeOptions,
 }
 impl<'a, 'b> DecodedArgs<'a, 'b> {
     fn from(args: Args<'a, 'b>) -> Result<Self, EncodeError> {
         let color = args.2;
         let writer = args.3;
+        let options = args.4;
 
         let data = args.0;
         if data.is_empty() {
@@ -495,6 +533,7 @@ impl<'a, 'b> DecodedArgs<'a, 'b> {
             height,
             color,
             writer,
+            options,
         })
     }
 }

@@ -5,7 +5,7 @@ use std::{
 };
 
 use ddsd::*;
-use util::test_data_dir;
+use util::{test_data_dir, WithPrecision};
 use Precision::*;
 
 mod util;
@@ -70,26 +70,27 @@ const FORMATS: &[EncodeFormat] = &[
     EncodeFormat::BC7_UNORM,
 ];
 
+fn encode_image<T: WithPrecision + util::Castable, W: std::io::Write>(
+    image: &util::Image<T>,
+    format: EncodeFormat,
+    writer: &mut W,
+    options: &EncodeOptions,
+) -> Result<(), EncodeError> {
+    format.encode(writer, image.size, image.color(), image.as_bytes(), options)
+}
+
 #[test]
 fn encode_base() {
-    let base = util::read_png_u8(&util::test_data_dir().join("base.png")).unwrap();
-    assert!(base.channels == Channels::Rgba);
-    let base_u16 = base
-        .data
-        .iter()
-        .map(|&x| u16::from(x) * 257)
-        .collect::<Vec<_>>();
-    let base_f32 = base
-        .data
-        .iter()
-        .map(|&x| f32::from(x) / 255.)
-        .collect::<Vec<_>>();
+    let base_u8 = util::read_png_u8(&util::test_data_dir().join("base.png")).unwrap();
+    assert!(base_u8.channels == Channels::Rgba);
+    let base_u16 = base_u8.to_u16();
+    let base_f32 = base_u8.to_f32();
 
     let test = |format: EncodeFormat| -> Result<(), Box<dyn std::error::Error>> {
         let header: Header = if let Ok(dxgi_format) = format.try_into() {
-            Header::new_image(base.size.width, base.size.height, dxgi_format)
+            Header::new_image(base_u8.size.width, base_u8.size.height, dxgi_format)
         } else if let Ok(format) = format.try_into() {
-            Dx9Header::new_image(base.size.width, base.size.height, format).into()
+            Dx9Header::new_image(base_u8.size.width, base_u8.size.height, format).into()
         } else {
             // skip non-DX10 formats for now
             return Ok(());
@@ -99,28 +100,20 @@ fn encode_base() {
         output.extend_from_slice(&Header::MAGIC);
         header.to_raw().write(&mut output).unwrap();
 
+        let options = EncodeOptions::default();
+
         // and now the image data
         if format.precision() == Precision::U16 {
-            format.encode(
-                &mut output,
-                base.size,
-                ColorFormat::RGBA_U16,
-                util::as_bytes(&base_u16),
-            )?;
+            encode_image(&base_u16, format, &mut output, &options)?;
         } else if format.precision() == Precision::F32 {
-            format.encode(
-                &mut output,
-                base.size,
-                ColorFormat::RGBA_F32,
-                util::as_bytes(&base_f32),
-            )?;
+            encode_image(&base_f32, format, &mut output, &options)?;
         } else {
-            format.encode(&mut output, base.size, ColorFormat::RGBA_U8, &base.data)?;
+            encode_image(&base_u8, format, &mut output, &options)?;
         }
 
         // write to disk
         let name = format!("{:?}.dds", format);
-        let path = test_data_dir().join("output-encode").join(&name);
+        let path = test_data_dir().join("output-encode/base").join(&name);
         std::fs::create_dir_all(path.parent().unwrap())?;
         std::fs::write(&path, &output)?;
 
@@ -132,6 +125,70 @@ fn encode_base() {
         if let Err(e) = test(format) {
             eprintln!("Failed to encode {:?}: {}", format, e);
             failed_count += 1;
+        }
+    }
+    if failed_count > 0 {
+        panic!("{} tests failed", failed_count);
+    }
+}
+
+#[test]
+fn encode_dither() {
+    let test = |format: EncodeFormat,
+                image: &util::Image<f32>,
+                name: &str|
+     -> Result<(), Box<dyn std::error::Error>> {
+        let header: Header = if let Ok(dxgi_format) = format.try_into() {
+            Header::new_image(image.size.width, image.size.height, dxgi_format)
+        } else if let Ok(format) = format.try_into() {
+            Dx9Header::new_image(image.size.width, image.size.height, format).into()
+        } else {
+            // skip non-DX10 formats for now
+            return Ok(());
+        };
+
+        let mut output = Vec::new();
+        output.extend_from_slice(&Header::MAGIC);
+        header.to_raw().write(&mut output).unwrap();
+
+        let mut options = EncodeOptions::default();
+        options.dither = DitheredChannels::All;
+        encode_image(image, format, &mut output, &options)?;
+
+        // write to disk
+        let name = format!("{:?} {}.dds", format, name);
+        let path = test_data_dir().join("output-encode/dither").join(&name);
+        std::fs::create_dir_all(path.parent().unwrap())?;
+        std::fs::write(&path, &output)?;
+
+        Ok(())
+    };
+
+    let base = util::read_png_u8(&util::test_data_dir().join("base.png"))
+        .unwrap()
+        .to_f32();
+    let twirl = util::read_png_u8(&util::test_data_dir().join("color-twirl.png"))
+        .unwrap()
+        .to_f32();
+
+    let mut failed_count = 0;
+    for format in FORMATS
+        .iter()
+        .copied()
+        .filter(|f| f.supports_dither() != DitheredChannels::None)
+    {
+        let dither = format.supports_dither();
+
+        if let Err(e) = test(format, &base, "base") {
+            eprintln!("Failed to encode {:?}: {}", format, e);
+            failed_count += 1;
+        }
+
+        if dither != DitheredChannels::AlphaOnly {
+            if let Err(e) = test(format, &twirl, "twirl") {
+                eprintln!("Failed to encode {:?}: {}", format, e);
+                failed_count += 1;
+            }
         }
     }
     if failed_count > 0 {
