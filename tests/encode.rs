@@ -1,4 +1,5 @@
 use ddsd::*;
+use rand::Rng;
 use util::{test_data_dir, Image, WithPrecision};
 
 mod util;
@@ -113,6 +114,31 @@ fn encode_decode(format: EncodeFormat, options: &EncodeOptions, image: &Image<f3
         data: output,
     }
 }
+fn create_random_color_blocks() -> Image<f32> {
+    let mut rng = util::create_rng();
+
+    let width = 256;
+    let height = 256;
+    let mut data = vec![0_f32; width * height * 3];
+    let block_stride = 4 * 3;
+    for y in (0..height).step_by(4) {
+        for x in (0..width).step_by(4) {
+            let rgb: [f32; 3] = rng.gen();
+            let block_line = [rgb; 4];
+            let line_flat: &[f32] = util::cast_slice(&block_line);
+            for j in 0..4 {
+                let i = ((y + j) * width + x) * 3;
+                data[i..i + block_stride].copy_from_slice(line_flat);
+            }
+        }
+    }
+
+    Image {
+        size: Size::new(width as u32, height as u32),
+        channels: Channels::Rgb,
+        data,
+    }
+}
 
 #[test]
 fn encode_base() {
@@ -221,10 +247,15 @@ fn encode_measure_quality() {
     let base = util::read_png_u8(&util::test_data_dir().join("base.png"))
         .unwrap()
         .to_f32();
+    let base = TestImage::new("base.png", &base);
     let twirl = util::read_png_u8(&util::test_data_dir().join("color-twirl.png"))
         .unwrap()
         .to_f32();
+    let twirl = TestImage::new("twirl.png", &twirl);
+    let random = create_random_color_blocks();
+    let random = TestImage::new("random single color", &random);
 
+    #[derive(Clone, Copy)]
     struct TestImage<'a> {
         name: &'a str,
         image: &'a Image<f32>,
@@ -244,10 +275,7 @@ fn encode_measure_quality() {
         TestCase {
             format: EncodeFormat::BC4_UNORM,
             options: EncodeOptions::default(),
-            images: &[
-                TestImage::new("base", &base),
-                TestImage::new("twirl", &twirl),
-            ],
+            images: &[base, twirl, random],
         },
         TestCase {
             format: EncodeFormat::BC4_UNORM,
@@ -255,10 +283,7 @@ fn encode_measure_quality() {
                 dither: DitheredChannels::All,
                 ..Default::default()
             },
-            images: &[
-                TestImage::new("base", &base),
-                TestImage::new("twirl", &twirl),
-            ],
+            images: &[base, twirl, random],
         },
     ];
 
@@ -266,7 +291,7 @@ fn encode_measure_quality() {
         let mut output = String::new();
 
         for image in case.images {
-            output.push_str(&format!("{}\n", image.name));
+            output.push_str(&format!("\n{}\n", image.name));
 
             let image = image.image.to_channels(case.format.channels());
             let encoded = encode_decode(case.format, &case.options, &image);

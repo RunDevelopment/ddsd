@@ -1,10 +1,15 @@
 use ddsd::*;
+use rand::SeedableRng;
 use std::{
     fs::File,
     path::{Path, PathBuf},
 };
 use zerocopy::{FromBytes, Immutable, IntoBytes, Ref};
 use Precision::*;
+
+pub fn create_rng() -> impl rand::Rng {
+    rand_chacha::ChaChaRng::seed_from_u64(123456789)
+}
 
 pub trait Castable: FromBytes + IntoBytes + Immutable {}
 impl<T: FromBytes + IntoBytes + Immutable> Castable for T {}

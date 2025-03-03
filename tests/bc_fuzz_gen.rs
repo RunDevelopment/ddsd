@@ -6,7 +6,6 @@
 use std::{fs::File, io::Write};
 
 use ddsd::*;
-use rand::SeedableRng;
 
 mod util;
 
@@ -43,10 +42,6 @@ fn create_bc_data<const N: usize>(
     Ok(())
 }
 
-fn create_rng() -> impl rand::Rng {
-    rand_chacha::ChaChaRng::seed_from_u64(123456789)
-}
-
 fn random_block<const N: usize>(rng: &mut impl rand::Rng) -> [u8; N] {
     let mut block = [0; N];
     rng.fill_bytes(&mut block);
@@ -65,7 +60,7 @@ fn push_bc7_mode(block: &mut u128, mode: u8) {
 fn bc7_mode_0() {
     // Mode 0 has 4 partition bits that we want to check exhaustively.
     let mut file = File::create("test-data/images/bc fuzz/bc7 mode 0.dds").unwrap();
-    let mut rng = create_rng();
+    let mut rng = util::create_rng();
     create_bc_data(&mut file, 256, 16, DxgiFormat::BC7_UNORM, |_, y| {
         let mut block = u128::from_le_bytes(random_block(&mut rng));
 
@@ -82,7 +77,7 @@ fn bc7_mode_1_2_3() {
     for mode in 1..=3 {
         let mut file =
             File::create(format!("test-data/images/bc fuzz/bc7 mode {}.dds", mode)).unwrap();
-        let mut rng = create_rng();
+        let mut rng = util::create_rng();
         create_bc_data(&mut file, 128, 64, DxgiFormat::BC7_UNORM, |_, y| {
             let mut block = u128::from_le_bytes(random_block(&mut rng));
 
@@ -98,7 +93,7 @@ fn bc7_mode_1_2_3() {
 fn bc7_mode_4() {
     // Mode 4 has 2 bits rotations and 1 index mode bit
     let mut file = File::create("test-data/images/bc fuzz/bc7 mode 4.dds").unwrap();
-    let mut rng = create_rng();
+    let mut rng = util::create_rng();
     create_bc_data(&mut file, 256, 8, DxgiFormat::BC7_UNORM, |_, y| {
         let mut block = u128::from_le_bytes(random_block(&mut rng));
 
@@ -113,7 +108,7 @@ fn bc7_mode_4() {
 fn bc7_mode_5() {
     // Mode 5 has 2 bits rotations
     let mut file = File::create("test-data/images/bc fuzz/bc7 mode 5.dds").unwrap();
-    let mut rng = create_rng();
+    let mut rng = util::create_rng();
     create_bc_data(&mut file, 256, 4, DxgiFormat::BC7_UNORM, |_, y| {
         let mut block = u128::from_le_bytes(random_block(&mut rng));
 
@@ -128,7 +123,7 @@ fn bc7_mode_5() {
 fn bc7_mode_6() {
     // Mode 6 has no special bits, so pure random is enough
     let mut file = File::create("test-data/images/bc fuzz/bc7 mode 6.dds").unwrap();
-    let mut rng = create_rng();
+    let mut rng = util::create_rng();
     create_bc_data(&mut file, 64, 64, DxgiFormat::BC7_UNORM, |_, _| {
         let mut block = u128::from_le_bytes(random_block(&mut rng));
         push_bc7_mode(&mut block, 6);
@@ -141,7 +136,7 @@ fn bc7_mode_6() {
 fn bc7_mode_7() {
     // Mode 7 has 6 partition bits that we want to check exhaustively.
     let mut file = File::create("test-data/images/bc fuzz/bc7 mode 7.dds").unwrap();
-    let mut rng = create_rng();
+    let mut rng = util::create_rng();
     create_bc_data(&mut file, 128, 64, DxgiFormat::BC7_UNORM, |_, y| {
         let mut block = u128::from_le_bytes(random_block(&mut rng));
 
@@ -155,7 +150,7 @@ fn bc7_mode_7() {
 #[test]
 fn bc6_modes() {
     let pure_random = |file: &mut File, format: DxgiFormat, mode: u8, mode_bits: u8| {
-        let mut rng = create_rng();
+        let mut rng = util::create_rng();
         create_bc_data(file, 64, 32, format, |_, _| {
             let mut block = u128::from_le_bytes(random_block(&mut rng));
             set_lsb(&mut block, mode_bits, mode as u128);

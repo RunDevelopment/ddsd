@@ -2,16 +2,24 @@ BC4_UNORM
 EncodeOptions {
     dither: None,
 }
-    base
+
+    base.png
                     L
         ↑PSNR       36.590
         ↑PSNR blur  44.467
         ↓Region     0.74412
-    twirl
+
+    twirl.png
                     L
         ↑PSNR       55.650
         ↑PSNR blur  65.219
         ↓Region     0.07899
+
+    random single color
+                    L
+        ↑PSNR       75.782
+        ↑PSNR blur  78.518
+        ↓Region     0.03587
 
 
 
@@ -19,16 +27,24 @@ BC4_UNORM
 EncodeOptions {
     dither: All,
 }
-    base
+
+    base.png
                     L
         ↑PSNR       34.538
         ↑PSNR blur  47.144
         ↓Region     0.44587
-    twirl
+
+    twirl.png
                     L
         ↑PSNR       55.080
         ↑PSNR blur  67.807
         ↓Region     0.04657
+
+    random single color
+                    L
+        ↑PSNR       72.778
+        ↑PSNR blur  89.846
+        ↓Region     0.00451
 
 
 
