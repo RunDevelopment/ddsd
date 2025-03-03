@@ -21,14 +21,14 @@ EncodeOptions {
 }
     base
                     L
-        ↑PSNR       33.114
-        ↑PSNR blur  45.724
-        ↓Region     0.59772
+        ↑PSNR       34.538
+        ↑PSNR blur  47.144
+        ↓Region     0.44587
     twirl
                     L
-        ↑PSNR       52.891
-        ↑PSNR blur  66.840
-        ↓Region     0.06646
+        ↑PSNR       55.080
+        ↑PSNR blur  67.807
+        ↓Region     0.04657
 
 
 
