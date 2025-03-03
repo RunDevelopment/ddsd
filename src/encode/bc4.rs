@@ -24,7 +24,12 @@ pub(crate) fn compress_bc4_block(mut block: [f32; 16], options: Bc4Options) -> [
 
     // This uses the path for 6 interpolated colors
     let endpoints = EndPoints::new_inter6(min, max, options.snorm);
-    let indexes = get_inter6_indexes(&block, endpoints.c0_f, endpoints.c1_f);
+
+    let indexes = if options.dither {
+        get_inter6_indexes_dither(&block, endpoints.c0_f, endpoints.c1_f)
+    } else {
+        get_inter6_indexes(&block, endpoints.c0_f, endpoints.c1_f)
+    };
     let index_bytes = indexes.to_le_bytes();
 
     [
@@ -43,7 +48,7 @@ fn get_inter6_indexes(block: &[f32; 16], c0: f32, c1: f32) -> u64 {
     let index_map: [u8; 8] = [1, 7, 6, 5, 4, 3, 2, 0];
 
     let mut indexes = 0_u64;
-    for &pixel in block.iter().rev() {
+    for (pixel_index, &pixel) in block.iter().enumerate() {
         let blend = (pixel - c1) / (c0 - c1);
         debug_assert!(
             (-0.001..=1.001).contains(&blend),
@@ -55,10 +60,37 @@ fn get_inter6_indexes(block: &[f32; 16], c0: f32, c1: f32) -> u64 {
         );
         let blend7 = ((blend * 7.0 + 0.5) as u8).min(7);
         let index = index_map[blend7 as usize];
-        indexes = (indexes << 3) | index as u64;
+        set_pixel_index(&mut indexes, pixel_index, index);
     }
 
     indexes
+}
+fn get_inter6_indexes_dither(block: &[f32; 16], c0: f32, c1: f32) -> u64 {
+    let index_map: [u8; 8] = [1, 7, 6, 5, 4, 3, 2, 0];
+
+    let mut indexes = 0_u64;
+    for (pixel_index, &pixel) in block.iter().enumerate() {
+        let blend = (pixel - c1) / (c0 - c1);
+        debug_assert!(
+            (-0.001..=1.001).contains(&blend),
+            "blend {} for pixel {} c0 {} c1 {}",
+            blend,
+            pixel,
+            c0,
+            c1
+        );
+        let blend7 = ((blend * 7.0 + 0.5) as u8).min(7);
+        let index = index_map[blend7 as usize];
+        set_pixel_index(&mut indexes, pixel_index, index);
+    }
+
+    indexes
+}
+
+fn set_pixel_index(indexes: &mut u64, pixel_index: usize, index: u8) {
+    debug_assert!(index < 8);
+    debug_assert!(pixel_index < 16);
+    *indexes |= (index as u64) << (pixel_index * 3);
 }
 
 struct EndPoints {

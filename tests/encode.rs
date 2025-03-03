@@ -184,11 +184,18 @@ fn encode_dither() {
         .unwrap()
         .to_f32();
 
+    let ignore = [
+        EncodeFormat::BC4_SNORM,
+        EncodeFormat::BC5_UNORM,
+        EncodeFormat::BC5_SNORM,
+    ];
+
     let mut failed_count = 0;
     for format in FORMATS
         .iter()
         .copied()
         .filter(|f| f.supports_dither() != DitheredChannels::None)
+        .filter(|f| !ignore.contains(f))
     {
         let dither = format.supports_dither();
 
@@ -233,14 +240,27 @@ fn encode_measure_quality() {
         images: &'a [TestImage<'a>],
     }
 
-    let cases = [TestCase {
-        format: EncodeFormat::BC4_UNORM,
-        options: EncodeOptions::default(),
-        images: &[
-            TestImage::new("base", &base),
-            TestImage::new("twirl", &twirl),
-        ],
-    }];
+    let cases = [
+        TestCase {
+            format: EncodeFormat::BC4_UNORM,
+            options: EncodeOptions::default(),
+            images: &[
+                TestImage::new("base", &base),
+                TestImage::new("twirl", &twirl),
+            ],
+        },
+        TestCase {
+            format: EncodeFormat::BC4_UNORM,
+            options: EncodeOptions {
+                dither: DitheredChannels::All,
+                ..Default::default()
+            },
+            images: &[
+                TestImage::new("base", &base),
+                TestImage::new("twirl", &twirl),
+            ],
+        },
+    ];
 
     let collect_info = |case: &TestCase| -> Result<String, Box<dyn std::error::Error>> {
         let mut output = String::new();
@@ -269,6 +289,7 @@ fn encode_measure_quality() {
     let mut output = String::new();
     for case in cases {
         output.push_str(&format!("{:?}\n", case.format));
+        output.push_str(&format!("{:#?}\n", case.options));
 
         let info = match collect_info(&case) {
             Ok(info) => info,

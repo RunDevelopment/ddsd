@@ -5,7 +5,7 @@ use crate::{cast, ch, convert_to_rgba_f32, util, ColorFormatSet};
 use super::{
     bc4,
     write::{BaseEncoder, Flags},
-    Args, DecodedArgs, EncodeError,
+    Args, DecodedArgs, EncodeError, EncodeOptions,
 };
 
 fn block_universal<
@@ -14,13 +14,14 @@ fn block_universal<
     const BLOCK_BYTES: usize,
 >(
     args: Args,
-    encode_block: fn(&[[f32; 4]], usize, &mut [u8; BLOCK_BYTES]),
+    encode_block: fn(&[[f32; 4]], usize, &EncodeOptions, &mut [u8; BLOCK_BYTES]),
 ) -> Result<(), EncodeError> {
     let DecodedArgs {
         data,
         color,
         writer,
         width,
+        options,
         ..
     } = DecodedArgs::from(args)?;
     let bytes_per_pixel = color.bytes_per_pixel() as usize;
@@ -50,7 +51,7 @@ fn block_universal<
             let block = &intermediate_buffer[block_start..];
             let encoded = &mut encoded_buffer[block_index];
 
-            encode_block(block, width, encoded);
+            encode_block(block, width, &options, encoded);
         }
 
         // handle last partial block
@@ -70,7 +71,7 @@ fn block_universal<
             }
 
             let encoded = &mut encoded_buffer[block_index];
-            encode_block(&block_data, BLOCK_WIDTH, encoded);
+            encode_block(&block_data, BLOCK_WIDTH, &options, encoded);
         }
 
         writer.write_all(cast::as_bytes(&encoded_buffer))?;
@@ -108,11 +109,11 @@ fn handle_bc4(data: &[[f32; 4]], row_pitch: usize, options: bc4::Bc4Options) -> 
 
 pub const BC4_UNORM: &[BaseEncoder] = &[BaseEncoder {
     color_formats: ColorFormatSet::ALL,
-    flags: Flags::empty(),
+    flags: Flags::DITHER_COLOR,
     encode: |args| {
-        block_universal::<4, 4, 8>(args, |data, row_pitch, out| {
+        block_universal::<4, 4, 8>(args, |data, row_pitch, options, out| {
             let options = bc4::Bc4Options {
-                dither: false,
+                dither: options.dither.color(),
                 snorm: false,
             };
             *out = handle_bc4(data, row_pitch, options);
@@ -122,11 +123,11 @@ pub const BC4_UNORM: &[BaseEncoder] = &[BaseEncoder {
 
 pub const BC4_SNORM: &[BaseEncoder] = &[BaseEncoder {
     color_formats: ColorFormatSet::ALL,
-    flags: Flags::empty(),
+    flags: Flags::DITHER_COLOR,
     encode: |args| {
-        block_universal::<4, 4, 8>(args, |data, row_pitch, out| {
+        block_universal::<4, 4, 8>(args, |data, row_pitch, options, out| {
             let options = bc4::Bc4Options {
-                dither: false,
+                dither: options.dither.color(),
                 snorm: true,
             };
             *out = handle_bc4(data, row_pitch, options);
@@ -149,11 +150,11 @@ fn handle_bc5(data: &[[f32; 4]], row_pitch: usize, options: bc4::Bc4Options) -> 
 
 pub const BC5_UNORM: &[BaseEncoder] = &[BaseEncoder {
     color_formats: ColorFormatSet::ALL,
-    flags: Flags::empty(),
+    flags: Flags::DITHER_COLOR,
     encode: |args| {
-        block_universal::<4, 4, 16>(args, |data, row_pitch, out| {
+        block_universal::<4, 4, 16>(args, |data, row_pitch, options, out| {
             let options = bc4::Bc4Options {
-                dither: false,
+                dither: options.dither.color(),
                 snorm: false,
             };
             *out = handle_bc5(data, row_pitch, options);
@@ -163,11 +164,11 @@ pub const BC5_UNORM: &[BaseEncoder] = &[BaseEncoder {
 
 pub const BC5_SNORM: &[BaseEncoder] = &[BaseEncoder {
     color_formats: ColorFormatSet::ALL,
-    flags: Flags::empty(),
+    flags: Flags::DITHER_COLOR,
     encode: |args| {
-        block_universal::<4, 4, 16>(args, |data, row_pitch, out| {
+        block_universal::<4, 4, 16>(args, |data, row_pitch, options, out| {
             let options = bc4::Bc4Options {
-                dither: false,
+                dither: options.dither.color(),
                 snorm: true,
             };
             *out = handle_bc5(data, row_pitch, options);

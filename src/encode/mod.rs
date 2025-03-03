@@ -494,6 +494,13 @@ impl DitheredChannels {
             }
         }
     }
+
+    pub(crate) fn color(self) -> bool {
+        matches!(self, DitheredChannels::All | DitheredChannels::ColorOnly)
+    }
+    pub(crate) fn alpha(self) -> bool {
+        matches!(self, DitheredChannels::All | DitheredChannels::AlphaOnly)
+    }
 }
 
 pub(crate) struct Args<'a, 'b>(&'a [u8], u32, ColorFormat, &'b mut dyn Write, EncodeOptions);
