@@ -3,13 +3,15 @@ EncodeOptions {
     dither: None,
 }
     base
-                 L
-        ↑PSNR    36.590
-        ↓Region  0.74412
+                    L
+        ↑PSNR       36.590
+        ↑PSNR blur  44.467
+        ↓Region     0.74412
     twirl
-                 L
-        ↑PSNR    55.650
-        ↓Region  0.07899
+                    L
+        ↑PSNR       55.650
+        ↑PSNR blur  65.219
+        ↓Region     0.07899
 
 
 
@@ -18,13 +20,15 @@ EncodeOptions {
     dither: All,
 }
     base
-                 L
-        ↑PSNR    33.114
-        ↓Region  0.59772
+                    L
+        ↑PSNR       33.114
+        ↑PSNR blur  45.724
+        ↓Region     0.59772
     twirl
-                 L
-        ↑PSNR    52.891
-        ↓Region  0.06646
+                    L
+        ↑PSNR       52.891
+        ↑PSNR blur  66.840
+        ↓Region     0.06646
 
 
 

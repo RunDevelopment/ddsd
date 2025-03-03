@@ -272,13 +272,15 @@ fn encode_measure_quality() {
             let encoded = encode_decode(case.format, &case.options, &image);
             let metrics = util::measure_compression_quality(&image, &encoded);
 
-            let mut table = PrettyTable::new(metrics.len() + 1, 3);
+            let mut table = PrettyTable::new(metrics.len() + 1, 4);
             table.set(0, 1, "    ↑PSNR");
-            table.set(0, 2, "    ↓Region");
+            table.set(0, 2, "    ↑PSNR blur");
+            table.set(0, 3, "    ↓Region");
             for (i, m) in metrics.iter().enumerate() {
                 table.set(i + 1, 0, format!("{:?}", m.channel));
                 table.set(i + 1, 1, format!("{:.3}", m.psnr));
-                table.set(i + 1, 2, format!("{:.5}", m.region_error * 255.));
+                table.set(i + 1, 2, format!("{:.3}", m.psnr_blur));
+                table.set(i + 1, 3, format!("{:.5}", m.region_error * 255.));
             }
             table.print(&mut output);
         }

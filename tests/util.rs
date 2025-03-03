@@ -731,8 +731,9 @@ pub enum MetricChannel {
 }
 pub struct Metrics {
     pub channel: MetricChannel,
-    pub mse: f64,
     pub psnr: f64,
+    /// This the PSNR of the image after a small blur
+    pub psnr_blur: f64,
     pub region_error: f64,
 }
 pub fn measure_compression_quality(org: &Image<f32>, compressed: &Image<f32>) -> Vec<Metrics> {
@@ -742,6 +743,81 @@ pub fn measure_compression_quality(org: &Image<f32>, compressed: &Image<f32>) ->
     let width = org.size.width as usize;
     let height = org.size.height as usize;
 
+    fn calculate_psnr<T, F>(org: &[T], compressed: &[T], get_value: F) -> f64
+    where
+        T: Copy,
+        F: Fn(T) -> f64,
+    {
+        let mut mse = 0.0;
+        for (&o, &c) in org.iter().zip(compressed.iter()) {
+            let diff = get_value(o) - get_value(c);
+            mse += diff * diff;
+        }
+        mse /= org.len() as f64;
+        -10.0 * mse.log10()
+    }
+    fn box_blur<T, F>(image: &[T], width: usize, height: usize, get_value: F) -> Vec<f64>
+    where
+        T: Copy,
+        F: Fn(T) -> f64,
+    {
+        let mut blurred: Vec<f64> = image.iter().map(|&x| get_value(x)).collect();
+
+        const GAUSS_WEIGHTS: [f64; 5] = {
+            let raw = [1.0, 4.0, 6.0, 4.0, 1.0];
+            let sum = raw[0] + raw[1] + raw[2] + raw[3] + raw[4];
+            [
+                raw[0] / sum,
+                raw[1] / sum,
+                raw[2] / sum,
+                raw[3] / sum,
+                raw[4] / sum,
+            ]
+        };
+        fn weigh(values: [f64; 5]) -> f64 {
+            values[0] * GAUSS_WEIGHTS[0]
+                + values[1] * GAUSS_WEIGHTS[1]
+                + values[2] * GAUSS_WEIGHTS[2]
+                + values[3] * GAUSS_WEIGHTS[3]
+                + values[4] * GAUSS_WEIGHTS[4]
+        }
+
+        // Pass 1: horizontal
+        for y in 0..height {
+            let index_base = y * width;
+            let mut prev_prev = blurred[index_base];
+            let mut prev = blurred[index_base];
+            let last_index = index_base + width - 1;
+            for x in 0..width {
+                let current = blurred[index_base + x];
+                let next = blurred[last_index.min(index_base + x + 1)];
+                let next_next = blurred[last_index.min(index_base + x + 2)];
+                let sum = weigh([prev_prev, prev, current, next, next_next]);
+                prev_prev = prev;
+                prev = current;
+                blurred[index_base + x] = sum;
+            }
+        }
+
+        // Pass 2: vertical
+        for x in 0..width {
+            let mut prev_prev = blurred[x];
+            let mut prev = blurred[x];
+            let last_index = (height - 1) * width + x;
+            for y in 0..height {
+                let index = y * width + x;
+                let current = blurred[index];
+                let next = blurred[last_index.min(index + width)];
+                let next_next = blurred[last_index.min(index + 2 * width)];
+                let sum = weigh([prev_prev, prev, current, next, next_next]);
+                prev_prev = prev;
+                prev = current;
+                blurred[index] = sum;
+            }
+        }
+
+        blurred
+    }
     fn calculate_metrics<T, F>(
         org: &[T],
         compressed: &[T],
@@ -752,17 +828,15 @@ pub fn measure_compression_quality(org: &Image<f32>, compressed: &Image<f32>) ->
     ) -> Metrics
     where
         T: Copy,
-        F: Fn(T) -> f64,
+        F: Copy + Fn(T) -> f64,
     {
-        let pixels = width * height;
+        // PSNR
+        let psnr = calculate_psnr(org, compressed, get_value);
 
-        let mut mse = 0.0;
-        for (&o, &c) in org.iter().zip(compressed.iter()) {
-            let diff = get_value(o) - get_value(c);
-            mse += diff * diff;
-        }
-        mse /= pixels as f64;
-        let psnr = -10.0 * mse.log10();
+        // blurred PSNR
+        let blurred_org = box_blur(org, width, height, get_value);
+        let blurred_compressed = box_blur(compressed, width, height, get_value);
+        let psnr_blur = calculate_psnr(&blurred_org, &blurred_compressed, |x| x);
 
         // region error is just the absolute average error per 4x4 region
         const REGION_SIZE: usize = 4;
@@ -784,8 +858,8 @@ pub fn measure_compression_quality(org: &Image<f32>, compressed: &Image<f32>) ->
 
         Metrics {
             channel,
-            mse,
             psnr,
+            psnr_blur,
             region_error,
         }
     }
