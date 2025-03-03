@@ -1,6 +1,6 @@
 use crate::{
-    cast, convert_channels_untyped, convert_to_rgba_f32, encode::write::ToLe, fp10, fp11, fp16, n1,
-    n10, n16, n2, n4, n5, n6, n8, rgb9995f, s16, s8, util, xr10, yuv10, yuv16, yuv8, Channels,
+    cast, ch, convert_channels_untyped, convert_to_rgba_f32, encode::write::ToLe, fp10, fp11, fp16,
+    n1, n10, n16, n2, n4, n5, n6, n8, rgb9995f, s16, s8, util, xr10, yuv10, yuv16, yuv8, Channels,
     ColorFormat, ColorFormatSet, Precision,
 };
 
@@ -249,6 +249,11 @@ macro_rules! universal {
         }
     }};
 }
+macro_rules! universal_grayscale {
+    ($out:ty, $f:expr) => {
+        universal!($out, |rgba| ($f)(ch::rgba_to_grayscale(rgba)[0]))
+    };
+}
 macro_rules! universal_dither {
     ($out:ty, $f:expr) => {
         BaseEncoder {
@@ -438,12 +443,12 @@ pub const A4B4G4R4_UNORM: &[BaseEncoder] = &[
 pub const R8_UNORM: &[BaseEncoder] = &[
     BaseEncoder::copy(ColorFormat::GRAYSCALE_U8),
     color_convert!(ColorFormat::GRAYSCALE_U8),
-    universal!(u8, |[r, _, _, _]| n8::from_f32(r)),
+    universal_grayscale!(u8, n8::from_f32),
 ];
 
 pub const R8_SNORM: &[BaseEncoder] = &[
     color_convert!(ColorFormat::GRAYSCALE_U8, SNORM),
-    universal!(u8, |[r, _, _, _]| s8::from_uf32(r)),
+    universal_grayscale!(u8, s8::from_uf32),
 ];
 
 pub const R8G8_UNORM: &[BaseEncoder] =
@@ -461,12 +466,12 @@ pub const A8_UNORM: &[BaseEncoder] = &[
 pub const R16_UNORM: &[BaseEncoder] = &[
     BaseEncoder::copy(ColorFormat::GRAYSCALE_U16),
     color_convert!(ColorFormat::GRAYSCALE_U16),
-    universal!(u16, |[r, _, _, _]| n16::from_f32(r)),
+    universal_grayscale!(u16, n16::from_f32),
 ];
 
 pub const R16_SNORM: &[BaseEncoder] = &[
     color_convert!(ColorFormat::GRAYSCALE_U16, SNORM),
-    universal!(u16, |[r, _, _, _]| s16::from_uf32(r)),
+    universal_grayscale!(u16, s16::from_uf32),
 ];
 
 pub const R16G16_UNORM: &[BaseEncoder] =
@@ -546,7 +551,7 @@ pub const R9G9B9E5_SHAREDEXP: &[BaseEncoder] =
     ];
 
 pub const R16_FLOAT: &[BaseEncoder] =
-    &[universal!(u16, |[r, _, _, _]| fp16::from_f32(r)).add_flags(Flags::EXACT_U8)];
+    &[universal_grayscale!(u16, fp16::from_f32).add_flags(Flags::EXACT_U8)];
 
 pub const R16G16_FLOAT: &[BaseEncoder] =
     &[universal!([u16; 2], |[r, g, _, _]| [r, g].map(fp16::from_f32)).add_flags(Flags::EXACT_U8)];
@@ -557,7 +562,7 @@ pub const R16G16B16A16_FLOAT: &[BaseEncoder] =
 pub const R32_FLOAT: &[BaseEncoder] = &[
     BaseEncoder::copy(ColorFormat::GRAYSCALE_F32),
     color_convert!(ColorFormat::GRAYSCALE_F32),
-    universal!(f32, |[r, _, _, _]| r),
+    universal_grayscale!(f32, |r| r),
 ];
 
 pub const R32G32_FLOAT: &[BaseEncoder] =
