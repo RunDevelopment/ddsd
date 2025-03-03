@@ -409,11 +409,16 @@ pub(crate) mod s8 {
         // this computes round(x / 255 * 254)
         // range: 0-254
         let norm = ((x as u16 * 254 + 254) >> 8) as u8;
-        (norm + 1).wrapping_sub(128)
+        from_norm(norm)
     }
     pub fn from_uf32(x: f32) -> u8 {
         let norm = (x.min(1.0) * 254.0 + 0.5) as u8;
-        (norm + 1).wrapping_sub(128)
+        from_norm(norm)
+    }
+    // Converts a value in the range [0, 254] to SNORM8.
+    pub fn from_norm(x: u8) -> u8 {
+        debug_assert!(x <= 254);
+        (x + 1).wrapping_sub(128)
     }
 }
 

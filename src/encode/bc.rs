@@ -101,32 +101,76 @@ fn get_4x4_select_channel<const CHANNEL: usize>(data: &[[f32; 4]], row_pitch: us
 
 // encoders
 
+fn handle_bc4(data: &[[f32; 4]], row_pitch: usize, options: bc4::Bc4Options) -> [u8; 8] {
+    let block = get_4x4_grayscale(data, row_pitch);
+    bc4::compress_bc4_block(block, options)
+}
+
 pub const BC4_UNORM: &[BaseEncoder] = &[BaseEncoder {
     color_formats: ColorFormatSet::ALL,
     flags: Flags::empty(),
     encode: |args| {
         block_universal::<4, 4, 8>(args, |data, row_pitch, out| {
-            let block = get_4x4_grayscale(data, row_pitch);
-            let options = bc4::Bc4Options { dither: false };
-            *out = bc4::compress_bc4u_block(block, options);
+            let options = bc4::Bc4Options {
+                dither: false,
+                snorm: false,
+            };
+            *out = handle_bc4(data, row_pitch, options);
         })
     },
 }];
+
+pub const BC4_SNORM: &[BaseEncoder] = &[BaseEncoder {
+    color_formats: ColorFormatSet::ALL,
+    flags: Flags::empty(),
+    encode: |args| {
+        block_universal::<4, 4, 8>(args, |data, row_pitch, out| {
+            let options = bc4::Bc4Options {
+                dither: false,
+                snorm: true,
+            };
+            *out = handle_bc4(data, row_pitch, options);
+        })
+    },
+}];
+
+fn handle_bc5(data: &[[f32; 4]], row_pitch: usize, options: bc4::Bc4Options) -> [u8; 16] {
+    let red_block = get_4x4_select_channel::<0>(data, row_pitch);
+    let green_block = get_4x4_select_channel::<1>(data, row_pitch);
+
+    let red = bc4::compress_bc4_block(red_block, options);
+    let green = bc4::compress_bc4_block(green_block, options);
+
+    let mut out = [0; 16];
+    out[0..8].copy_from_slice(&red);
+    out[8..].copy_from_slice(&green);
+    out
+}
 
 pub const BC5_UNORM: &[BaseEncoder] = &[BaseEncoder {
     color_formats: ColorFormatSet::ALL,
     flags: Flags::empty(),
     encode: |args| {
         block_universal::<4, 4, 16>(args, |data, row_pitch, out| {
-            let red_block = get_4x4_select_channel::<0>(data, row_pitch);
-            let green_block = get_4x4_select_channel::<1>(data, row_pitch);
-            let options = bc4::Bc4Options { dither: false };
+            let options = bc4::Bc4Options {
+                dither: false,
+                snorm: false,
+            };
+            *out = handle_bc5(data, row_pitch, options);
+        })
+    },
+}];
 
-            let red = bc4::compress_bc4u_block(red_block, options);
-            let green = bc4::compress_bc4u_block(green_block, options);
-
-            out[0..8].copy_from_slice(&red);
-            out[8..].copy_from_slice(&green);
+pub const BC5_SNORM: &[BaseEncoder] = &[BaseEncoder {
+    color_formats: ColorFormatSet::ALL,
+    flags: Flags::empty(),
+    encode: |args| {
+        block_universal::<4, 4, 16>(args, |data, row_pitch, out| {
+            let options = bc4::Bc4Options {
+                dither: false,
+                snorm: true,
+            };
+            *out = handle_bc5(data, row_pitch, options);
         })
     },
 }];
