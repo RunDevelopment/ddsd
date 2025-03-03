@@ -303,8 +303,8 @@ fn encode_measure_quality() {
             table.set(0, 3, "    ↓Region");
             for (i, m) in metrics.iter().enumerate() {
                 table.set(i + 1, 0, format!("{:?}", m.channel));
-                table.set(i + 1, 1, format!("{:.3}", m.psnr));
-                table.set(i + 1, 2, format!("{:.3}", m.psnr_blur));
+                table.set(i + 1, 1, format!("{:.4}", m.psnr));
+                table.set(i + 1, 2, format!("{:.4}", m.psnr_blur));
                 table.set(i + 1, 3, format!("{:.5}", m.region_error * 255.));
             }
             table.print(&mut output);

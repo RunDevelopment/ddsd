@@ -10,6 +10,8 @@ pub struct Bc4Options {
 ///
 /// This is also the smallest distance of 2 adjacent representable values.
 const BC4_MIN_VALUE: f32 = 1. / (255. * 7.);
+/// 2 values that are this close will be considered equal.
+const BC4_EPSILON: f32 = 1. / (65536.);
 
 pub(crate) fn compress_bc4_block(mut block: [f32; 16], options: Bc4Options) -> [u8; 8] {
     // clamp to 0-1
@@ -22,6 +24,25 @@ pub(crate) fn compress_bc4_block(mut block: [f32; 16], options: Bc4Options) -> [
         max = max.max(value);
     }
 
+    // single color
+    if (max - min) < BC4_EPSILON {
+        // See if the closest encoded value is good enough. This doesn't improve
+        // quality, but it does make the output more compressable for gzip.
+        let value = (min + max) * 0.5;
+        let closest = EndPoints::new_closest(value, options.snorm);
+        if (closest.c0_f - value).abs() < BC4_EPSILON {
+            return closest.with_indexes(0);
+        }
+    }
+
+    // if min < BC4_MIN_VALUE || max > 1.0 - BC4_MIN_VALUE {
+    //     // If the range is too small, we need to expand it
+    //     let range = max - min;
+    //     let half_range = range / 2.0;
+    //     min -= half_range;
+    //     max += half_range;
+    // }
+
     // This uses the path for 6 interpolated colors
     let endpoints = EndPoints::new_inter6(min, max, options.snorm);
 
@@ -30,18 +51,8 @@ pub(crate) fn compress_bc4_block(mut block: [f32; 16], options: Bc4Options) -> [
     } else {
         get_inter6_indexes(&block, endpoints.c0_f, endpoints.c1_f)
     };
-    let index_bytes = indexes.to_le_bytes();
 
-    [
-        endpoints.c0,
-        endpoints.c1,
-        index_bytes[0],
-        index_bytes[1],
-        index_bytes[2],
-        index_bytes[3],
-        index_bytes[4],
-        index_bytes[5],
-    ]
+    endpoints.with_indexes(indexes)
 }
 
 fn get_inter6_indexes(block: &[f32; 16], c0: f32, c1: f32) -> u64 {
@@ -65,6 +76,7 @@ fn get_inter6_indexes(block: &[f32; 16], c0: f32, c1: f32) -> u64 {
 
     indexes
 }
+
 const BAYER_4: [u8; 16] = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const BAYER_4_N: [f32; 16] = {
     let mut bayer = [0.0; 16];
@@ -196,6 +208,31 @@ struct EndPoints {
     c1_f: f32,
 }
 impl EndPoints {
+    /// Creates a new endpoint pair for a BC4 block.
+    /// C0 will be the value closest to the given value and C1_f will be 0.
+    fn new_closest(value: f32, snorm: bool) -> Self {
+        if snorm {
+            let closest_s8_norm = (254.0 * value + 0.5) as u8;
+
+            let c0 = s8::from_norm(closest_s8_norm);
+            let c1 = s8::from_norm(0);
+            let c0_f = s8::uf32(c0);
+            let c1_f = s8::uf32(c1);
+            debug_assert!(c1_f == 0.0);
+
+            Self { c0, c1, c0_f, c1_f }
+        } else {
+            // round down min and round up max
+            let closest = (255.0 * value + 0.5) as u8;
+
+            let c0 = closest;
+            let c1 = 0;
+            let c0_f = n8::f32(c0);
+            let c1_f = 0.0;
+
+            Self { c0, c1, c0_f, c1_f }
+        }
+    }
     fn new_inter6(e0: f32, e1: f32, snorm: bool) -> Self {
         let min = e0.min(e1);
         let max = e0.max(e1);
@@ -250,5 +287,20 @@ impl EndPoints {
 
             Self { c0, c1, c0_f, c1_f }
         }
+    }
+
+    fn with_indexes(&self, indexes: u64) -> [u8; 8] {
+        let index_bytes = indexes.to_le_bytes();
+
+        [
+            self.c0,
+            self.c1,
+            index_bytes[0],
+            index_bytes[1],
+            index_bytes[2],
+            index_bytes[3],
+            index_bytes[4],
+            index_bytes[5],
+        ]
     }
 }
