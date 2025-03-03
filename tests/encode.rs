@@ -1,12 +1,5 @@
-use std::{
-    fs::File,
-    io::{Cursor, Read},
-    path::{Path, PathBuf},
-};
-
 use ddsd::*;
-use util::{test_data_dir, WithPrecision};
-use Precision::*;
+use util::{test_data_dir, Image, WithPrecision};
 
 mod util;
 
@@ -70,13 +63,55 @@ const FORMATS: &[EncodeFormat] = &[
     EncodeFormat::BC7_UNORM,
 ];
 
+fn create_header(size: Size, format: EncodeFormat) -> Header {
+    if let Ok(dxgi_format) = format.try_into() {
+        Header::new_image(size.width, size.height, dxgi_format)
+    } else if let Ok(format) = format.try_into() {
+        Dx9Header::new_image(size.width, size.height, format).into()
+    } else {
+        unreachable!("unsupported format: {:?}", format);
+    }
+}
+fn write_dds_header(size: Size, format: EncodeFormat) -> Vec<u8> {
+    let header = create_header(size, format);
+
+    let mut output = Vec::new();
+    output.extend_from_slice(&Header::MAGIC);
+    header.to_raw().write(&mut output).unwrap();
+
+    output
+}
 fn encode_image<T: WithPrecision + util::Castable, W: std::io::Write>(
-    image: &util::Image<T>,
+    image: &Image<T>,
     format: EncodeFormat,
     writer: &mut W,
     options: &EncodeOptions,
 ) -> Result<(), EncodeError> {
     format.encode(writer, image.size, image.color(), image.as_bytes(), options)
+}
+fn encode_decode(format: EncodeFormat, options: &EncodeOptions, image: &Image<f32>) -> Image<f32> {
+    // encode
+    let mut encoded = Vec::new();
+    encode_image(image, format, &mut encoded, options).unwrap();
+
+    // decode
+    let header = create_header(image.size, format);
+    let decode_format = DecodeFormat::from_header(&header).unwrap();
+    let mut output = vec![0_f32; image.size.pixels() as usize * image.channels.count() as usize];
+    decode_format
+        .decode_f32(
+            &mut encoded.as_slice(),
+            image.size,
+            image.channels,
+            &mut output,
+        )
+        .unwrap();
+
+    Image {
+        size: image.size,
+        channels: image.channels,
+        data: output,
+    }
 }
 
 #[test]
@@ -87,18 +122,7 @@ fn encode_base() {
     let base_f32 = base_u8.to_f32();
 
     let test = |format: EncodeFormat| -> Result<(), Box<dyn std::error::Error>> {
-        let header: Header = if let Ok(dxgi_format) = format.try_into() {
-            Header::new_image(base_u8.size.width, base_u8.size.height, dxgi_format)
-        } else if let Ok(format) = format.try_into() {
-            Dx9Header::new_image(base_u8.size.width, base_u8.size.height, format).into()
-        } else {
-            // skip non-DX10 formats for now
-            return Ok(());
-        };
-
-        let mut output = Vec::new();
-        output.extend_from_slice(&Header::MAGIC);
-        header.to_raw().write(&mut output).unwrap();
+        let mut output = write_dds_header(base_u8.size, format);
 
         let options = EncodeOptions::default();
 
@@ -135,21 +159,10 @@ fn encode_base() {
 #[test]
 fn encode_dither() {
     let test = |format: EncodeFormat,
-                image: &util::Image<f32>,
+                image: &Image<f32>,
                 name: &str|
      -> Result<(), Box<dyn std::error::Error>> {
-        let header: Header = if let Ok(dxgi_format) = format.try_into() {
-            Header::new_image(image.size.width, image.size.height, dxgi_format)
-        } else if let Ok(format) = format.try_into() {
-            Dx9Header::new_image(image.size.width, image.size.height, format).into()
-        } else {
-            // skip non-DX10 formats for now
-            return Ok(());
-        };
-
-        let mut output = Vec::new();
-        output.extend_from_slice(&Header::MAGIC);
-        header.to_raw().write(&mut output).unwrap();
+        let mut output = write_dds_header(image.size, format);
 
         let mut options = EncodeOptions::default();
         options.dither = DitheredChannels::All;
@@ -193,5 +206,137 @@ fn encode_dither() {
     }
     if failed_count > 0 {
         panic!("{} tests failed", failed_count);
+    }
+}
+
+#[test]
+fn encode_measure_quality() {
+    let base = util::read_png_u8(&util::test_data_dir().join("base.png"))
+        .unwrap()
+        .to_f32();
+    let twirl = util::read_png_u8(&util::test_data_dir().join("color-twirl.png"))
+        .unwrap()
+        .to_f32();
+
+    struct TestImage<'a> {
+        name: &'a str,
+        image: &'a Image<f32>,
+    }
+    impl<'a> TestImage<'a> {
+        fn new(name: &'a str, image: &'a Image<f32>) -> Self {
+            Self { name, image }
+        }
+    }
+    struct TestCase<'a> {
+        format: EncodeFormat,
+        options: EncodeOptions,
+        images: &'a [TestImage<'a>],
+    }
+
+    let cases = [TestCase {
+        format: EncodeFormat::BC4_UNORM,
+        options: EncodeOptions::default(),
+        images: &[
+            TestImage::new("base", &base),
+            TestImage::new("twirl", &twirl),
+        ],
+    }];
+
+    let collect_info = |case: &TestCase| -> Result<String, Box<dyn std::error::Error>> {
+        let mut output = String::new();
+
+        for image in case.images {
+            output.push_str(&format!("{}\n", image.name));
+
+            let image = image.image.to_channels(case.format.channels());
+            let encoded = encode_decode(case.format, &case.options, &image);
+            let metrics = util::measure_compression_quality(&image, &encoded);
+
+            let mut table = PrettyTable::new(metrics.len() + 1, 3);
+            table.set(0, 1, "    ↑PSNR");
+            table.set(0, 2, "    ↓Region");
+            for (i, m) in metrics.iter().enumerate() {
+                table.set(i + 1, 0, format!("{:?}", m.channel));
+                table.set(i + 1, 1, format!("{:.3}", m.psnr));
+                table.set(i + 1, 2, format!("{:.5}", m.region_error * 255.));
+            }
+            table.print(&mut output);
+        }
+
+        Ok(output)
+    };
+
+    let mut output = String::new();
+    for case in cases {
+        output.push_str(&format!("{:?}\n", case.format));
+
+        let info = match collect_info(&case) {
+            Ok(info) => info,
+            Err(e) => format!("Error: {}", e),
+        };
+
+        for line in info.lines() {
+            if line.is_empty() {
+                output.push('\n');
+            } else {
+                output.push_str(&format!("    {}\n", line.trim_ascii_end()));
+            }
+        }
+
+        output.push('\n');
+        output.push('\n');
+        output.push('\n');
+    }
+
+    util::compare_snapshot_text(&util::test_data_dir().join("encode_quality.txt"), &output);
+}
+
+struct PrettyTable {
+    cells: Vec<String>,
+    width: usize,
+    height: usize,
+}
+impl PrettyTable {
+    pub fn new(width: usize, height: usize) -> Self {
+        Self {
+            cells: vec![String::new(); width * height],
+            width,
+            height,
+        }
+    }
+
+    pub fn get(&self, x: usize, y: usize) -> &str {
+        &self.cells[y * self.width + x]
+    }
+    pub fn get_mut(&mut self, x: usize, y: usize) -> &mut String {
+        &mut self.cells[y * self.width + x]
+    }
+
+    pub fn set(&mut self, x: usize, y: usize, value: impl Into<String>) {
+        *self.get_mut(x, y) = value.into();
+    }
+
+    pub fn print(&self, out: &mut String) {
+        let column_width: Vec<usize> = (0..self.width)
+            .map(|x| {
+                (0..self.height)
+                    .map(|y| self.get(x, y).chars().count())
+                    .max()
+                    .unwrap()
+            })
+            .collect();
+
+        for y in 0..self.height {
+            #[allow(clippy::needless_range_loop)]
+            for x in 0..self.width {
+                let cell = self.get(x, y);
+                out.push_str(cell);
+                for _ in 0..column_width[x] - cell.chars().count() {
+                    out.push(' ');
+                }
+                out.push_str("  ");
+            }
+            out.push('\n');
+        }
     }
 }

@@ -86,6 +86,17 @@ impl<T> Image<T> {
     {
         ColorFormat::new(self.channels, T::PRECISION)
     }
+
+    pub fn to_channels(&self, channels: Channels) -> Image<T>
+    where
+        T: Copy + Default + Castable + Norm,
+    {
+        Image {
+            data: convert_channels(&self.data, self.channels, channels),
+            channels,
+            size: self.size,
+        }
+    }
 }
 impl Image<u8> {
     pub fn to_u16(&self) -> Image<u16> {
@@ -708,4 +719,92 @@ pub fn pretty_print_raw_header(out: &mut String, raw: &RawHeader) {
     //         out.push_str(&format!("        array_size: {:?}\n", dx10.array_size));
     //     }
     // };
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MetricChannel {
+    L,
+    R,
+    G,
+    B,
+    A,
+}
+pub struct Metrics {
+    pub channel: MetricChannel,
+    pub mse: f64,
+    pub psnr: f64,
+    pub region_error: f64,
+}
+pub fn measure_compression_quality(org: &Image<f32>, compressed: &Image<f32>) -> Vec<Metrics> {
+    assert!(org.size == compressed.size);
+    assert!(org.channels == compressed.channels);
+    assert!(org.data.len() == compressed.data.len());
+    let width = org.size.width as usize;
+    let height = org.size.height as usize;
+
+    fn calculate_metrics<T, F>(
+        org: &[T],
+        compressed: &[T],
+        width: usize,
+        height: usize,
+        channel: MetricChannel,
+        get_value: F,
+    ) -> Metrics
+    where
+        T: Copy,
+        F: Fn(T) -> f64,
+    {
+        let pixels = width * height;
+
+        let mut mse = 0.0;
+        for (&o, &c) in org.iter().zip(compressed.iter()) {
+            let diff = get_value(o) - get_value(c);
+            mse += diff * diff;
+        }
+        mse /= pixels as f64;
+        let psnr = -10.0 * mse.log10();
+
+        // region error is just the absolute average error per 4x4 region
+        const REGION_SIZE: usize = 4;
+        let mut region_error = 0.0;
+        for region_y in 0..height / REGION_SIZE {
+            for region_x in 0..width / REGION_SIZE {
+                let mut region = 0.0;
+                for y in 0..REGION_SIZE {
+                    for x in 0..REGION_SIZE {
+                        let i = (region_y * REGION_SIZE + y) * width + region_x * REGION_SIZE + x;
+                        let diff = get_value(org[i]) - get_value(compressed[i]);
+                        region += diff;
+                    }
+                }
+                region_error += region.abs() / (REGION_SIZE * REGION_SIZE) as f64;
+            }
+        }
+        region_error /= (width / REGION_SIZE * height / REGION_SIZE) as f64;
+
+        Metrics {
+            channel,
+            mse,
+            psnr,
+            region_error,
+        }
+    }
+
+    match org.channels {
+        Channels::Grayscale => {
+            let l = calculate_metrics(
+                &org.data,
+                &compressed.data,
+                width,
+                height,
+                MetricChannel::L,
+                |x| x as f64,
+            );
+
+            vec![l]
+        }
+        Channels::Alpha => todo!(),
+        Channels::Rgb => todo!(),
+        Channels::Rgba => todo!(),
+    }
 }

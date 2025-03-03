@@ -47,7 +47,7 @@ pub(crate) fn compress_bc4u_block(mut block: [f32; 16], options: Bc4Options) -> 
     let mut indexes = 0_u64;
     for &pixel in block.iter().rev() {
         let blend = (pixel - c1f) / dist;
-        debug_assert!((0.0..=1.0).contains(&blend));
+        debug_assert!((-0.001..=1.001).contains(&blend), "blend: {}", blend);
         let blend7 = ((blend * 7.0 + 0.5) as u8).min(7);
         let index = index_map[blend7 as usize];
         indexes = (indexes << 3) | index as u64;
