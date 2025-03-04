@@ -1,3 +1,5 @@
+use core::error;
+
 use crate::{n8, s8};
 
 #[derive(Debug, Clone, Copy)]
@@ -32,7 +34,7 @@ pub(crate) fn compress_bc4_block(mut block: [f32; 16], options: Bc4Options) -> [
         let value = (min + max) * 0.5;
         let closest = EndPoints::new_closest(value, options.snorm);
         if (closest.c0_f - value).abs() < BC4_EPSILON {
-            return closest.with_indexes(0);
+            return closest.with_indexes(IndexList::new_all(0));
         }
     }
 
@@ -121,11 +123,9 @@ fn compress_inter6(
         min,
         max,
         move |(min, max)| {
-            if options.dither {
-                get_inter6_error_dither(block, min, max)
-            } else {
-                get_inter6_error(block, min, max)
-            }
+            let palette = Inter6Palette::new(min, max);
+            // TODO: find a better error metric for dithered blocks
+            palette.block_closest_mse(block)
         },
         move |(min, max)| {
             let endpoints = EndPoints::new_inter6(min, max, options.snorm);
@@ -134,49 +134,15 @@ fn compress_inter6(
     );
 
     let endpoints = EndPoints::new_inter6(min, max, options.snorm);
+    let palette = Inter6Palette::from_endpoints(&endpoints);
 
     let (indexes, error) = if options.dither {
-        get_inter6_indexes_dither_ordered_diffused(block, endpoints.c0_f, endpoints.c1_f)
+        get_inter6_indexes_dither_ordered_diffused(block, palette)
     } else {
-        get_inter6_indexes(block, endpoints.c0_f, endpoints.c1_f)
+        palette.block_closest(block)
     };
 
     (endpoints.with_indexes(indexes), error)
-}
-
-fn get_inter6_error(block: &[f32; 16], c0: f32, c1: f32) -> f32 {
-    let mut total_error = 0.0;
-    for pixel in block {
-        let blend = (pixel - c1) / (c0 - c1);
-        let blend7 = (blend * 7.0 + 0.5).min(7.0) as u8;
-        let back = blend7 as f32 * (1.0 / 7.0) * (c0 - c1) + c1;
-        let error = pixel - back;
-        total_error += error * error;
-    }
-    total_error
-}
-fn get_inter6_error_dither(block: &[f32; 16], c0: f32, c1: f32) -> f32 {
-    get_inter6_error(block, c0, c1)
-}
-
-fn get_inter6_indexes(block: &[f32; 16], c0: f32, c1: f32) -> (u64, f32) {
-    let index_map: [u8; 8] = [1, 7, 6, 5, 4, 3, 2, 0];
-
-    let mut total_error = 0.0;
-    let mut indexes = 0_u64;
-    for (pixel_index, &pixel) in block.iter().enumerate() {
-        let blend = (pixel - c1) / (c0 - c1);
-        let blend7 = ((blend * 7.0 + 0.5) as u8).min(7);
-
-        let index = index_map[blend7 as usize];
-        set_pixel_index(&mut indexes, pixel_index, index);
-
-        let back = blend7 as f32 / 7.0 * (c0 - c1) + c1;
-        let error = pixel - back;
-        total_error += error * error;
-    }
-
-    (indexes, total_error)
 }
 
 const BAYER_4: [u8; 16] = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
@@ -189,37 +155,26 @@ const BAYER_4_N: [f32; 16] = {
     }
     bayer
 };
-fn get_inter6_indexes_dither_ordered(block: &[f32; 16], c0: f32, c1: f32) -> (u64, f32) {
-    let index_map: [u8; 8] = [1, 7, 6, 5, 4, 3, 2, 0];
-
+fn get_inter6_indexes_dither_ordered(
+    block: &[f32; 16],
+    palette: Inter6Palette,
+) -> (IndexList, f32) {
     let mut total_error = 0.0;
-    let mut indexes = 0_u64;
+    let mut index_list = IndexList::new_empty();
     for (pixel_index, &pixel) in block.iter().enumerate() {
-        let blend = (pixel - c1) / (c0 - c1);
-        let blend7 = ((blend * 7.0 + BAYER_4_N[pixel_index]) as u8).min(7);
+        let (index_value, _, error) = palette.closest_order_dither(pixel_index, pixel);
 
-        let index = index_map[blend7 as usize];
-        set_pixel_index(&mut indexes, pixel_index, index);
-
-        let back = blend7 as f32 / 7.0 * (c0 - c1) + c1;
-        let error = pixel - back;
+        index_list.set(pixel_index, index_value);
         total_error += error * error;
     }
 
-    (indexes, total_error)
+    (index_list, total_error)
 }
-fn get_inter6_indexes_dither_ordered_diffused(block: &[f32; 16], c0: f32, c1: f32) -> (u64, f32) {
-    let index_map: [u8; 8] = [1, 7, 6, 5, 4, 3, 2, 0];
-
+fn get_inter6_indexes_dither_ordered_diffused(
+    block: &[f32; 16],
+    palette: Inter6Palette,
+) -> (IndexList, f32) {
     // Pass 1: Score all pixels by their error
-    let get_index_and_error = |value: f32| {
-        let blend = (value - c1) / (c0 - c1);
-        let blend7 = ((blend * 7.0 + 0.5) as u8).min(7);
-        let index = index_map[blend7 as usize];
-        let back = blend7 as f32 / 7.0 * (c0 - c1) + c1;
-        let error = value - back;
-        (index, error)
-    };
     #[derive(Clone, Copy)]
     struct Record {
         pixel_index: u8,
@@ -230,7 +185,7 @@ fn get_inter6_indexes_dither_ordered_diffused(block: &[f32; 16], c0: f32, c1: f3
         // go through the pixels in random order
         let pixel_index = BAYER_4[i];
         let value = block[pixel_index as usize];
-        let (index, error) = get_index_and_error(value);
+        let (index, _, error) = palette.closest(value);
         Record {
             pixel_index,
             index,
@@ -253,7 +208,7 @@ fn get_inter6_indexes_dither_ordered_diffused(block: &[f32; 16], c0: f32, c1: f3
     // Pass 3: Diffuse error with balancing
     // The basic idea here is that we want to trade positive with negative error
     let mut acc_error = 0.0;
-    let mut indexes = 0;
+    let mut index_list = IndexList::new_empty();
     let mut total_error = 0.0;
 
     let mut neg_index = 0;
@@ -267,13 +222,13 @@ fn get_inter6_indexes_dither_ordered_diffused(block: &[f32; 16], c0: f32, c1: f3
         if neg_error < pos_error {
             // Neg is closer to 0
             acc_error += neg.error;
-            set_pixel_index(&mut indexes, neg.pixel_index as usize, neg.index);
+            index_list.set(neg.pixel_index as usize, neg.index);
             neg_index += 1;
             total_error += neg.error * neg.error;
         } else {
             // Pos is closer to 0
             acc_error += pos.error;
-            set_pixel_index(&mut indexes, pos.pixel_index as usize, pos.index);
+            index_list.set(pos.pixel_index as usize, pos.index);
             pos_index += 1;
             total_error += pos.error * pos.error;
         }
@@ -289,18 +244,13 @@ fn get_inter6_indexes_dither_ordered_diffused(block: &[f32; 16], c0: f32, c1: f3
     for record in rest {
         let pixel_index = record.pixel_index as usize;
         let pixel = block[pixel_index];
-        let blend = (pixel - c1) / (c0 - c1);
-        let blend7 = ((blend * 7.0 + BAYER_4_N[pixel_index]) as u8).min(7);
+        let (index_value, _, error) = palette.closest_order_dither(pixel_index, pixel);
 
-        let index = index_map[blend7 as usize];
-        set_pixel_index(&mut indexes, pixel_index, index);
-
-        let back = blend7 as f32 / 7.0 * (c0 - c1) + c1;
-        let error = pixel - back;
+        index_list.set(pixel_index, index_value);
         total_error += error * error;
     }
 
-    (indexes, total_error)
+    (index_list, total_error)
 }
 
 fn compress_inter4(block: &[f32; 16], options: Bc4Options) -> ([u8; 8], f32) {
@@ -318,7 +268,11 @@ fn compress_inter4(block: &[f32; 16], options: Bc4Options) -> ([u8; 8], f32) {
     (min, max) = refine_endpoints(
         min,
         max,
-        move |(min, max)| get_inter4_error(block, min, max),
+        move |(min, max)| {
+            let palette = Inter4Palette::new(min, max);
+            // TODO: find a better error metric for dithered blocks
+            palette.block_closest_mse(block)
+        },
         |(min, max)| {
             let endpoints = EndPoints::new_inter4(min, max, options.snorm);
             (endpoints.c0_f, endpoints.c1_f)
@@ -326,80 +280,19 @@ fn compress_inter4(block: &[f32; 16], options: Bc4Options) -> ([u8; 8], f32) {
     );
 
     let endpoints = EndPoints::new_inter4(min, max, options.snorm);
-    let c0 = endpoints.c0_f;
-    let c1 = endpoints.c1_f;
-    let palette = create_inter4_palette(c0, c1);
+    let palette = Inter4Palette::from_endpoints(&endpoints);
 
     let (indexes, error) = if options.dither {
         get_indexes_dither_palette(block, palette)
     } else {
-        get_inter4_indexes(block, palette)
+        palette.block_closest(block)
     };
 
     (endpoints.with_indexes(indexes), error)
 }
-fn get_inter4_error(block: &[f32; 16], min: f32, max: f32) -> f32 {
-    let palette = create_inter4_palette(min, max);
 
-    let mut total_error = 0.0;
-    for &pixel in block {
-        total_error += palette
-            .iter()
-            .copied()
-            .map(|c| {
-                let error = pixel - c;
-                error * error
-            })
-            .reduce(|a, b| a.min(b))
-            .unwrap();
-    }
-    total_error
-}
-
-fn get_inter4_indexes(block: &[f32; 16], palette: [f32; 8]) -> (u64, f32) {
-    let mut total_error = 0.0;
-
-    let mut indexes = 0_u64;
-    for (pixel_index, &pixel) in block.iter().enumerate() {
-        // this handles the case where pixel is 0 or 1
-        let (mut index, mut min_error) = if pixel > 0.5 {
-            (7_u8, 1.0 - pixel)
-        } else {
-            (6_u8, pixel)
-        };
-
-        // for the rest, check the palette
-        #[allow(clippy::needless_range_loop)]
-        for i in 0..6 {
-            let error = (pixel - palette[i]).abs();
-            if error < min_error {
-                min_error = error;
-                index = i as u8;
-            }
-        }
-
-        set_pixel_index(&mut indexes, pixel_index, index);
-        total_error += min_error * min_error;
-    }
-
-    (indexes, total_error)
-}
-fn get_indexes_dither_palette(block: &[f32; 16], palette: [f32; 8]) -> (u64, f32) {
-    fn find_with_min_error(value: f32, palette: &[f32; 8]) -> (u8, f32) {
-        let mut index: u8 = 0;
-        let mut min_error = value - palette[0];
-        for i in 1..8 {
-            let error = value - palette[i];
-            if error.abs() < min_error.abs() {
-                min_error = error;
-                index = i as u8;
-            }
-        }
-        (index, min_error)
-    }
-
+fn get_indexes_dither_palette(block: &[f32; 16], palette: Inter4Palette) -> (IndexList, f32) {
     // Pass 1: Score all pixels by their error
-    let get_index_and_error = |value: f32| find_with_min_error(value, &palette);
     #[derive(Clone, Copy)]
     struct Record {
         pixel_index: u8,
@@ -410,7 +303,7 @@ fn get_indexes_dither_palette(block: &[f32; 16], palette: [f32; 8]) -> (u64, f32
         // go through the pixels in random order
         let pixel_index = BAYER_4[i];
         let value = block[pixel_index as usize];
-        let (index, error) = get_index_and_error(value);
+        let (index, _, error) = palette.closest(value);
         Record {
             pixel_index,
             index,
@@ -433,7 +326,7 @@ fn get_indexes_dither_palette(block: &[f32; 16], palette: [f32; 8]) -> (u64, f32
     // Pass 3: Diffuse error with balancing
     // The basic idea here is that we want to trade positive with negative error
     let mut acc_error = 0.0;
-    let mut indexes = 0;
+    let mut index_list = IndexList::new_empty();
     let mut total_error = 0.0;
 
     let mut neg_index = 0;
@@ -447,13 +340,13 @@ fn get_indexes_dither_palette(block: &[f32; 16], palette: [f32; 8]) -> (u64, f32
         if neg_error < pos_error {
             // Neg is closer to 0
             acc_error += neg.error;
-            set_pixel_index(&mut indexes, neg.pixel_index as usize, neg.index);
+            index_list.set(neg.pixel_index as usize, neg.index);
             neg_index += 1;
             total_error += neg.error * neg.error;
         } else {
             // Pos is closer to 0
             acc_error += pos.error;
-            set_pixel_index(&mut indexes, pos.pixel_index as usize, pos.index);
+            index_list.set(pos.pixel_index as usize, pos.index);
             pos_index += 1;
             total_error += pos.error * pos.error;
         }
@@ -478,33 +371,15 @@ fn get_indexes_dither_palette(block: &[f32; 16], palette: [f32; 8]) -> (u64, f32
         }
 
         let value = block[pixel_index as usize] + diffuse_error;
-        let (index, min_error) = get_index_and_error(value);
-        diffuse_error = min_error;
+        let (index, _, error) = palette.closest(value);
+        diffuse_error = error;
 
-        set_pixel_index(&mut indexes, pixel_index as usize, index);
+        index_list.set(pixel_index as usize, index);
 
-        total_error += min_error * min_error;
+        total_error += error * error;
     }
 
-    (indexes, total_error)
-}
-
-fn create_inter4_palette(c0: f32, c1: f32) -> [f32; 8] {
-    [
-        c0,
-        c1,
-        c0 * 0.8 + c1 * 0.2,
-        c0 * 0.6 + c1 * 0.4,
-        c0 * 0.4 + c1 * 0.6,
-        c0 * 0.2 + c1 * 0.8,
-        0.0,
-        1.0,
-    ]
-}
-fn set_pixel_index(indexes: &mut u64, pixel_index: usize, index: u8) {
-    debug_assert!(index < 8);
-    debug_assert!(pixel_index < 16);
-    *indexes |= (index as u64) << (pixel_index * 3);
+    (index_list, total_error)
 }
 
 struct EndPoints {
@@ -601,8 +476,8 @@ impl EndPoints {
         inter6
     }
 
-    fn with_indexes(&self, indexes: u64) -> [u8; 8] {
-        let index_bytes = indexes.to_le_bytes();
+    fn with_indexes(&self, indexes: IndexList) -> [u8; 8] {
+        let index_bytes = indexes.data.to_le_bytes();
 
         [
             self.c0,
@@ -614,5 +489,207 @@ impl EndPoints {
             index_bytes[4],
             index_bytes[5],
         ]
+    }
+}
+
+struct IndexList {
+    data: u64,
+}
+impl IndexList {
+    fn new_empty() -> Self {
+        Self { data: 0 }
+    }
+    fn new_all(value: u8) -> Self {
+        debug_assert!(value < 8);
+        const MASK: u64 = {
+            let mut mask: u64 = 0;
+            let mut i = 0;
+            while i < 16 {
+                mask |= 1 << (i * 3);
+                i += 1;
+            }
+            mask
+        };
+
+        Self {
+            data: (value as u64) * MASK,
+        }
+    }
+
+    fn get(&self, index: usize) -> u8 {
+        debug_assert!(index < 16);
+        ((self.data >> (index * 3)) & 0b111) as u8
+    }
+    fn set(&mut self, index: usize, value: u8) {
+        debug_assert!(index < 16);
+        debug_assert!(value < 8);
+        debug_assert!(self.get(index) == 0, "Cannot set an index twice.");
+        self.data |= (value as u64) << (index * 3);
+    }
+}
+
+trait Palette {
+    fn new(c0: f32, c1: f32) -> Self
+    where
+        Self: Sized;
+
+    /// Returns:
+    /// 0: The index value of the closest color in the palette
+    /// 1: The closest color in the palette
+    /// 2: `pixel - closest`, aka the (signed) error
+    fn closest(&self, pixel: f32) -> (u8, f32, f32);
+
+    /// Returns the square of the error between the pixel and the closest color
+    /// in the palette.
+    ///
+    /// Same as `self.closest(pixel).2.powi(2)`.
+    fn closest_error_sq(&self, pixel: f32) -> f32;
+
+    fn from_endpoints(endpoints: &EndPoints) -> Self
+    where
+        Self: Sized,
+    {
+        Self::new(endpoints.c0_f, endpoints.c1_f)
+    }
+
+    /// Returns the index list of the colors in the palette that together
+    /// minimize the MSE.
+    ///
+    /// Returns:
+    /// 0: The index list
+    /// 1: The total MSE of the block
+    ///
+    /// Note that the MSE is **NOT** normalized. In other words, the result is
+    /// 16x the actual MSE.
+    fn block_closest(&self, block: &[f32; 16]) -> (IndexList, f32) {
+        let mut total_error = 0.0;
+        let mut index_list = IndexList::new_empty();
+        for (pixel_index, pixel) in block.iter().copied().enumerate() {
+            let (index_value, _, error) = self.closest(pixel);
+
+            index_list.set(pixel_index, index_value);
+            total_error += error * error;
+        }
+
+        (index_list, total_error)
+    }
+
+    /// Returns the mean squared error of the block with the closest colors in
+    /// the palette.
+    ///
+    /// Same as `self.block_closest(block).1`.
+    fn block_closest_mse(&self, block: &[f32; 16]) -> f32 {
+        block
+            .iter()
+            .copied()
+            .map(|pixel| self.closest_error_sq(pixel))
+            .sum()
+    }
+}
+
+struct Inter6Palette {
+    c0: f32,
+    c1: f32,
+}
+impl Inter6Palette {
+    const INDEX_MAP: [u8; 8] = [1, 7, 6, 5, 4, 3, 2, 0];
+
+    /// Similar to `self.closest`, but uses ordered dithering.
+    ///
+    /// Returns:
+    /// 0: The index value of the closest color in the palette
+    /// 1: The closest color in the palette
+    /// 2: `pixel - closest`, aka the (signed) error
+    fn closest_order_dither(&self, pixel_index: usize, pixel: f32) -> (u8, f32, f32) {
+        debug_assert!(pixel_index < 16);
+
+        let blend = (pixel - self.c1) / (self.c0 - self.c1);
+        let blend7 = ((blend * 7.0 + BAYER_4_N[pixel_index]) as u8).min(7);
+
+        let index_value = Self::INDEX_MAP[blend7 as usize];
+        let closest = blend7 as f32 * (1.0 / 7.0) * (self.c0 - self.c1) + self.c1;
+        let error = pixel - closest;
+
+        (index_value, closest, error)
+    }
+}
+impl Palette for Inter6Palette {
+    fn new(c0: f32, c1: f32) -> Self {
+        Self { c0, c1 }
+    }
+
+    fn closest(&self, pixel: f32) -> (u8, f32, f32) {
+        let blend = (pixel - self.c1) / (self.c0 - self.c1);
+        let blend7 = ((blend * 7.0 + 0.5) as u8).min(7);
+
+        let index_value = Self::INDEX_MAP[blend7 as usize];
+        let closest = blend7 as f32 * (1.0 / 7.0) * (self.c0 - self.c1) + self.c1;
+        let error = pixel - closest;
+
+        (index_value, closest, error)
+    }
+    fn closest_error_sq(&self, pixel: f32) -> f32 {
+        let (_, _, error) = self.closest(pixel);
+        error * error
+    }
+}
+
+struct Inter4Palette {
+    colors: [f32; 8],
+}
+impl Palette for Inter4Palette {
+    fn new(c0: f32, c1: f32) -> Self {
+        Self {
+            colors: [
+                c0,
+                c1,
+                c0 * 0.8 + c1 * 0.2,
+                c0 * 0.6 + c1 * 0.4,
+                c0 * 0.4 + c1 * 0.6,
+                c0 * 0.2 + c1 * 0.8,
+                0.0,
+                1.0,
+            ],
+        }
+    }
+
+    fn closest(&self, pixel: f32) -> (u8, f32, f32) {
+        // this handles the case where pixel is 0 or 1
+        let (mut index_value, mut min_error) = if pixel >= 0.5 {
+            (7_u8, 1.0 - pixel)
+        } else {
+            (6_u8, pixel)
+        };
+
+        // for the rest, check the palette
+        #[allow(clippy::needless_range_loop)]
+        for i in 0..6 {
+            let error = pixel - self.colors[i];
+            if error.abs() < min_error.abs() {
+                min_error = error;
+                index_value = i as u8;
+            }
+        }
+
+        (index_value, self.colors[index_value as usize], min_error)
+    }
+
+    fn closest_error_sq(&self, pixel: f32) -> f32 {
+        // this handles the case where pixel is 0 or 1
+        let zero_one_error = pixel.min(1.0 - pixel);
+
+        let mut min_sq_error = zero_one_error * zero_one_error;
+
+        // for the rest, check the palette
+        #[allow(clippy::needless_range_loop)]
+        for i in 0..6 {
+            let mut error = pixel - self.colors[i];
+            error *= error;
+            if error < min_sq_error {
+                min_sq_error = error;
+            }
+        }
+
+        min_sq_error
     }
 }

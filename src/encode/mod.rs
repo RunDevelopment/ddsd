@@ -456,7 +456,7 @@ trait Encoder {
 }
 
 #[derive(Debug, Clone)]
-// #[non_exhaustive]
+#[non_exhaustive]
 pub struct EncodeOptions {
     pub dither: DitheredChannels,
 }

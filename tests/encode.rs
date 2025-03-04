@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use ddsd::*;
 use rand::Rng;
 use util::{test_data_dir, Image, WithPrecision};
@@ -248,43 +246,43 @@ fn encode_dither() {
 fn encode_measure_quality() {
     let base = &TestImage::from_file("base.png");
     let color_twirl = &TestImage::from_file("color-twirl.png");
-    let clovers_roughness = &TestImage::from_file("clovers-r.png");
-    let stone_height = &TestImage::from_file("stone-h.png");
-    let random = &TestImage::new_owned("random color", create_random_color_blocks());
+    let clovers_r = &TestImage::from_file("clovers-r.png");
+    let stone_h = &TestImage::from_file("stone-h.png");
+    let random = &TestImage::new("random color", create_random_color_blocks());
 
     #[derive(Clone)]
-    struct TestImage<'a> {
-        name: &'a str,
-        image: Cow<'a, Image<f32>>,
+    struct TestImage {
+        name: String,
+        image: Image<f32>,
     }
-    impl<'a> TestImage<'a> {
-        fn new(name: &'a str, image: &'a Image<f32>) -> Self {
+    impl TestImage {
+        fn new(name: &str, image: Image<f32>) -> Self {
             Self {
-                name,
-                image: Cow::Borrowed(image),
+                name: name.to_string(),
+                image,
             }
         }
-        fn new_owned(name: &'a str, image: Image<f32>) -> Self {
-            Self {
-                name,
-                image: Cow::Owned(image),
-            }
-        }
-        fn from_file(name: &'a str) -> Self {
+        fn from_file(name: &str) -> Self {
             let image = util::read_png_u8(&util::test_data_dir().join(name))
                 .unwrap()
                 .to_f32();
 
             Self {
-                name,
-                image: Cow::Owned(image),
+                name: name.to_string(),
+                image,
             }
         }
     }
     struct TestCase<'a> {
         format: EncodeFormat,
         options: Vec<(&'a str, EncodeOptions)>,
-        images: &'a [&'a TestImage<'a>],
+        images: &'a [&'a TestImage],
+    }
+
+    fn new_options(f: impl FnOnce(&mut EncodeOptions)) -> EncodeOptions {
+        let mut options = EncodeOptions::default();
+        f(&mut options);
+        options
     }
 
     let cases = [TestCase {
@@ -293,13 +291,12 @@ fn encode_measure_quality() {
             ("default", EncodeOptions::default()),
             (
                 "dither",
-                EncodeOptions {
-                    dither: DitheredChannels::All,
-                    ..Default::default()
-                },
+                new_options(|options| {
+                    options.dither = DitheredChannels::All;
+                }),
             ),
         ],
-        images: &[base, color_twirl, clovers_roughness, stone_height, random],
+        images: &[base, color_twirl, clovers_r, stone_h, random],
     }];
 
     let collect_info = |case: &TestCase| -> Result<String, Box<dyn std::error::Error>> {
@@ -317,7 +314,7 @@ fn encode_measure_quality() {
             }
             output.push_str(&format!(": {:?}\n", option));
         }
-        output.push_str("\n");
+        output.push('\n');
 
         let mut table =
             PrettyTable::from_header(&["", "", "", "↑PSNR", "↑PSNR blur", "↓Region error"]);
@@ -325,7 +322,7 @@ fn encode_measure_quality() {
         for image in case.images {
             table.add_empty_row();
 
-            let name = image.name;
+            let name = &image.name;
             let image = image.image.to_channels(case.format.channels());
             let mut name_mentioned = false;
             for (opt_name, options) in &options {
@@ -404,6 +401,7 @@ impl PrettyTable {
         &mut self.cells[y * self.width + x]
     }
 
+    #[allow(unused)]
     pub fn set(&mut self, x: usize, y: usize, value: impl Into<String>) {
         *self.get_mut(x, y) = value.into();
     }
