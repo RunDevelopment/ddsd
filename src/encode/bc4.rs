@@ -54,7 +54,85 @@ pub(crate) fn compress_bc4_block(mut block: [f32; 16], options: Bc4Options) -> [
     }
 }
 
-fn compress_inter6(block: &[f32; 16], min: f32, max: f32, options: Bc4Options) -> ([u8; 8], f32) {
+fn refine_endpoints(
+    mut min: f32,
+    mut max: f32,
+    mut compute_error: impl FnMut((f32, f32)) -> f32,
+    mut quantize: impl FnMut((f32, f32)) -> (f32, f32),
+) -> (f32, f32) {
+    // Step 1: Improve the endpoints with a local search
+    const STEP_DECAY: f32 = 0.5;
+    const MIN_STEP: f32 = 1. / 255. / 2.;
+    const INITIAL_PORTION: f32 = 0.15;
+    const _ITERATIONS: u32 = {
+        let mut count: u32 = 0;
+        let mut step = INITIAL_PORTION;
+        while step > MIN_STEP {
+            count += 1;
+            step *= STEP_DECAY;
+        }
+        count
+    };
+
+    let mut step = INITIAL_PORTION * (max - min);
+    let mut error = compute_error((min, max));
+    while step > MIN_STEP {
+        for (delta_min, delta_max) in [(step, 0.0), (0.0, step), (-step, 0.0), (0.0, -step)] {
+            let new_min = (min + delta_min).clamp(0.0, 1.0);
+            let new_max = (max + delta_max).clamp(0.0, 1.0);
+            if new_min < new_max {
+                let new_error = compute_error((new_min, new_max));
+                if new_error < error {
+                    error = new_error;
+                    min = new_min;
+                    max = new_max;
+                }
+            }
+        }
+        step *= STEP_DECAY;
+    }
+
+    // Step 2: Quantize the endpoints and select the best
+    const QUANT_STEP: f32 = 1. / 254. + 0.0001;
+    error = compute_error(quantize((min, max)));
+    for pair in [
+        (min + QUANT_STEP, max),
+        (min, max - QUANT_STEP),
+        (min + QUANT_STEP, max - QUANT_STEP),
+    ] {
+        let new_error = compute_error(quantize(pair));
+        if new_error < error {
+            error = new_error;
+            min = pair.0;
+            max = pair.1;
+        }
+    }
+
+    (min, max)
+}
+
+fn compress_inter6(
+    block: &[f32; 16],
+    mut min: f32,
+    mut max: f32,
+    options: Bc4Options,
+) -> ([u8; 8], f32) {
+    (min, max) = refine_endpoints(
+        min,
+        max,
+        move |(min, max)| {
+            if options.dither {
+                get_inter6_error_dither(block, min, max)
+            } else {
+                get_inter6_error(block, min, max)
+            }
+        },
+        move |(min, max)| {
+            let endpoints = EndPoints::new_inter6(min, max, options.snorm);
+            (endpoints.c0_f, endpoints.c1_f)
+        },
+    );
+
     let endpoints = EndPoints::new_inter6(min, max, options.snorm);
 
     let (indexes, error) = if options.dither {
@@ -66,6 +144,21 @@ fn compress_inter6(block: &[f32; 16], min: f32, max: f32, options: Bc4Options) -
     (endpoints.with_indexes(indexes), error)
 }
 
+fn get_inter6_error(block: &[f32; 16], c0: f32, c1: f32) -> f32 {
+    let mut total_error = 0.0;
+    for pixel in block {
+        let blend = (pixel - c1) / (c0 - c1);
+        let blend7 = (blend * 7.0 + 0.5).min(7.0) as u8;
+        let back = blend7 as f32 * (1.0 / 7.0) * (c0 - c1) + c1;
+        let error = pixel - back;
+        total_error += error * error;
+    }
+    total_error
+}
+fn get_inter6_error_dither(block: &[f32; 16], c0: f32, c1: f32) -> f32 {
+    get_inter6_error(block, c0, c1)
+}
+
 fn get_inter6_indexes(block: &[f32; 16], c0: f32, c1: f32) -> (u64, f32) {
     let index_map: [u8; 8] = [1, 7, 6, 5, 4, 3, 2, 0];
 
@@ -73,14 +166,6 @@ fn get_inter6_indexes(block: &[f32; 16], c0: f32, c1: f32) -> (u64, f32) {
     let mut indexes = 0_u64;
     for (pixel_index, &pixel) in block.iter().enumerate() {
         let blend = (pixel - c1) / (c0 - c1);
-        debug_assert!(
-            (-0.001..=1.001).contains(&blend),
-            "blend {} for pixel {} c0 {} c1 {}",
-            blend,
-            pixel,
-            c0,
-            c1
-        );
         let blend7 = ((blend * 7.0 + 0.5) as u8).min(7);
 
         let index = index_map[blend7 as usize];
@@ -111,14 +196,6 @@ fn get_inter6_indexes_dither_ordered(block: &[f32; 16], c0: f32, c1: f32) -> (u6
     let mut indexes = 0_u64;
     for (pixel_index, &pixel) in block.iter().enumerate() {
         let blend = (pixel - c1) / (c0 - c1);
-        debug_assert!(
-            (-0.001..=1.001).contains(&blend),
-            "blend {} for pixel {} c0 {} c1 {}",
-            blend,
-            pixel,
-            c0,
-            c1
-        );
         let blend7 = ((blend * 7.0 + BAYER_4_N[pixel_index]) as u8).min(7);
 
         let index = index_map[blend7 as usize];
@@ -238,19 +315,20 @@ fn compress_inter4(block: &[f32; 16], options: Bc4Options) -> ([u8; 8], f32) {
         }
     }
 
+    (min, max) = refine_endpoints(
+        min,
+        max,
+        move |(min, max)| get_inter4_error(block, min, max),
+        |(min, max)| {
+            let endpoints = EndPoints::new_inter4(min, max, options.snorm);
+            (endpoints.c0_f, endpoints.c1_f)
+        },
+    );
+
     let endpoints = EndPoints::new_inter4(min, max, options.snorm);
     let c0 = endpoints.c0_f;
     let c1 = endpoints.c1_f;
-    let palette = [
-        c0,
-        c1,
-        c0 * 0.8 + c1 * 0.2,
-        c0 * 0.6 + c1 * 0.4,
-        c0 * 0.4 + c1 * 0.6,
-        c0 * 0.2 + c1 * 0.8,
-        0.0,
-        1.0,
-    ];
+    let palette = create_inter4_palette(c0, c1);
 
     let (indexes, error) = if options.dither {
         get_indexes_dither_palette(block, palette)
@@ -259,6 +337,23 @@ fn compress_inter4(block: &[f32; 16], options: Bc4Options) -> ([u8; 8], f32) {
     };
 
     (endpoints.with_indexes(indexes), error)
+}
+fn get_inter4_error(block: &[f32; 16], min: f32, max: f32) -> f32 {
+    let palette = create_inter4_palette(min, max);
+
+    let mut total_error = 0.0;
+    for &pixel in block {
+        total_error += palette
+            .iter()
+            .copied()
+            .map(|c| {
+                let error = pixel - c;
+                error * error
+            })
+            .reduce(|a, b| a.min(b))
+            .unwrap();
+    }
+    total_error
 }
 
 fn get_inter4_indexes(block: &[f32; 16], palette: [f32; 8]) -> (u64, f32) {
@@ -304,9 +399,7 @@ fn get_indexes_dither_palette(block: &[f32; 16], palette: [f32; 8]) -> (u64, f32
     }
 
     // Pass 1: Score all pixels by their error
-    let get_index_and_error = |value: f32| {
-        find_with_min_error(value, &palette)
-    };
+    let get_index_and_error = |value: f32| find_with_min_error(value, &palette);
     #[derive(Clone, Copy)]
     struct Record {
         pixel_index: u8,
@@ -396,6 +489,18 @@ fn get_indexes_dither_palette(block: &[f32; 16], palette: [f32; 8]) -> (u64, f32
     (indexes, total_error)
 }
 
+fn create_inter4_palette(c0: f32, c1: f32) -> [f32; 8] {
+    [
+        c0,
+        c1,
+        c0 * 0.8 + c1 * 0.2,
+        c0 * 0.6 + c1 * 0.4,
+        c0 * 0.4 + c1 * 0.6,
+        c0 * 0.2 + c1 * 0.8,
+        0.0,
+        1.0,
+    ]
+}
 fn set_pixel_index(indexes: &mut u64, pixel_index: usize, index: u8) {
     debug_assert!(index < 8);
     debug_assert!(pixel_index < 16);
