@@ -5,19 +5,19 @@ BC4_UNORM
                                  ↑PSNR    ↑PSNR blur  ↓Region error
     
     base.png         default  L  40.9007  53.5509     0.09556
-                     dither   L  40.3684  53.2726     0.08968
+                     dither   L  40.2748  54.8627     0.08047
     
     color-twirl.png  default  L  57.0444  68.3564     0.05327
-                     dither   L  56.3861  68.8295     0.04010
+                     dither   L  55.9328  71.4270     0.02403
     
     clovers-r.png    default  L  39.6725  53.1162     0.14922
-                     dither   L  39.2119  51.9241     0.25423
+                     dither   L  38.9453  53.7982     0.15514
     
     stone-h.png      default  L  48.2864  61.0011     0.11904
-                     dither   L  47.7048  60.3932     0.11635
+                     dither   L  47.4700  62.1952     0.07799
     
     random color     default  L  75.7824  78.5184     0.03587
-                     dither   L  72.6736  89.5884     0.00459
+                     dither   L  73.1988  91.2470     0.00437
 
 
 

@@ -1,5 +1,3 @@
-use core::error;
-
 use crate::{n8, s8};
 
 #[derive(Debug, Clone, Copy)]
@@ -55,6 +53,25 @@ pub(crate) fn compress_bc4_block(mut block: [f32; 16], options: Bc4Options) -> [
         inter4
     }
 }
+
+// fn single_color(value: f32, options: Bc4Options) -> [u8; 8] {
+//     // See if the closest encoded value is good enough. This doesn't improve
+//     // quality, but it does make the output more compressable for gzip.
+//     let closest = EndPoints::new_closest(value, options.snorm);
+//     if (closest.c0_f - value).abs() < BC4_EPSILON {
+//         return closest.with_indexes(IndexList::new_all(0));
+//     }
+
+//     // inter6 is typically optimal for single colors
+//     let endpoints = EndPoints::new_inter6(value, value, options.snorm);
+//     let (indexes, _) = if options.dither {
+//         get_inter6_indexes_dither_ordered_diffused(block, endpoints.c0_f, endpoints.c1_f)
+//     } else {
+//         get_inter6_indexes(block, endpoints.c0_f, endpoints.c1_f)
+//     };
+
+//     endpoints.with_indexes(indexes)
+// }
 
 fn refine_endpoints(
     mut min: f32,
@@ -137,7 +154,7 @@ fn compress_inter6(
     let palette = Inter6Palette::from_endpoints(&endpoints);
 
     let (indexes, error) = if options.dither {
-        get_inter6_indexes_dither_ordered_diffused(block, palette)
+        palette.block_dither(block)
     } else {
         palette.block_closest(block)
     };
@@ -162,88 +179,6 @@ fn get_inter6_indexes_dither_ordered(
     let mut total_error = 0.0;
     let mut index_list = IndexList::new_empty();
     for (pixel_index, &pixel) in block.iter().enumerate() {
-        let (index_value, _, error) = palette.closest_order_dither(pixel_index, pixel);
-
-        index_list.set(pixel_index, index_value);
-        total_error += error * error;
-    }
-
-    (index_list, total_error)
-}
-fn get_inter6_indexes_dither_ordered_diffused(
-    block: &[f32; 16],
-    palette: Inter6Palette,
-) -> (IndexList, f32) {
-    // Pass 1: Score all pixels by their error
-    #[derive(Clone, Copy)]
-    struct Record {
-        pixel_index: u8,
-        index: u8,
-        error: f32,
-    }
-    let mut records: [Record; 16] = std::array::from_fn(|i| {
-        // go through the pixels in random order
-        let pixel_index = BAYER_4[i];
-        let value = block[pixel_index as usize];
-        let (index, _, error) = palette.closest(value);
-        Record {
-            pixel_index,
-            index,
-            error,
-        }
-    });
-
-    // Pass 2: Separate pixels by negative and positive error
-    records.sort_unstable_by(|a, b| {
-        a.error
-            .partial_cmp(&b.error)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
-
-    let neg_count = records.iter().take_while(|r| r.error < 0.0).count();
-    let (negative, positive) = records.split_at_mut(neg_count);
-    negative.reverse();
-    // Both negative and positive are sorted by ascending absolute error
-
-    // Pass 3: Diffuse error with balancing
-    // The basic idea here is that we want to trade positive with negative error
-    let mut acc_error = 0.0;
-    let mut index_list = IndexList::new_empty();
-    let mut total_error = 0.0;
-
-    let mut neg_index = 0;
-    let mut pos_index = 0;
-    while neg_index < negative.len() && pos_index < positive.len() {
-        let neg = negative[neg_index];
-        let pos = positive[pos_index];
-
-        let neg_error = (neg.error + acc_error).abs();
-        let pos_error = (pos.error + acc_error).abs();
-        if neg_error < pos_error {
-            // Neg is closer to 0
-            acc_error += neg.error;
-            index_list.set(neg.pixel_index as usize, neg.index);
-            neg_index += 1;
-            total_error += neg.error * neg.error;
-        } else {
-            // Pos is closer to 0
-            acc_error += pos.error;
-            index_list.set(pos.pixel_index as usize, pos.index);
-            pos_index += 1;
-            total_error += pos.error * pos.error;
-        }
-    }
-
-    // Pass 4: Diffuse error
-    let rest = if neg_index < negative.len() {
-        &negative[neg_index..]
-    } else {
-        &positive[pos_index..]
-    };
-
-    for record in rest {
-        let pixel_index = record.pixel_index as usize;
-        let pixel = block[pixel_index];
         let (index_value, _, error) = palette.closest_order_dither(pixel_index, pixel);
 
         index_list.set(pixel_index, index_value);
@@ -283,103 +218,12 @@ fn compress_inter4(block: &[f32; 16], options: Bc4Options) -> ([u8; 8], f32) {
     let palette = Inter4Palette::from_endpoints(&endpoints);
 
     let (indexes, error) = if options.dither {
-        get_indexes_dither_palette(block, palette)
+        palette.block_dither(block)
     } else {
         palette.block_closest(block)
     };
 
     (endpoints.with_indexes(indexes), error)
-}
-
-fn get_indexes_dither_palette(block: &[f32; 16], palette: Inter4Palette) -> (IndexList, f32) {
-    // Pass 1: Score all pixels by their error
-    #[derive(Clone, Copy)]
-    struct Record {
-        pixel_index: u8,
-        index: u8,
-        error: f32,
-    }
-    let mut records: [Record; 16] = std::array::from_fn(|i| {
-        // go through the pixels in random order
-        let pixel_index = BAYER_4[i];
-        let value = block[pixel_index as usize];
-        let (index, _, error) = palette.closest(value);
-        Record {
-            pixel_index,
-            index,
-            error,
-        }
-    });
-
-    // Pass 2: Separate pixels by negative and positive error
-    records.sort_unstable_by(|a, b| {
-        a.error
-            .partial_cmp(&b.error)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
-
-    let neg_count = records.iter().take_while(|r| r.error < 0.0).count();
-    let (negative, positive) = records.split_at_mut(neg_count);
-    negative.reverse();
-    // Both negative and positive are sorted by ascending absolute error
-
-    // Pass 3: Diffuse error with balancing
-    // The basic idea here is that we want to trade positive with negative error
-    let mut acc_error = 0.0;
-    let mut index_list = IndexList::new_empty();
-    let mut total_error = 0.0;
-
-    let mut neg_index = 0;
-    let mut pos_index = 0;
-    while neg_index < negative.len() && pos_index < positive.len() {
-        let neg = negative[neg_index];
-        let pos = positive[pos_index];
-
-        let neg_error = (neg.error + acc_error).abs();
-        let pos_error = (pos.error + acc_error).abs();
-        if neg_error < pos_error {
-            // Neg is closer to 0
-            acc_error += neg.error;
-            index_list.set(neg.pixel_index as usize, neg.index);
-            neg_index += 1;
-            total_error += neg.error * neg.error;
-        } else {
-            // Pos is closer to 0
-            acc_error += pos.error;
-            index_list.set(pos.pixel_index as usize, pos.index);
-            pos_index += 1;
-            total_error += pos.error * pos.error;
-        }
-    }
-
-    // Pass 4: Diffuse error
-    let rest = if neg_index < negative.len() {
-        &negative[neg_index..]
-    } else {
-        &positive[pos_index..]
-    };
-    let mut processed: u16 = 0;
-    for record in rest {
-        processed |= 1 << record.pixel_index;
-    }
-
-    const HILBERT: [u8; 16] = [0, 1, 5, 4, 8, 12, 13, 9, 10, 14, 15, 11, 7, 6, 2, 3];
-    let mut diffuse_error = acc_error;
-    for pixel_index in HILBERT {
-        if processed & (1 << pixel_index) == 0 {
-            continue;
-        }
-
-        let value = block[pixel_index as usize] + diffuse_error;
-        let (index, _, error) = palette.closest(value);
-        diffuse_error = error;
-
-        index_list.set(pixel_index as usize, index);
-
-        total_error += error * error;
-    }
-
-    (index_list, total_error)
 }
 
 struct EndPoints {
@@ -584,6 +428,64 @@ trait Palette {
             .copied()
             .map(|pixel| self.closest_error_sq(pixel))
             .sum()
+    }
+
+    fn block_dither(&self, block: &[f32; 16]) -> (IndexList, f32) {
+        let mut index_list = IndexList::new_empty();
+        let mut total_error = 0.0;
+
+        // This implements a modified version of the Floyd-Steinberg dithering
+        let mut error_map = [0_f32; 16];
+        for y in 0..4 {
+            for x in 0..4 {
+                let pixel_index = y * 4 + x;
+                let pixel = block[pixel_index] + error_map[pixel_index];
+                let (index_value, _, error) = self.closest(pixel);
+                index_list.set(pixel_index, index_value);
+                total_error += error * error;
+
+                // diffuse the error
+                let mut weight_right = 7. / 16.;
+                let mut weight_next_left = 3. / 16.;
+                let mut weight_next_middle = 5. / 16.;
+                let mut weight_next_right = 1. / 16.;
+                // adjust the weights, so we lose as little of the error as possible
+                if x == 0 {
+                    weight_next_left = 0.0;
+                    weight_next_middle = 6. / 16.;
+                    weight_next_right = 2. / 16.;
+                }
+                if x == 3 {
+                    // we lose 25% of the error, per pixel in the last column
+                    weight_right = 0.0;
+                    weight_next_left = 5. / 16.;
+                    weight_next_middle = 7. / 16.;
+                    weight_next_right = 0.0;
+                }
+                if y == 3 {
+                    // we lose 50% of the error, per pixel in the last row
+                    weight_right = 8. / 16.;
+                    weight_next_left = 0.0;
+                    weight_next_middle = 0.0;
+                    weight_next_right = 0.0;
+                }
+
+                if x < 3 {
+                    error_map[pixel_index + 1] += error * weight_right;
+                }
+                if y < 3 {
+                    if x > 0 {
+                        error_map[pixel_index + 4 - 1] += error * weight_next_left;
+                    }
+                    error_map[pixel_index + 4] += error * weight_next_middle;
+                    if x < 3 {
+                        error_map[pixel_index + 4 + 1] += error * weight_next_right;
+                    }
+                }
+            }
+        }
+
+        (index_list, total_error)
     }
 }
 
