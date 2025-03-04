@@ -1,74 +1,23 @@
 BC4_UNORM
-EncodeOptions {
-    dither: None,
-}
+    default: EncodeOptions { dither: None }
+    dither: EncodeOptions { dither: All }
 
-    base.png
-                    L
-        ↑PSNR       38.2275
-        ↑PSNR blur  47.1018
-        ↓Region     0.45011
-
-    color-twirl.png
-                    L
-        ↑PSNR       55.6501
-        ↑PSNR blur  65.2186
-        ↓Region     0.07899
-
-    clovers-roughness.png
-                    L
-        ↑PSNR       37.9419
-        ↑PSNR blur  49.1589
-        ↓Region     0.56392
-
-    stone-height.png
-                    L
-        ↑PSNR       46.8071
-        ↑PSNR blur  57.4563
-        ↓Region     0.22309
-
-    random single color
-                    L
-        ↑PSNR       75.7824
-        ↑PSNR blur  78.5184
-        ↓Region     0.03587
-
-
-
-BC4_UNORM
-EncodeOptions {
-    dither: All,
-}
-
-    base.png
-                    L
-        ↑PSNR       36.5306
-        ↑PSNR blur  49.8821
-        ↓Region     0.18361
-
-    color-twirl.png
-                    L
-        ↑PSNR       55.0715
-        ↑PSNR blur  68.0152
-        ↓Region     0.04631
-
-    clovers-roughness.png
-                    L
-        ↑PSNR       37.1317
-        ↑PSNR blur  49.8526
-        ↓Region     0.37497
-
-    stone-height.png
-                    L
-        ↑PSNR       46.1364
-        ↑PSNR blur  58.7532
-        ↓Region     0.14358
-
-    random single color
-                    L
-        ↑PSNR       72.7830
-        ↑PSNR blur  89.8534
-        ↓Region     0.00450
+                                 ↑PSNR    ↑PSNR blur  ↓Region error
+    
+    base.png         default  L  38.2275  47.1018     0.45011
+                     dither   L  36.5306  49.8821     0.18361
+    
+    color-twirl.png  default  L  55.6501  65.2186     0.07899
+                     dither   L  55.0715  68.0152     0.04631
+    
+    clovers-r.png    default  L  37.9419  49.1589     0.56392
+                     dither   L  37.1317  49.8526     0.37497
+    
+    stone-h.png      default  L  46.8071  57.4563     0.22309
+                     dither   L  46.1364  58.7532     0.14358
+    
+    random color     default  L  75.7824  78.5184     0.03587
+                     dither   L  72.7830  89.8534     0.00450
 
 
 

@@ -248,9 +248,9 @@ fn encode_dither() {
 fn encode_measure_quality() {
     let base = &TestImage::from_file("base.png");
     let color_twirl = &TestImage::from_file("color-twirl.png");
-    let clovers_roughness = &TestImage::from_file("clovers-roughness.png");
-    let stone_height = &TestImage::from_file("stone-height.png");
-    let random = &TestImage::new_owned("random single color", create_random_color_blocks());
+    let clovers_roughness = &TestImage::from_file("clovers-r.png");
+    let stone_height = &TestImage::from_file("stone-h.png");
+    let random = &TestImage::new_owned("random color", create_random_color_blocks());
 
     #[derive(Clone)]
     struct TestImage<'a> {
@@ -283,56 +283,79 @@ fn encode_measure_quality() {
     }
     struct TestCase<'a> {
         format: EncodeFormat,
-        options: EncodeOptions,
+        options: Vec<(&'a str, EncodeOptions)>,
         images: &'a [&'a TestImage<'a>],
     }
 
-    let cases = [
-        TestCase {
-            format: EncodeFormat::BC4_UNORM,
-            options: EncodeOptions::default(),
-            images: &[base, color_twirl, clovers_roughness, stone_height, random],
-        },
-        TestCase {
-            format: EncodeFormat::BC4_UNORM,
-            options: EncodeOptions {
-                dither: DitheredChannels::All,
-                ..Default::default()
-            },
-            images: &[base, color_twirl, clovers_roughness, stone_height, random],
-        },
-    ];
+    let cases = [TestCase {
+        format: EncodeFormat::BC4_UNORM,
+        options: vec![
+            ("default", EncodeOptions::default()),
+            (
+                "dither",
+                EncodeOptions {
+                    dither: DitheredChannels::All,
+                    ..Default::default()
+                },
+            ),
+        ],
+        images: &[base, color_twirl, clovers_roughness, stone_height, random],
+    }];
 
     let collect_info = |case: &TestCase| -> Result<String, Box<dyn std::error::Error>> {
         let mut output = String::new();
 
-        for image in case.images {
-            output.push_str(&format!("\n{}\n", image.name));
-
-            let image = image.image.to_channels(case.format.channels());
-            let encoded = encode_decode(case.format, &case.options, &image);
-            let metrics = util::measure_compression_quality(&image, &encoded);
-
-            let mut table = PrettyTable::new(metrics.len() + 1, 4);
-            table.set(0, 1, "    ↑PSNR");
-            table.set(0, 2, "    ↑PSNR blur");
-            table.set(0, 3, "    ↓Region");
-            for (i, m) in metrics.iter().enumerate() {
-                table.set(i + 1, 0, format!("{:?}", m.channel));
-                table.set(i + 1, 1, format!("{:.4}", m.psnr));
-                table.set(i + 1, 2, format!("{:.4}", m.psnr_blur));
-                table.set(i + 1, 3, format!("{:.5}", m.region_error * 255.));
+        let mut options = case.options.clone();
+        if options.is_empty() {
+            options.push(("", EncodeOptions::default()));
+        }
+        for (name, option) in &options {
+            if name.is_empty() {
+                output.push_str("Default options");
+            } else {
+                output.push_str(name);
             }
-            table.print(&mut output);
+            output.push_str(&format!(": {:?}\n", option));
+        }
+        output.push_str("\n");
+
+        let mut table =
+            PrettyTable::from_header(&["", "", "", "↑PSNR", "↑PSNR blur", "↓Region error"]);
+
+        for image in case.images {
+            table.add_empty_row();
+
+            let name = image.name;
+            let image = image.image.to_channels(case.format.channels());
+            let mut name_mentioned = false;
+            for (opt_name, options) in &options {
+                let encoded = encode_decode(case.format, options, &image);
+                let metrics = util::measure_compression_quality(&image, &encoded);
+                for m in metrics {
+                    table.add_row(&[
+                        if name_mentioned {
+                            String::new()
+                        } else {
+                            name.to_string()
+                        },
+                        opt_name.to_string(),
+                        format!("{:?}", m.channel),
+                        format!("{:.4}", m.psnr),
+                        format!("{:.4}", m.psnr_blur),
+                        format!("{:.5}", m.region_error * 255.),
+                    ]);
+                    name_mentioned = true;
+                }
+            }
         }
 
+        table.print(&mut output);
         Ok(output)
     };
 
     let mut output = String::new();
     for case in cases {
         output.push_str(&format!("{:?}\n", case.format));
-        output.push_str(&format!("{:#?}\n", case.options));
 
         let info = match collect_info(&case) {
             Ok(info) => info,
@@ -361,12 +384,17 @@ struct PrettyTable {
     height: usize,
 }
 impl PrettyTable {
-    pub fn new(width: usize, height: usize) -> Self {
+    pub fn new_empty(width: usize, height: usize) -> Self {
         Self {
             cells: vec![String::new(); width * height],
             width,
             height,
         }
+    }
+    pub fn from_header<S: AsRef<str>>(header: &[S]) -> Self {
+        let mut table = Self::new_empty(header.len(), 0);
+        table.add_row(header);
+        table
     }
 
     pub fn get(&self, x: usize, y: usize) -> &str {
@@ -378,6 +406,21 @@ impl PrettyTable {
 
     pub fn set(&mut self, x: usize, y: usize, value: impl Into<String>) {
         *self.get_mut(x, y) = value.into();
+    }
+
+    #[track_caller]
+    pub fn add_row<S: AsRef<str>>(&mut self, row: &[S]) {
+        assert!(row.len() == self.width);
+        self.height += 1;
+        for cell in row {
+            self.cells.push(cell.as_ref().to_string());
+        }
+    }
+    pub fn add_empty_row(&mut self) {
+        self.height += 1;
+        for _ in 0..self.width {
+            self.cells.push(String::new());
+        }
     }
 
     pub fn print(&self, out: &mut String) {
