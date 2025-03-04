@@ -10,8 +10,8 @@ BC4_UNORM
     color-twirl.png  default  L  57.0444  68.3564     0.05327
                      dither   L  56.3879  68.8335     0.04007
     
-    clovers-r.png    default  L  39.4402  52.8802     0.15031
-                     dither   L  39.0073  51.8760     0.25554
+    clovers-r.png    default  L  39.6725  53.1162     0.14922
+                     dither   L  39.2151  51.9382     0.25051
     
     stone-h.png      default  L  48.2864  61.0011     0.11904
                      dither   L  47.7046  60.3929     0.11633
