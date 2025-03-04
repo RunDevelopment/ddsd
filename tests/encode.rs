@@ -247,7 +247,9 @@ fn encode_dither() {
 #[test]
 fn encode_measure_quality() {
     let base = &TestImage::from_file("base.png");
-    let twirl = &TestImage::from_file("color-twirl.png");
+    let color_twirl = &TestImage::from_file("color-twirl.png");
+    let clovers_roughness = &TestImage::from_file("clovers-roughness.png");
+    let stone_height = &TestImage::from_file("stone-height.png");
     let random = &TestImage::new_owned("random single color", create_random_color_blocks());
 
     #[derive(Clone)]
@@ -289,7 +291,7 @@ fn encode_measure_quality() {
         TestCase {
             format: EncodeFormat::BC4_UNORM,
             options: EncodeOptions::default(),
-            images: &[base, twirl, random],
+            images: &[base, color_twirl, clovers_roughness, stone_height, random],
         },
         TestCase {
             format: EncodeFormat::BC4_UNORM,
@@ -297,7 +299,7 @@ fn encode_measure_quality() {
                 dither: DitheredChannels::All,
                 ..Default::default()
             },
-            images: &[base, twirl, random],
+            images: &[base, color_twirl, clovers_roughness, stone_height, random],
         },
     ];
 

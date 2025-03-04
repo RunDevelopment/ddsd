@@ -15,6 +15,18 @@ EncodeOptions {
         ↑PSNR blur  65.2186
         ↓Region     0.07899
 
+    clovers-roughness.png
+                    L
+        ↑PSNR       37.9419
+        ↑PSNR blur  49.1589
+        ↓Region     0.56392
+
+    stone-height.png
+                    L
+        ↑PSNR       46.8071
+        ↑PSNR blur  57.4563
+        ↓Region     0.22309
+
     random single color
                     L
         ↑PSNR       75.7824
@@ -39,6 +51,18 @@ EncodeOptions {
         ↑PSNR       55.0715
         ↑PSNR blur  68.0152
         ↓Region     0.04631
+
+    clovers-roughness.png
+                    L
+        ↑PSNR       37.1317
+        ↑PSNR blur  49.8526
+        ↓Region     0.37497
+
+    stone-height.png
+                    L
+        ↑PSNR       46.1364
+        ↑PSNR blur  58.7532
+        ↓Region     0.14358
 
     random single color
                     L
