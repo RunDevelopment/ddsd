@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use ddsd::*;
 use rand::Rng;
 use util::{test_data_dir, Image, WithPrecision};
@@ -244,31 +246,43 @@ fn encode_dither() {
 
 #[test]
 fn encode_measure_quality() {
-    let base = util::read_png_u8(&util::test_data_dir().join("base.png"))
-        .unwrap()
-        .to_f32();
-    let base = TestImage::new("base.png", &base);
-    let twirl = util::read_png_u8(&util::test_data_dir().join("color-twirl.png"))
-        .unwrap()
-        .to_f32();
-    let twirl = TestImage::new("twirl.png", &twirl);
-    let random = create_random_color_blocks();
-    let random = TestImage::new("random single color", &random);
+    let base = &TestImage::from_file("base.png");
+    let twirl = &TestImage::from_file("color-twirl.png");
+    let random = &TestImage::new_owned("random single color", create_random_color_blocks());
 
-    #[derive(Clone, Copy)]
+    #[derive(Clone)]
     struct TestImage<'a> {
         name: &'a str,
-        image: &'a Image<f32>,
+        image: Cow<'a, Image<f32>>,
     }
     impl<'a> TestImage<'a> {
         fn new(name: &'a str, image: &'a Image<f32>) -> Self {
-            Self { name, image }
+            Self {
+                name,
+                image: Cow::Borrowed(image),
+            }
+        }
+        fn new_owned(name: &'a str, image: Image<f32>) -> Self {
+            Self {
+                name,
+                image: Cow::Owned(image),
+            }
+        }
+        fn from_file(name: &'a str) -> Self {
+            let image = util::read_png_u8(&util::test_data_dir().join(name))
+                .unwrap()
+                .to_f32();
+
+            Self {
+                name,
+                image: Cow::Owned(image),
+            }
         }
     }
     struct TestCase<'a> {
         format: EncodeFormat,
         options: EncodeOptions,
-        images: &'a [TestImage<'a>],
+        images: &'a [&'a TestImage<'a>],
     }
 
     let cases = [

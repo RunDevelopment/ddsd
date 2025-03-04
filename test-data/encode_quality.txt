@@ -5,11 +5,11 @@ EncodeOptions {
 
     base.png
                     L
-        ↑PSNR       36.5900
-        ↑PSNR blur  44.4668
-        ↓Region     0.74412
+        ↑PSNR       38.2275
+        ↑PSNR blur  47.1018
+        ↓Region     0.45011
 
-    twirl.png
+    color-twirl.png
                     L
         ↑PSNR       55.6501
         ↑PSNR blur  65.2186
@@ -30,15 +30,15 @@ EncodeOptions {
 
     base.png
                     L
-        ↑PSNR       34.5378
-        ↑PSNR blur  47.1438
-        ↓Region     0.44587
+        ↑PSNR       36.5306
+        ↑PSNR blur  49.8821
+        ↓Region     0.18361
 
-    twirl.png
+    color-twirl.png
                     L
-        ↑PSNR       55.0798
-        ↑PSNR blur  67.8072
-        ↓Region     0.04657
+        ↑PSNR       55.0715
+        ↑PSNR blur  68.0152
+        ↓Region     0.04631
 
     random single color
                     L
