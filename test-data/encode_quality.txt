@@ -16,8 +16,8 @@ BC4_UNORM
     stone-h.png      default  L  48.2864  61.0011     0.11904
                      dither   L  47.4700  62.1952     0.07799
     
-    random color     default  L  75.7824  78.5184     0.03587
-                     dither   L  73.1988  91.2470     0.00437
+    random color     default  L  77.5573  80.2664     0.02777
+                     dither   L  73.2562  91.5346     0.00424
 
 
 

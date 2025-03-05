@@ -27,16 +27,11 @@ pub(crate) fn compress_bc4_block(mut block: [f32; 16], options: Bc4Options) -> [
 
     // single color
     if diff < BC4_EPSILON {
-        // See if the closest encoded value is good enough. This doesn't improve
-        // quality, but it does make the output more compressable for gzip.
         let value = (min + max) * 0.5;
-        let closest = EndPoints::new_closest(value, options.snorm);
-        if (closest.c0_f - value).abs() < BC4_EPSILON {
-            return closest.with_indexes(IndexList::new_all(0));
-        }
+        return single_color(value, options);
     }
 
-    // If the colors are far away from 0 and 1, then inter6 is always better
+    // If the colors are far away from 0 and 1, then inter6 should always be better
     // than inter4
     const INTER6_THRESHOLD: f32 = 1. / 7.;
     if 0. < min - diff * INTER6_THRESHOLD && max + diff * INTER6_THRESHOLD < 1. {
@@ -54,24 +49,40 @@ pub(crate) fn compress_bc4_block(mut block: [f32; 16], options: Bc4Options) -> [
     }
 }
 
-// fn single_color(value: f32, options: Bc4Options) -> [u8; 8] {
-//     // See if the closest encoded value is good enough. This doesn't improve
-//     // quality, but it does make the output more compressable for gzip.
-//     let closest = EndPoints::new_closest(value, options.snorm);
-//     if (closest.c0_f - value).abs() < BC4_EPSILON {
-//         return closest.with_indexes(IndexList::new_all(0));
-//     }
+fn single_color(value: f32, options: Bc4Options) -> [u8; 8] {
+    // See if the closest encoded value is good enough. This doesn't improve
+    // quality, but it does make the output more compressable for gzip.
+    let closest = EndPoints::new_closest(value, options.snorm);
+    if (closest.c0_f - value).abs() < BC4_EPSILON {
+        return closest.with_indexes(IndexList::new_all(0));
+    }
 
-//     // inter6 is typically optimal for single colors
-//     let endpoints = EndPoints::new_inter6(value, value, options.snorm);
-//     let (indexes, _) = if options.dither {
-//         get_inter6_indexes_dither_ordered_diffused(block, endpoints.c0_f, endpoints.c1_f)
-//     } else {
-//         get_inter6_indexes(block, endpoints.c0_f, endpoints.c1_f)
-//     };
+    // The inter6 palette is typically the better palette for single colors.
+    // It certainly is for dithering. However, the inter4 palette might just
+    // happen to contain a color closer to the input value, so we check both
+    // if dithering is disabled.
 
-//     endpoints.with_indexes(indexes)
-// }
+    let endpoints6 = EndPoints::new_inter6(value, value, options.snorm);
+    let palette6 = Inter6Palette::from_endpoints(&endpoints6);
+
+    if options.dither {
+        let (indexes, _) = palette6.block_dither(&[value; 16]);
+        endpoints6.with_indexes(indexes)
+    } else {
+        // pick the best palette
+        let endpoints4 = EndPoints::new_inter4(value, value, options.snorm);
+        let palette4 = Inter4Palette::from_endpoints(&endpoints4);
+
+        let (index_value4, _, error4) = palette4.closest(value);
+        let (index_value6, _, error6) = palette6.closest(value);
+
+        if error4.abs() < error6.abs() {
+            endpoints4.with_indexes(IndexList::new_all(index_value4))
+        } else {
+            endpoints6.with_indexes(IndexList::new_all(index_value6))
+        }
+    }
+}
 
 fn refine_endpoints(
     mut min: f32,
@@ -160,32 +171,6 @@ fn compress_inter6(
     };
 
     (endpoints.with_indexes(indexes), error)
-}
-
-const BAYER_4: [u8; 16] = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-const BAYER_4_N: [f32; 16] = {
-    let mut bayer = [0.0; 16];
-    let mut i = 0;
-    while i < 16 {
-        bayer[i] = BAYER_4[i] as f32 / 16.0;
-        i += 1;
-    }
-    bayer
-};
-fn get_inter6_indexes_dither_ordered(
-    block: &[f32; 16],
-    palette: Inter6Palette,
-) -> (IndexList, f32) {
-    let mut total_error = 0.0;
-    let mut index_list = IndexList::new_empty();
-    for (pixel_index, &pixel) in block.iter().enumerate() {
-        let (index_value, _, error) = palette.closest_order_dither(pixel_index, pixel);
-
-        index_list.set(pixel_index, index_value);
-        total_error += error * error;
-    }
-
-    (index_list, total_error)
 }
 
 fn compress_inter4(block: &[f32; 16], options: Bc4Options) -> ([u8; 8], f32) {
@@ -495,25 +480,6 @@ struct Inter6Palette {
 }
 impl Inter6Palette {
     const INDEX_MAP: [u8; 8] = [1, 7, 6, 5, 4, 3, 2, 0];
-
-    /// Similar to `self.closest`, but uses ordered dithering.
-    ///
-    /// Returns:
-    /// 0: The index value of the closest color in the palette
-    /// 1: The closest color in the palette
-    /// 2: `pixel - closest`, aka the (signed) error
-    fn closest_order_dither(&self, pixel_index: usize, pixel: f32) -> (u8, f32, f32) {
-        debug_assert!(pixel_index < 16);
-
-        let blend = (pixel - self.c1) / (self.c0 - self.c1);
-        let blend7 = ((blend * 7.0 + BAYER_4_N[pixel_index]) as u8).min(7);
-
-        let index_value = Self::INDEX_MAP[blend7 as usize];
-        let closest = blend7 as f32 * (1.0 / 7.0) * (self.c0 - self.c1) + self.c1;
-        let error = pixel - closest;
-
-        (index_value, closest, error)
-    }
 }
 impl Palette for Inter6Palette {
     fn new(c0: f32, c1: f32) -> Self {
