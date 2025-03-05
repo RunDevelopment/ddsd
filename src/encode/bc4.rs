@@ -141,6 +141,17 @@ fn refine_endpoints(
     (min, max)
 }
 
+fn refinement_error_metric<P: Palette>(
+    block: &[f32; 16],
+    _options: Bc4Options,
+) -> impl Fn((f32, f32)) -> f32 + '_ {
+    move |(min, max)| {
+        let palette = P::new(min, max);
+        // TODO: find a better error metric for dithered blocks
+        palette.block_closest_mse(block)
+    }
+}
+
 fn compress_inter6(
     block: &[f32; 16],
     mut min: f32,
@@ -150,11 +161,7 @@ fn compress_inter6(
     (min, max) = refine_endpoints(
         min,
         max,
-        move |(min, max)| {
-            let palette = Inter6Palette::new(min, max);
-            // TODO: find a better error metric for dithered blocks
-            palette.block_closest_mse(block)
-        },
+        refinement_error_metric::<Inter6Palette>(block, options),
         move |(min, max)| {
             let endpoints = EndPoints::new_inter6(min, max, options.snorm);
             (endpoints.c0_f, endpoints.c1_f)
@@ -188,12 +195,8 @@ fn compress_inter4(block: &[f32; 16], options: Bc4Options) -> ([u8; 8], f32) {
     (min, max) = refine_endpoints(
         min,
         max,
+        refinement_error_metric::<Inter4Palette>(block, options),
         move |(min, max)| {
-            let palette = Inter4Palette::new(min, max);
-            // TODO: find a better error metric for dithered blocks
-            palette.block_closest_mse(block)
-        },
-        |(min, max)| {
             let endpoints = EndPoints::new_inter4(min, max, options.snorm);
             (endpoints.c0_f, endpoints.c1_f)
         },
